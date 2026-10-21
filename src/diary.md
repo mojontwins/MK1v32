@@ -46,15 +46,15 @@ Se puede disparar en todas las direcciones,
 
 ## Escalerasión
 
-Si se activa la escalerasión, debe haber un detector que detecte "tocando escalera" (`hit_stairs`) y un flag `on_stairs` y eso defina un contexto.
+Si se activa la escalerasión, debe haber un detector que detecte "tocando escalera" (`hit_ladder`) y un flag `on_ladder` y eso defina un contexto.
 
-* Si `!on_stairs`, pero `hit_stairs` y pulsamos UP|DOWN -> `on_stairs = 1`.
-* Si `on_stairs` -> gravedad no aplica.
-* Si `on_stairs` -> podemos iniciar un salto, lo cual deberá poner `on_stairs = 0`.
-* Si `on_stairs` y `!hit_stairs` -> `on_staris = 0`.
-* Si `on_stairs` -> UP|DOWN suben y bajan, LEFT|RIGHT como normalmente, frame específico que tiene que ver con `(y >> 3) | 1`.
+* Si `!on_ladder`, pero `hit_ladder` y pulsamos UP|DOWN -> `on_ladder = 1`.
+* Si `on_ladder` -> gravedad no aplica.
+* Si `on_ladder` -> podemos iniciar un salto, lo cual deberá poner `on_ladder = 0`.
+* Si `on_ladder` y `!hit_ladder` -> `on_staris = 0`.
+* Si `on_ladder` -> UP|DOWN suben y bajan, LEFT|RIGHT como normalmente, frame específico que tiene que ver con `(y >> 3) | 1`.
 
-Vamos a probar a hacer que `hit_stairs` cubra un área que haga que sea sencillo encararmarse a las escaleras. Por ejemplo, un rectángulo `[x+4, x+11]` e `[y+8,y+16]` (cubre un pixel por debajo).
+Vamos a probar a hacer que `hit_ladder` cubra un área que haga que sea sencillo encararmarse a las escaleras. Por ejemplo, un rectángulo `[x+4, x+11]` e `[y+8,y+16]` (cubre un pixel por debajo).
 
 Hay que detectar 4 attr, recuerda que:
 
@@ -63,3 +63,9 @@ Hay que detectar 4 attr, recuerda que:
 	._attr_2
 ```
 
+Early en vert.axis, se detecta (o no) la escalera y se establece `player.hit_ladder`. El resto de los cambios, en orden de motor:
+
+[X] Si `!player.hit_ladder` -> `player.on_ladder = 0`.
+[X] Si `player.on_ladder`, la gravedad no aplica.
+[X] Iniciar el salto: se puede si `player.on_ladder`. 
+[ ] Lógica `player.hit_ladder && !player.on_ladder`, si UP|DOWN `player.onladder = 1`.

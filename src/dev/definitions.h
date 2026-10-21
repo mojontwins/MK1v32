@@ -90,6 +90,8 @@ typedef struct {
 	unsigned char sword_g;								// 44
 	unsigned char coins;								// 45
 	unsigned char drain_amount; 						// 46
+	unsigned char hit_ladder; 							// 47
+	unsigned char on_ladder; 							// 48
 } INERCIA;
 
 INERCIA player;

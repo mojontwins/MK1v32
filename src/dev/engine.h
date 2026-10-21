@@ -894,13 +894,19 @@ void move (void) {
 			.m_vert_kp_done
 		#endasm
 	#else
-		// Early: stairs detection
-		#ifdef PLAYER_HAS_STAIRS 
+		// Early: ladder detection
+
+		#ifdef PLAYER_HAS_LADDERS 
 			// cx1 = (gpx + 4) >> 4; cx2 = (gpx + 12) >> 4;
 			// cy1 = (gpy + 8) >> 4; cy2 = (gpy + 16) >> 4;
 			// ATTR en las cuatro esquinas debe ser & 16
+			// Detectamos con salida rápida (en cuanto encontramos punto)
 
 			#asm
+				.m_vert_ladder_detect
+					xor a 
+					ld  (player + 47), a 			// player.hit_ladder = 0
+
 					ld  a, (_gpx)
 					add 4
 					srl a
@@ -925,14 +931,67 @@ void move (void) {
 					srl a 
 					srl a 
 					srl a 				// A = cy1
+					ld  (_cy1), a
 					call _attr2 
-			#endasm 
+					xor a 
+					or  l 
+					jr  nz, m_vert_set_ladder 
 
+					ld  a, (_cx1)
+					ld  c, a 
+					ld  a, (_cy1)
+					call _attr2 
+					xor a 
+					or  l
+					jr  nz, m_vert_set_ladder
+
+				// Bottom edge
+					ld  a, (_cx1)
+					ld  c, a 
+					ld  a, (_gpy)
+					add 16 
+					srl a 
+					srl a 
+					srl a 
+					srl a 
+					ld  (_cy2), a 
+					call _attr2
+					xor a 
+					or  l
+					jr  nz, m_vert_set_ladder
+
+					ld  a, (_cx2)
+					ld  c, a 
+					ld  a, (_cy2)
+					call _attr2 
+					xor a 
+					or  l
+
+					jr  z,  m_vert_set_ladder_done
+
+				.m_vert_set_ladder
+					ld  a, 1
+					ld  (_player + 47), a 			// player.hit_ladder = 0
+
+					jr  m_vert_set_ladder_done_done
+
+				.m_vert_set_ladder_done
+					ld  (_player + 48), a 			// player.on_ladder
+
+				.m_vert_set_ladder_done_done
+		
+				// Skip gravity if on ladder.
+
+					ld  a, (_player + 48) 				// player.on_ladder
+					or  a 
+					jr  nz, m_vert_gravity_skip
+			#endasm
 		#endif
 
 		// Apply gravity
-		
+
 		#asm
+
 			.m_vert_gravity_do
 				ld  hl, (_player + 8) 			// player.vy
 				ld  de, PLAYER_G 
@@ -948,6 +1007,8 @@ void move (void) {
 
 			.m_vert_gravity_done
 				ld  (_player + 8), hl 
+
+			.m_vert_gravity_skip
 		#endasm 
 
 		#ifdef PLAYER_HAS_JUMP
@@ -974,6 +1035,11 @@ void move (void) {
 					ld  c, a 
 					ld  a, (_player + 25) 		// player.gotten 
 					or  c
+				#ifdef PLAYER_HAS_LADDERS
+						ld  c, a 
+						ld  a, (_player + 48) 		// player.on_ladder
+						or  c 
+				#endif
 					jr  z, m_jump_start_done 
 
 					ld  (_player + 19), a  		// player.saltando
@@ -1054,6 +1120,52 @@ void move (void) {
 				.m_vert_jump_down_done
 					ld  (_disable_collide_platform), a
 			#endasm
+		#endif
+
+		// Ladders!
+
+		#ifdef PLAYER_HAS_LADDERS
+				ld  a, (_player + 48) 			// player.on_ladder 
+				or  a 
+				jr  nz, m_vert_ladders_on_ladder
+
+				// Not on ladder. If !hit_ladder -> done
+				ld  a, (_player + 47) 			// player.hit_ladder
+				or  a 
+				jr  z, m_vert_ladders_done
+
+				// Hop on a ladder? if UP | DOWN
+				// pad0 & (UP | DOWN) != UP | DOWN
+
+				ld  a, (_pad0)
+				and sp_UP|sp_DOWN 
+				cp  sp_UP|sp_DOWN
+				jr  z, m_vert_ladders_done
+
+				ld  a, 1
+				ld  (_player + 48), a 			// player.on_ladder 
+
+			.m_vert_ladders_on_ladder
+				// UP|DOWN move fixed amount, no acceleration
+				
+				ld  a, (_pad0)
+				and sp_UP
+				jr  nz, m_vert_ladders_on_ladder_up_done
+
+				ld  hl, -PLAYER_LADDER_VX 
+				ld  (player + 8), hl
+
+			.m_vert_ladders_on_ladder_up_done
+
+				ld  a, (_pad0)
+				and sp_DOWN
+				jr  nz, m_vert_ladders_done
+
+				ld  hl, PLAYER_LADDER_VX 
+				ld  (player + 8), hl
+
+
+			.m_vert_ladders_done
 		#endif
 	#endif 
 
