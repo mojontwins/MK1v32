@@ -50,9 +50,15 @@ Dim Shared As Integer lastTextOffset
 Dim Shared As String textPool (16384)
 Dim Shared As Integer textOffsets (16384)
 Dim Shared As Integer lastCommandWasTerminator
+Dim Shared As Integer errorCount = 0
 
 Dim Shared As TypeSubroutineInfo subInfo (128)
 Dim Shared As Integer subInfoIdx = 0
+
+Sub reportError (msg As String)
+	errorCount = errorCount + 1
+	Print "*** ERROR: " & msg
+End Sub
 
 Sub addSubInfo (subName As String, binAddress As Integer)
 	subInfo (subInfoIdx).subName = subName
@@ -317,6 +323,16 @@ Function isNumber (s As String) As Integer
 	Return -1
 End Function
 
+Function isFlagIndex (s As String) As Integer
+	' A flag index is either a plain number (0..254) or another
+	' indirection ("$something"), which will be resolved later on.
+	If Len (s) = 0 Then Return 0
+	If Left (s, 1) = "$" Then Return -1
+	If Not isNumber (s) Then Return 0
+	If Val (s) > 254 Then Return 0
+	Return -1
+End Function
+
 Function correctSuBExpresion (s As String) As Integer
 	If Len (s) < 2 Then Return 0
 	If Left (s, 1) <> "=" Then Return 0 
@@ -460,7 +476,7 @@ Function pVal (expresion As String) As String
 			result = Chr (&HFF) & Chr (&HE7) & pVal(subTokens (1)) & pVal (subTokens (2))
 			RV (&HE7) = -1
 		Else 
-			Print "Wrong expresion @ " & curLineNo
+			reportError ("Wrong expresion @ " & curLineNo)
 			Return Chr (0)
 		End If
 
@@ -468,13 +484,27 @@ Function pVal (expresion As String) As String
 		Return result
 
 	ElseIf Len (expresion) > 1 And Left (expresion, 1) = "$" Then 
+		If Not isFlagIndex (Right (expresion, Len (expresion) - 1)) Then
+			reportError ("Bad flag reference '" & expresion & "' @ " & curLineNo)
+			Return Chr (0)
+		End If
 		Return Chr (&HFF) & pVal (Right (expresion, Len (expresion) - 1)) 
 	Else
+		If Len (expresion) = 0 Then
+			' Empty value: zero
+			Return Chr (0)
+		End If
+
+		If Not isNumber (expresion) Then
+			reportError ("Wrong value '" & expresion & "' @ " & curLineNo)
+			Return Chr (0)
+		End If
+
 		If Val (expresion) <= 254 Then 
 			RV (Val (expresion)) = -1
 			Return Chr (Val (expresion)) 
 		Else 
-			Print "Wrong value @ " & curLineNo
+			reportError ("Wrong value @ " & curLineNo)
 			Return Chr (0)
 		End If
 	End If
@@ -496,11 +526,16 @@ Function lVal (expresion As String) As String
 	Dim As String value
 	' Used for lValues such as $A = B, so first $ is ignored.
 	If correctLvalue (expresion) Then
+		If Not isFlagIndex (Right (expresion, Len (expresion) - 1)) Then
+			reportError ("Bad flag reference '" & expresion & "' @ " & curLineNo)
+			Return Chr (0)
+		End If
 		value = lValR (Right (expresion, Len (expresion) - 1))
 		LV (Asc (Right (value, 1))) = -1
 		Return value
 	Else
-		Print "Expecting lValue @ " & curLineNo
+		reportError ("Expecting lValue @ " & curLineNo)
+		Return Chr (0)
 	End If
 End Function
 
@@ -526,7 +561,7 @@ Function buildAction (bytecode As String) As String
 End Function
 
 Sub syntaxError 
-	Print "Syntax error at " & curLineNo
+	reportError ("Syntax error at line " & curLineNo)
 End Sub
 
 Function processIf (linea As String) As String
@@ -592,38 +627,33 @@ Function processIf (linea As String) As String
 						code = buildCond (Chr (&H23) & pVal (tokens (3)) & pVal (tokens (4)))
 					
 					Case "falling"
-						' $24 X Y
+						' $24
 						code = buildCond (Chr (&H24))
 		
 					Case "not_falling"
-						' $25 X Y
+						' $25
 						code = buildCond (Chr (&H25))
 					
+					Case "not"
+						' $25, written as "PLAYER NOT FALLING"
+						If lCase (tokens (3)) = "falling" Then
+							code = buildCond (Chr (&H25))
+						End If
+					
 					Case "still"
-						' $26 X Y
+						' $26
 						code = buildCond (Chr (&H26))
 				End Select
 
-			Case "tile"
-
-				Select Case lCase (tokens (2))
-					Case "at"
-						' $30 X Y T
-						code = buildCond (Chr (&H30) & pVal (tokens (3)) & pVal (tokens (4)) & pVal (tokens (6)))
-
 				End Select
 
-			Case "beh"
+	End If
 
-				Select Case lCase (tokens (2))
-					Case "at"
-						' $31 X Y T
-						code = buildCond (Chr (&H31) & pVal (tokens (3)) & pVal (tokens (4)) & pVal (tokens (6)))
+	' Note: "TILE AT" and "BEH AT" are handled as expressions (see pVal),
+	' so there are no dedicated conditions for them.
 
-				End Select
-
-		End Select
-
+	If Len (code) = 0 Then
+		reportError ("Unknown condition @ line " & curLineNo & ": " & linea)
 	End If
 
 	Return code 
@@ -633,8 +663,11 @@ Function processCommand (linea As String) As String
 	Dim As String code = ""
 	Dim As String cmd, scmd 
 	Dim As Integer subBinIndex, indexSize
+	Dim As Integer errBefore
 
 	parseScriptLine linea
+
+	errBefore = errorCount
 
 	' Detect direct numeric asignation $A = B 
 	If tokens (1) = "=" Then 
@@ -696,11 +729,19 @@ Function processCommand (linea As String) As String
 		Case "set"
 			If scmd = "tile" Then
 				' SET TILE X Y = N
+				If tokens (4) = "=" And isNumberOrVar (tokens (2)) And isNumberOrVar (tokens (3)) And isNumberOrVar (tokens (5)) Then
 				code = buildAction (Chr (&H20) & pVal (tokens(2)) & pVal (tokens (3)) & pVal (tokens (5)))
+				Else
+					syntaxError
+				End If
 
 			ElseIf scmd = "beh" Then
 				' SET BEH X Y = N
+				If tokens (4) = "=" And isNumberOrVar (tokens (2)) And isNumberOrVar (tokens (3)) And isNumberOrVar (tokens (5)) Then
 				code = buildAction (Chr (&H21) & pVal (tokens(2)) & pVal (tokens (3)) & pVal (tokens (5)))
+				Else
+					syntaxError
+				End If
 
 			ElseIf correctLvalue (tokens (1)) And tokens (2) = "=" And isNumberOrVar (tokens (3)) Then
 				' SET $A = B
@@ -713,14 +754,26 @@ Function processCommand (linea As String) As String
 			If scmd = "item" Then
 				' GET ITEM SET f
 				' $30 F (lvalue)
+				If correctLvalue (tokens (3)) Then
 				code = buildAction (Chr (&H30) & lVal (tokens(3)))
+				Else
+					syntaxError
+				End If
+			Else
+				syntaxError
 			End If
 
 		Case "print"
 			If scmd = "tile" Then 
 				' PRINT TILE X Y = T
 				' $50 X Y T
+				If tokens (4) = "=" And isNumberOrVar (tokens (2)) And isNumberOrVar (tokens (3)) And isNumberOrVar (tokens (5)) Then
 				code = buildAction (Chr (&H50) & pVal (tokens (2)) & pVal (tokens (3)) & pVal (tokens (5)))
+				Else
+					syntaxError
+				End If
+			Else
+				syntaxError
 			End If
 
 		Case "warp"
@@ -818,6 +871,10 @@ Function processCommand (linea As String) As String
 
 	End Select 
 
+	If Len (code) = 0 And errorCount = errBefore And Len (tokens (0)) > 0 Then
+		reportError ("Unknown command @ line " & curLineNo & ": " & linea)
+	End If
+
 	Return code 
 End Function
 
@@ -841,7 +898,7 @@ Function processCurrentSection (fIn As Integer) As String
 		If linea = "" Then 
 			' Skip 
 
-		ElseIf lineaLc = "end" Then
+		ElseIf lineaLc = "end" Or lineaLc = "end if" Then
 			' If we are fetching -> this section has ended.
 			' If we are reading conditions -> wrong
 			' If we are reading actions -> this clausule has ended.
@@ -850,7 +907,7 @@ Function processCurrentSection (fIn As Integer) As String
 				terminado = -1
 			ElseIf state = 1 Then 
 				wrong = -1: terminado = -1
-				Print "Unexpected END @ " & curLineNo
+				reportError ("Unexpected END @ line " & curLineNo)
 			ElseIf state = 3 Then 
 				' End decos
 				clausule = clausule & Chr (&HFF)
@@ -888,14 +945,14 @@ Function processCurrentSection (fIn As Integer) As String
 				lastCommandWasTerminator = 0
 			Else 
 				wrong = -1: terminado = -1
-				Print "Unexpected THEN @ " & curLineNo
+				reportError ("Unexpected THEN @ line " & curLineNo)
 			End If
 
 		ElseIf Len (lineaLc) > 3 And Left (lineaLc, 3) = "if " Then 
 			' Only valid when fetching or reading conditions
 			If state = 2 Then 
 				wrong = -1: terminado = -1
-				Print "Unexpected IF @ " & curLineNo
+				reportError ("Unexpected IF @ line " & curLineNo)
 			Else 
 				state = 1
 
@@ -913,7 +970,7 @@ Function processCurrentSection (fIn As Integer) As String
 
 			Else
 				wrong = -1: terminado = -1
-				Print "Unexpected DECOS @ " & curLineNo
+				reportError ("Unexpected DECOS @ line " & curLineNo)
 			End If
 		Else
 			If state = 3 Then 
@@ -931,7 +988,7 @@ Function processCurrentSection (fIn As Integer) As String
 
 			ElseIf Left (linea, 1) <> "#" Then 
 				wrong = -1: terminado = -1
-				Print "Unexpected command @ " & curLineNo
+				reportError ("Unexpected command @ line " & curLineNo)
 
 			Else 
 				' ignoring comment
@@ -1286,7 +1343,13 @@ i = 0: While i < 127 And fileIns(i) <> ""
 	Print "Processing " & fileIns(i)
 	processScript (fIn)
 	Close #fIn
+
+		If errorCount = 0 Then
 	writeScript fileIns(i) & ".bin"
+		Else
+			Print "NOT writing " & fileIns(i) & ".bin because of errors"
+		End If
+
 	If debug Then debugPrintAliases
 
 	i = i + 1
@@ -1298,6 +1361,15 @@ If textPoolIndex > 0 Then
 	writeTexts fileText
 End If
 
+	'' If there were errors, do not generate the interpreter: it would
+	'' not match the (missing) bytecode.
+
+	If errorCount > 0 Then
+		Print "*** " & errorCount & " ERROR(S) FOUND! Not writing the interpreter. ***"
+		End 1
+	End If
+
+
 '' GENERATE INTERPRETER
 '' Only output conditions & actios for opcodes in AU and CU.
 
@@ -1307,7 +1379,7 @@ fOut = FreeFile
 Open interpreterFn For Output As #fOut
 
 writeAssemblyString fOut, "defc PLAYER_LIFE=99 ;; Find a way to solve this"
-writeAssemblyString fOut, "; Imports|XREF _flags|XREF _n_pant|XREF _on_pant|XREF _gpx|XREF _gpy|XREF _tpx|XREF _tpy|XREF _tat|XREF _tqt|XREF _player|XREF _attr_2|XREF qtile_do|XREF set_map_tile_do|XREF _draw_coloured_tile|XREF __x|XREF __y|XREF __t|XREF __n|XREF _comportamiento_tiles|XREF _map_attr|XREF _peta_el_beeper|XREF _do_extern_action|XREF draw_line_of_text|XREF _hotspot_t|XREF _scenery_info|XREF __en_t|XREF _en_it|XREF __en_x|XREF __en_y|XREF _script_param"
+writeAssemblyString fOut, "; Imports|XREF _flags|XREF _n_pant|XREF _on_pant|XREF _gpx|XREF _gpy|XREF _tpx|XREF _tpy|XREF _tat|XREF _tqt|XREF _player|XREF _attr_2|XREF qtile_do|XREF set_map_tile_do|XREF _draw_coloured_tile|XREF __x|XREF __y|XREF __t|XREF __n|XREF _comportamiento_tiles|XREF _map_attr|XREF _peta_el_beeper|XREF _do_extern_action|XREF draw_line_of_text|XREF _hotspot_t|XREF _scenery_info|XREF __en_t|XREF _enit|XREF __en_x|XREF __en_y|XREF _script_param"
 
 If RV(&HE6) Or AU(&HE6) Then writeAssemblyString fOut, "; 5bit text decoder|XREF _run_text_box"
 If RV(&HE6) Then writeAssemblyString fOut, "; Dialogs|XREF _addr1|XREF _addr2|XREF _addr3|XREF _run_dialog"
@@ -1398,14 +1470,13 @@ If CU(&H05) Then writeAssemblyString fOut, ";; OPCODE 0x05|;; IF NPANT = N|cp  0
 If CU(&H21) Then writeAssemblyString fOut, ";; OPCODE 0x21|;; IF PLAYER IN_X (X1, X2)|cp  0x21|jr  nz, copcode_21_end|.copcode_21|;; gpx < X1 -> exit|call read_vbyte|ld  c, a|ld  a, (_gpx)|cp  c|jp  c, skip_clausule|;; X2 < gpx -> exit|ld  a, (_gpx)|ld  c, a|call read_vbyte|cp  c|jp  c, skip_clausule|jp  script_clausule|.copcode_21_end"
 If CU(&H22) Then writeAssemblyString fOut, ";; OPCODE 0x22|;; IF PLAYER IN_Y (Y1, Y2)|cp  0x22|jr  nz, copcode_22_end|.copcode_22|;; gpy < Y1 -> exit|call read_vbyte|ld  c, a|ld  a, (_gpy)|cp  c|jp  c, skip_clausule|;; Y2 < gpy -> exit|ld  a, (_gpy)|ld  c, a|call read_vbyte|cp  c|jp  c, skip_clausule|jp  script_clausule|.copcode_22_end"
 If CU(&H23) Then writeAssemblyString fOut, ";; OPCODE 0x23|;; IF PLAYER AT (X, Y)|cp  0x23|jr  nz, copcode_23_end|.opcode23|;; (gpx + 8) >> 4 != X -> exit|ld  a, (_tpx)|ld  c, a|call read_vbyte|cp  c|jp  nz, skip_clausule|;; (gpy + 8) >> 4 != Y -> exit|ld  a, (_tpy)|ld  c, a|call read_vbyte|cp  c|jp  nz, skip_clausule|jp  script_clausule|.copcode_23_end"
-If CU(&H24) Then writeAssemblyString fOut, ";; OPCODE 0x24|;; IF PLAYER FALLING|cp  0x24|jr  nz, copcode_24_end|.copcode_24|;; Player falling if not possee|ld  a, (_player + 26) 	; player.possee|or  a|jp  z, skip_clausule|jp  script_clausule|.copcode_24_end"
-If CU(&H25) Then writeAssemblyString fOut, ";; OPCODE 0x25|;; IF PLAYER NOT FALLING|cp  0x25|jr  nz, copcode_25_end|.copcode_25|;; Player not falling if possee|ld  a, (_player + 16)	; player.possee|or  a|jp  nz, skip_clausule|jp  script_clausule|.copcode_25_end"
+	If CU(&H24) Then writeAssemblyString fOut, ";; OPCODE 0x24|;; IF PLAYER FALLING (vy > 0 and not possee)|cp  0x24|jr  nz, copcode_24_end|.copcode_24|ld  hl, (_player + 8) 	; player.vy|ld  a, h|and 0x80|jp  nz, copcode_24_false	; vy < 0|ld  a, l|or  a|jp  nz, copcode_24_moving|ld  a, h|or  a|jp  z, copcode_24_false	; vy == 0|.copcode_24_moving|ld  a, (_player + 26) 	; player.possee|or  a|jp  nz, skip_clausule	; standing on something|jp  script_clausule|.copcode_24_false|jp  skip_clausule|.copcode_24_end"
+	If CU(&H25) Then writeAssemblyString fOut, ";; OPCODE 0x25|;; IF PLAYER NOT FALLING (vy <= 0 or possee)|cp  0x25|jr  nz, copcode_25_end|.copcode_25|ld  a, (_player + 26) 	; player.possee|or  a|jp  nz, script_clausule	; standing on something|ld  hl, (_player + 8) 	; player.vy|ld  a, h|and 0x80|jp  nz, script_clausule	; vy < 0|ld  a, l|or  a|jp  nz, skip_clausule	; vy > 0|ld  a, h|or  a|jp  nz, skip_clausule	; vy > 0|jp  script_clausule	; vy == 0|.copcode_25_end"
 If CU(&H26) Then writeAssemblyString fOut, ";; OPCODE 0x26|;; PLAYER_STILL|cp  0x26|jr  nz, copcode_26_end|.copcode_26|ld  a, (_player + 6) 	; player.vx LSB|ld  hl, (_player + 7)	; player.vx MSB|or  (hl)|ld  hl, (_player + 8) 	; player.vy LSB|or  (hl)|ld  hl, (_player + 9) 	; player.vy MSB|or  (hl)|jp  nz, skip_clausule|jp  script_clausule|.copcode_26_end"
-If CU(&H30) Then writeAssemblyString fOut, ";; OPCODE 0x30|;; TILE AT (X, Y) = T|cp  0x30|jr  nz, copcode_30_end|.copcode_30|call read_x_y|ld  a, (sc_x)|ld  c, a|ld  a, (sc_y)|call qtile_do|ld  c, l|call read_vbyte|cp  c|jp  nz, skip_clausule|jp  script_clausule|.copcode_30_end"
-If CU(&H31) Then writeAssemblyString fOut, ";; OPCODE 0x31|;; BEH AT (X, Y) = T|cp  0x31|jr  nz, copcode_31_end|.copcode_31|call read_x_y|ld  a, (sc_x)|ld  c, a|ld  a, (sc_y)|call _attr_2|ld  c, l|call read_vbyte|cp  c|jp  nz, skip_clausule|jp  script_clausule|.copcode_31_end"
-'If CU(&HF0) Then writeAssemblyString fOut, ";; OPCODE 0xF0|;; TRUE|cp  0xf0|jr  z, script_clausule"
-
-''
+	If CU(&HF0) Then writeAssemblyString fOut, ";; OPCODE 0xF0|;; TRUE|cp  0xf0|jr  nz, copcode_F0_end|.copcode_F0|jp  script_clausule|.copcode_F0_end"
+' (removed: dead opcode; TILE AT / BEH AT are expressions now)
+' (removed: dead opcode; TILE AT / BEH AT are expressions now)
+'
 
 writeAssemblyString fOut, ";; UNKNOWN|jp  script_clausule"
 writeAssemblyString fOut, ".skip_clausule|ld  hl, (skip)|ld  (script), hl|jp  script_loop"
@@ -1462,7 +1533,7 @@ If RV(&HF5) Then writeAssemblyString fOut, "; HOTSPOT RVALUE|cp  0xF5|jr  nz, rv
 If RV(&HF0) Then writeAssemblyString fOut, "; HIDE_HOTSPOTS RVALUE|cp  0xF0|jr  nz, rvb_set_hide_hotspots_done|ld  a, (_scenery_info + 0)|ret|.rvb_set_set_hide_hotspots"
 If RV(&HEF) Then writeAssemblyString fOut, "; DONT_MAKE_FANTIES RVALUE|cp  0xEF|jr  nz, rvb_set_dont_make_fanties_done|ld  a, (_scenery_info + 1)|ret|.rvb_set_dont_make_fanties_done"
 If RV(&HEE) Then writeAssemblyString fOut, "; EN_T RVALUE|cp  0xEE|jr  nz, rvb_set_en_t_done|ld  a, (__en_t)|ret|.rvb_set_en_t_done"
-If RV(&HED) Then writeAssemblyString fOut, "; EN_N RVALUE|cp  0xED|jr  nz, rvb_set_en_n_done|ld  a, (_en_it)|ret|.rvb_set_en_n_done"
+If RV(&HED) Then writeAssemblyString fOut, "; EN_N RVALUE|cp  0xED|jr  nz, rvb_set_en_n_done|ld  a, (_enit)|ret|.rvb_set_en_n_done"
 If RV(&HEC) Then writeAssemblyString fOut, "; EN_X RVALUE|cp  0xEC|jr  nz, rvb_set_en_x_done|ld  a, (__en_x)|ret|.rvb_set_en_x_done"
 If RV(&HEB) Then writeAssemblyString fOut, "; EN_Y RVALUE|cp  0xEB|jr  nz, rvb_set_en_y_done|ld  a, (__en_y)|ret|.rvb_set_en_y_done"
 If RV(&HEA) Then writeAssemblyString fOut, "; OPANT RVALUE|cp  0xEA|jr  nz, rvb_set_on_pant_done|ld  a, (_on_pant)|ret|.rvb_set_on_pant_done"
@@ -1473,7 +1544,7 @@ If RV(&HE6) Then writeAssemblyString fOut, "; DIALOG EXPRESION RVALUE|cp 0xE6|jr
 
 writeAssemblyString fOut, "ld  d, 0|ld  e, a|ld  hl, _flags|add hl, de|ld  a, (hl)|ret"
 writeAssemblyString fOut, ".read_x_y|call read_vbyte|ld  (sc_x), a|call read_vbyte|ld  (sc_y), a|ret"
-IF AU(&HE6) Or AU(&H70) Then writeAssemblyString fOut, ".read_addr|call read_byte|ld  c, a|call read_byte|ld  h, a|ld  l, c|ret"
+IF AU(&HE6) Or AU(&H70) Or RV(&HE6) Or RV(&H70) Then writeAssemblyString fOut, ".read_addr|call read_byte|ld  c, a|call read_byte|ld  h, a|ld  l, c|ret"
 writeAssemblyString fOut, ";; Read flag index and value, returns pointer in HL and value in A.|.read_i_v|call read_vbyte  		; Read flag index|ld  c, a|call read_vbyte 		; Read value|ld  (sc_y), a"
 writeAssemblyString fOut, "ld  a, c  				; C = flag index"
 If LV(&HFE) Then writeAssemblyString fOut, "; NPANT LVALUE|cp  0xFE|jr  nz, riv_set_n_pant_done|ld  hl, _n_pant|jr  read_i_v_cont|.riv_set_n_pant_done"
@@ -1488,7 +1559,7 @@ If LV(&HEE) Then writeAssemblyString fOut, "; EN_T LVALUE|cp  0xEE|jr  nz, riv_s
 If LV(&HEC) Then writeAssemblyString fOut, "; EN_X LVALUE|cp  0xEC|jr  nz, riv_set_en_x_done|ld  hl, __en_x|jr  read_i_v_cont|.riv_set_en_x_done"
 If LV(&HEB) Then writeAssemblyString fOut, "; EN_Y LVALUE|cp  0xEB|jr  nz, riv_set_en_y_done|ld  hl, __en_y|jr  read_i_v_cont|.riv_set_en_y_done"
 If LV(&HEA) Then writeAssemblyString fOut, "; OPANT LVALUE|cp  0xEA|jr  nz, riv_set_on_pant_done|ld  hl, _on_pant|jr  read_i_v_cont|.riv_set_on_pant_done"
-If LV(&HEA) Then writeAssemblyString fOut, "; PARAM LVALUE|cp  0xE9|jr  nz, riv_set_cript_param_done|ld  hl, _script_param|jr  read_i_v_cont|.riv_set_cript_param_done"
+If LV(&HE9) Then writeAssemblyString fOut, "; PARAM LVALUE|cp  0xE9|jr  nz, riv_set_cript_param_done|ld  hl, _script_param|jr  read_i_v_cont|.riv_set_cript_param_done"
 
 writeAssemblyString fOut, "ld  b, 0 				; BC = flag index|ld  hl, _flags|add hl, bc 				; HL -> FLAGS [X]"
 writeAssemblyString fOut, ".read_i_v_cont|ld  a, (sc_y) 			; A = value|ret"
