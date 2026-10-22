@@ -18,6 +18,11 @@
 //  What it does: fills the screen with random tiles and bounces two 16x16
 //  sprites over them.
 //
+//  Note: this program has *no local variables*. z88dk keeps the locals of
+//  a function in the stack, and the code it generates to reach them is
+//  slow, so the engine works with globals only. See the "work" section
+//  below.
+//
 //  Build: see build.bat
 //
 // =========================================================================
@@ -112,6 +117,31 @@ signed char spr_dx [2], spr_dy [2];
 
 unsigned int seed = 0xc0de;
 
+// ---------------------------------------------------------------- work
+//
+// z88dk allocates the locals of a function in the stack, and the code it
+// generates to reach them is slow: every access has to load the stack
+// pointer and offset it. The engine has no locals at all for that reason,
+// it uses globals, which live in the data segment and are reached
+// directly.
+//
+// This example follows the same rule: every local became a global. Each
+// function owns its own set of variables, so a function can call another
+// one without the two stepping on each other. The parameters of our own
+// functions are globals too, for the same reason.
+
+unsigned char enc_px [4];                    // encode_4: the four pixels
+unsigned char it_i, it_j, it_b, it_p;        // init_tiles
+unsigned char km_v, km_m, km_p, km_hi, km_lo;// keep_mask
+unsigned char il_i;                          // init_lut
+unsigned char bs_row, bs_b, bs_px;           // build_sprite
+unsigned char bs_x, bs_y, bs_on, bs_dx, bs_dy;
+unsigned char *bs_data;                      // build_sprite: what to build
+unsigned char bs_style;                      // build_sprite: what to build
+unsigned char is_i;                          // init_sprites
+unsigned char ms_i;                          // move_sprites
+unsigned char upd_sprites;                   // cpc_UpdateNow
+
 // ---------------------------------------------------------------- utils
 
 unsigned char rnd (void) {
@@ -123,27 +153,28 @@ unsigned char rnd (void) {
 
 // Mode 1 packs 4 pixels of 2 bits in every byte, in the CPC's "garbled"
 // order: the high bit of the leftmost pixel is in bit 3, its low bit in
-// bit 7, and so on.
-unsigned char encode_4 (unsigned char c0, unsigned char c1, unsigned char c2, unsigned char c3) {
-	return ((c0 & 2) >> 1) << 2 | ((c1 & 2) >> 1) << 1 | (c2 & 2) >> 1 | (c3 & 2) >> 1 |
-	       ((c0 & 1) << 7) | ((c1 & 1) << 6) | ((c2 & 1) << 5) | ((c3 & 1) << 4);
+// bit 7, and so on. The four pixels are in enc_px.
+unsigned char encode_4 (void) {
+	return ((enc_px [0] & 2) >> 1) << 2 | ((enc_px [1] & 2) >> 1) << 1 | (enc_px [2] & 2) >> 1 | (enc_px [3] & 2) >> 1 |
+	       ((enc_px [0] & 1) << 7) | ((enc_px [1] & 1) << 6) | ((enc_px [2] & 1) << 5) | ((enc_px [3] & 1) << 4);
 }
 
 // The mask of background bits that a sprite byte leaves alone: the pixels
-// whose colour is not 0 (transparent) overwrite the background.
-unsigned char keep_mask (unsigned char v) {
-	unsigned char m = 0xff, p, hi, lo;
+// whose colour is not 0 (transparent) overwrite the background. The byte
+// to work on is in km_v.
+unsigned char keep_mask (void) {
+	km_m = 0xff;
 
-	for (p = 0; p < 4; p ++) {
-		hi = (v >> (3-p)) & 1;
-		lo = (v >> (7-p)) & 1;
-		if (hi | lo) {
-			m &= ~(1 << (3-p));
-			m &= ~(1 << (7-p));
+	for (km_p = 0; km_p < 4; km_p ++) {
+		km_hi = (km_v >> (3-km_p)) & 1;
+		km_lo = (km_v >> (7-km_p)) & 1;
+		if (km_hi | km_lo) {
+			km_m &= ~(1 << (3-km_p));
+			km_m &= ~(1 << (7-km_p));
 		}
 	}
 
-	return m;
+	return km_m;
 }
 
 // ---------------------------------------------------------------- system
@@ -166,10 +197,10 @@ void set_palette (void) {
 
 // Build the transparency LUT at $FE00.
 void init_lut (void) {
-	unsigned char i;
-
-	for (i = 0; i < 256; i ++) lut [i] = keep_mask (i);
-
+	for (il_i = 0; il_i < 256; il_i ++) {
+		km_v = il_i;
+		lut [il_i] = keep_mask ();
+	}
 	#asm
 		ld  de, _lut
 		ld  hl, BASE_LUT
@@ -283,18 +314,19 @@ void isr (void) {
 // ---------------------------------------------------------------- tiles
 
 void init_tiles (void) {
-	unsigned char i, j, b, p;
-
-	for (i = 0; i < 256; i ++) {
-		for (j = 0; j < 8; j ++) {
-			for (b = 0; b < 2; b ++) {
+	for (it_i = 0; it_i < 256; it_i ++) {
+		for (it_j = 0; it_j < 8; it_j ++) {
+			for (it_b = 0; it_b < 2; it_b ++) {
 				// a frame, plus a checkerboard inside
-				p = 0;
-				if (j == 0 || j == 7) p = 1;
-				else if ((i + j + b) & 1) p = 2;
-				if (i & 0x20) p = 3 - p;
+				it_p = 0;
+				if (it_j == 0 || it_j == 7) it_p = 1;
+				else if ((it_i + it_j + it_b) & 1) it_p = 2;
+				if (it_i & 0x20) it_p = 3 - it_p;
 
-				tiles [i*16 + j*2 + b] = encode_4 (p, p, p, p);
+				enc_px [0] = it_p; enc_px [1] = it_p;
+				enc_px [2] = it_p; enc_px [3] = it_p;
+
+				tiles [it_i*16 + it_j*2 + it_b] = encode_4 ();
 			}
 		}
 	}
@@ -302,15 +334,13 @@ void init_tiles (void) {
 
 // Fill the nametable with random tiles.
 void random_background (void) {
-	unsigned char row, col;
-
-	for (row = 0; row < SCR_ROWS; row ++) {
-		for (col = 0; col < SCR_COLS; col ++) {
-			ntable [row*SCR_COLS + col] = rnd ();
+	// bg_row and bg_col are the globals the assembly helper needs, so
+	// they double as the loop counters.
+	for (bg_row = 0; bg_row < SCR_ROWS; bg_row ++) {
+		for (bg_col = 0; bg_col < SCR_COLS; bg_col ++) {
+			ntable [bg_row*SCR_COLS + bg_col] = rnd ();
 
 			// mark the cell as dirty
-			bg_row = row;
-			bg_col = col;
 			#asm
 				ld  a, (_bg_col)
 				ld  e, a
@@ -324,81 +354,80 @@ void random_background (void) {
 
 // ---------------------------------------------------------------- sprites
 
-// Build a 16x16 sprite: 16 rows of 4 bytes.
-void build_sprite (unsigned char *data, unsigned char style) {
-	unsigned char row, b, px, col [4];
+// Build a 16x16 sprite: 16 rows of 4 bytes. The sprite to build is in
+// bs_data (where) and bs_style (what shape).
+void build_sprite (void) {
+	for (bs_row = 0; bs_row < 16; bs_row ++) {
+		for (bs_b = 0; bs_b < 4; bs_b ++) {
+			for (bs_px = 0; bs_px < 4; bs_px ++) {
+				bs_x = bs_b*4 + bs_px;
+				bs_y = bs_row;
+				bs_on = 0;
 
-	for (row = 0; row < 16; row ++) {
-		for (b = 0; b < 4; b ++) {
-			for (px = 0; px < 4; px ++) {
-				unsigned char x = b*4 + px;
-				unsigned char y = row;
-				unsigned char on = 0;
-
-				if (style == 0) {
+				if (bs_style == 0) {
 					// hollow square
-					if (x == 0 || x == 15 || y == 0 || y == 15) on = 1;
+					if (bs_x == 0 || bs_x == 15 || bs_y == 0 || bs_y == 15) bs_on = 1;
 				} else {
 					// filled disc
-					unsigned char dx = x > 7 ? x - 7 : 7 - x;
-					unsigned char dy = y > 7 ? y - 7 : 7 - y;
-					if (dx + dy <= 8) on = 1;
+					bs_dx = bs_x > 7 ? bs_x - 7 : 7 - bs_x;
+					bs_dy = bs_y > 7 ? bs_y - 7 : 7 - bs_y;
+					if (bs_dx + bs_dy <= 8) bs_on = 1;
 				}
 
 				// colour 1 (white); 0 is transparent
-				col [px] = on ? 1 : 0;
+				enc_px [bs_px] = bs_on ? 1 : 0;
 			}
 
-			data [row*4 + b] = encode_4 (col [0], col [1], col [2], col [3]);
+			bs_data [bs_row*4 + bs_b] = encode_4 ();
 		}
 	}
 }
 
 void init_sprites (void) {
-	unsigned char i;
+	for (is_i = 0; is_i < 2; is_i ++) {
+		bs_data = spr_data + is_i*16*4;
+		bs_style = is_i;
+		build_sprite ();
 
-	for (i = 0; i < 2; i ++) {
-		build_sprite (spr_data + i*16*4, i);
-
-		sp_sw [i].sp0 = (unsigned int) (spr_data + i*16*4);
-		sp_sw [i].sp1 = sp_sw [i].sp0;
+		sp_sw [is_i].sp0 = (unsigned int) (spr_data + is_i*16*4);
+		sp_sw [is_i].sp1 = sp_sw [is_i].sp0;
 
 		// the routines of the library: mark the cells it covers, draw it
-		sp_sw [i].invfunc = (void *) cpc_PutSpTileMap16x16PxM1;
-		sp_sw [i].updfunc = (void *) cpc_PutTrSp16x16TileMapPxM1LUT;
+		sp_sw [is_i].invfunc = (void *) cpc_PutSpTileMap16x16PxM1;
+		sp_sw [is_i].updfunc = (void *) cpc_PutTrSp16x16TileMapPxM1LUT;
 
-		spr_x [i] = VIEWPORT_X*8 + 20 + i*60;
-		spr_y [i] = VIEWPORT_Y*8 + 30 + i*40;
-		spr_dx [i] = 1 + i;
-		spr_dy [i] = 1;
+		spr_x [is_i] = VIEWPORT_X*8 + 20 + is_i*60;
+		spr_y [is_i] = VIEWPORT_Y*8 + 30 + is_i*40;
+		spr_dx [is_i] = 1 + is_i;
+		spr_dy [is_i] = 1;
 	}
 }
 
 void move_sprites (void) {
-	unsigned char i;
-
-	for (i = 0; i < 2; i ++) {
-		spr_x [i] += spr_dx [i];
-		spr_y [i] += spr_dy [i];
+	for (ms_i = 0; ms_i < 2; ms_i ++) {
+		spr_x [ms_i] += spr_dx [ms_i];
+		spr_y [ms_i] += spr_dy [ms_i];
 
 		// bounce inside the game area
-		if (spr_x [i] < VIEWPORT_X*8) { spr_x [i] = VIEWPORT_X*8; spr_dx [i] = -spr_dx [i]; }
-		if (spr_x [i] > (VIEWPORT_X+VIEWPORT_W)*8 - 17) { spr_x [i] = (VIEWPORT_X+VIEWPORT_W)*8 - 17; spr_dx [i] = -spr_dx [i]; }
-		if (spr_y [i] < VIEWPORT_Y*8) { spr_y [i] = VIEWPORT_Y*8; spr_dy [i] = -spr_dy [i]; }
-		if (spr_y [i] > (VIEWPORT_Y+VIEWPORT_H)*8 - 17) { spr_y [i] = (VIEWPORT_Y+VIEWPORT_H)*8 - 17; spr_dy [i] = -spr_dy [i]; }
+		if (spr_x [ms_i] < VIEWPORT_X*8) { spr_x [ms_i] = VIEWPORT_X*8; spr_dx [ms_i] = -spr_dx [ms_i]; }
+		if (spr_x [ms_i] > (VIEWPORT_X+VIEWPORT_W)*8 - 17) { spr_x [ms_i] = (VIEWPORT_X+VIEWPORT_W)*8 - 17; spr_dx [ms_i] = -spr_dx [ms_i]; }
+		if (spr_y [ms_i] < VIEWPORT_Y*8) { spr_y [ms_i] = VIEWPORT_Y*8; spr_dy [ms_i] = -spr_dy [ms_i]; }
+		if (spr_y [ms_i] > (VIEWPORT_Y+VIEWPORT_H)*8 - 17) { spr_y [ms_i] = (VIEWPORT_Y+VIEWPORT_H)*8 - 17; spr_dy [ms_i] = -spr_dy [ms_i]; }
 
 		// X in pixels (0..255), Y in scanlines
-		sp_sw [i].cx = (unsigned char) spr_x [i];
-		sp_sw [i].cy = (unsigned char) spr_y [i];
+		sp_sw [ms_i].cx = (unsigned char) spr_x [ms_i];
+		sp_sw [ms_i].cy = (unsigned char) spr_y [ms_i];
 	}
 }
 
 // ---------------------------------------------------------------- update
 //
-// This is the engine's cpc_UpdateNow() (src/dev/cpc.h), used verbatim.
+// This is the engine's cpc_UpdateNow() (src/dev/cpc.h), used verbatim but
+// with the "sprites" flag turned into a global, so that there are no
+// locals anywhere.
 
-void cpc_UpdateNow (unsigned char sprites) {
-	if (sprites) {
+void cpc_UpdateNow (void) {
+	if (upd_sprites) {
 		#asm
 			// Call the invalidate function for all sprites
 
@@ -450,7 +479,7 @@ void cpc_UpdateNow (unsigned char sprites) {
 			call cpc_UpdScr
 	#endasm
 
-	if (sprites) {
+	if (upd_sprites) {
 		// Call the drawing function for all sprites
 
 		#asm
@@ -528,8 +557,11 @@ void main (void) {
 	init_sprites ();
 	random_background ();
 
+	// draw the sprites too
+	upd_sprites = 1;
+
 	while (1) {
 		move_sprites ();
-		cpc_UpdateNow (1);
+		cpc_UpdateNow ();
 	}
 }

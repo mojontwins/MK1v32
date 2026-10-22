@@ -56,9 +56,19 @@ descomprimirla de un binario, que es lo que hace el motor.
 
 ## Detalles del código
 
+- **No hay variables locales.** z88dk deja los locales de una función en la
+  pila, y el código que genera para llegar a ellos es lento (hay que
+  cargar el puntero de pila y desplazarlo en cada acceso). El motor
+  trabaja sólo con globales, y este ejemplo hace lo mismo: todos los
+  locales se han convertido en globales, y cada función tiene las suyas
+  propias para que no se pisen entre ellas. Los parámetros de las
+  funciones propias del ejemplo también son globales (el `cpc_UpdateNow()`
+  del motor, copiado aquí, usa el global `upd_sprites` en vez del
+  parámetro `sprites`).
 - El modo 1 empaqueta 4 píxeles de 2 bits en cada byte, en el orden
   "garbled" del CPC: el bit alto del píxel de la izquierda está en el bit
-  3, y su bit bajo en el 7. `encode_4()` lo hace.
+  3, y su bit bajo en el 7. `encode_4()` lo hace con los 4 píxeles del
+  global `enc_px[]`.
 - La LUT de transparencia dice, para cada byte posible de un sprite, qué
   bits del fondo se conservan: los píxeles de color 0 (transparentes) no
   tocan el fondo. `keep_mask()` la genera; es la misma tabla que el motor

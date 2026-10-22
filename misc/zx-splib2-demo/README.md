@@ -52,6 +52,13 @@ tabla IM2 y con las tablas de rotación, que están en direcciones fijas.
 
 ## Detalles del código
 
+- **No hay variables locales.** z88dk deja los locales de una función en la
+  pila, y el código que genera para llegar a ellos es lento (hay que
+  cargar el puntero de pila y desplazarlo en cada acceso). El motor
+  trabaja sólo con globales, y este ejemplo hace lo mismo: todos los
+  locales se han convertido en globales, y cada función tiene las suyas
+  propias para que no se pisen entre ellas. Los parámetros de las
+  funciones propias del ejemplo también son globales.
 - `system_init()` deja el ZX en modo IM2 con el ISR genérico de splib2
   (`SPInitIM2`, `SPCreateGenericISR`, `SPRegisterHook`) y nuestro contador
   de frames como *hook*.

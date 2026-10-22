@@ -21,6 +21,11 @@
 //  What it does: fills the screen with random tiles and bounces two 16x16
 //  sprites over them.
 //
+//  Note: this program has *no local variables*. z88dk keeps the locals of
+//  a function in the stack, and the code it generates to reach them is
+//  slow, so the engine works with globals only. See the "work" section
+//  below.
+//
 //  Build: see build.bat
 //
 // =========================================================================
@@ -91,6 +96,31 @@ signed char spr_dx [2], spr_dy [2];
 
 unsigned int seed = 0xace1;
 
+// ---------------------------------------------------------------- work
+//
+// z88dk allocates the locals of a function in the stack, and the code it
+// generates to reach them is slow: every access has to load the stack
+// pointer and offset it. The engine has no locals at all for that reason,
+// it uses globals, which live in the data segment and are reached
+// directly.
+//
+// This example follows the same rule: every local became a global. Each
+// function owns its own set of variables, so a function can call another
+// one without the two stepping on each other. The parameters of our own
+// functions are globals too, for the same reason.
+
+unsigned char ti, tj, tp;                    // init_tiles
+unsigned char bf_col, bf_line, bf_bit;       // build_frame
+unsigned char bf_px, bf_py, bf_on, bf_g, bf_m;
+unsigned char bf_dx, bf_dy;
+unsigned char *bf_data;                      // build_frame: what to build
+unsigned char bf_style, bf_frame;            // build_frame: what to build
+unsigned char si;                            // init_sprites
+unsigned char *sd;                           // init_sprites
+unsigned char rb_row, rb_col, rb_attr, rb_r; // random_background
+unsigned char mi;                            // move_sprites
+unsigned char *mb;                           // move_sprites
+
 // ---------------------------------------------------------------- utils
 
 unsigned char rnd (void) {
@@ -146,102 +176,98 @@ void system_init (void) {
 // Register the tile graphics in splib2's tile array, so the display list
 // can just store tile numbers.
 void init_tiles (void) {
-	unsigned char i, j;
-
-	for (i = 0; i < 256; i ++) {
-		for (j = 0; j < 8; j ++) {
-			unsigned char p = 0;
+	for (ti = 0; ti < 256; ti ++) {
+		for (tj = 0; tj < 8; tj ++) {
+			tp = 0;
 
 			// a frame, plus a bit of noise so tiles are told apart
-			if (j == 0 || j == 7) p = 0xff;
-			else if ((i + j) & 1) p = 0xaa;
-			if (i & 0x20) p = ~p;
+			if (tj == 0 || tj == 7) tp = 0xff;
+			else if ((ti + tj) & 1) tp = 0xaa;
+			if (ti & 0x20) tp = ~tp;
 
-			tile_graphics [i*8 + j] = p;
+			tile_graphics [ti*8 + tj] = tp;
 		}
 
 		// splib2's tile array: character code -> address of the graphic
-		sp_TileArray (i, tile_graphics + i*8);
+		sp_TileArray (ti, tile_graphics + ti*8);
 	}
 }
 
 // Build one frame of one sprite: 2 columns of 24 lines of (graphic, mask).
-void build_frame (unsigned char *data, unsigned char style, unsigned char frame) {
-	unsigned char col, line, bit;
+// The frame to build is in bf_data (where), bf_style (what shape) and
+// bf_frame (which of the two frames).
+void build_frame (void) {
+	for (bf_col = 0; bf_col < 2; bf_col ++) {
+		for (bf_line = 0; bf_line < 24; bf_line ++) {
+			bf_g = 0;
+			bf_m = 0xff;    // transparent
 
-	for (col = 0; col < 2; col ++) {
-		for (line = 0; line < 24; line ++) {
-			unsigned char g = 0;
-			unsigned char m = 0xff;    // transparent
+			if (bf_line < 16) {
+				for (bf_bit = 0; bf_bit < 8; bf_bit ++) {
+					bf_px = bf_col*8 + bf_bit;   // 0..15
+					bf_py = bf_line;              // 0..15
+					bf_on = 0;
 
-			if (line < 16) {
-				for (bit = 0; bit < 8; bit ++) {
-					unsigned char px = col*8 + bit;   // 0..15
-					unsigned char py = line;           // 0..15
-					unsigned char on = 0;
-
-					if (style == 0) {
+					if (bf_style == 0) {
 						// hollow square
-						if (px == 0 || px == 15 || py == 0 || py == 15) on = 1;
+						if (bf_px == 0 || bf_px == 15 || bf_py == 0 || bf_py == 15) bf_on = 1;
 						// second frame adds a diagonal
-						if (frame && px == py) on = 1;
+						if (bf_frame && bf_px == bf_py) bf_on = 1;
 					} else {
 						// filled disc
-						unsigned char dx = px > 7 ? px - 7 : 7 - px;
-						unsigned char dy = py > 7 ? py - 7 : 7 - py;
-						if (dx + dy <= 8) on = 1;
+						bf_dx = bf_px > 7 ? bf_px - 7 : 7 - bf_px;
+						bf_dy = bf_py > 7 ? bf_py - 7 : 7 - bf_py;
+						if (bf_dx + bf_dy <= 8) bf_on = 1;
 						// second frame makes it a ring
-						if (frame && dx + dy > 5) on = 0;
+						if (bf_frame && bf_dx + bf_dy > 5) bf_on = 0;
 					}
 
-					if (on) g |= (0x80 >> bit);
+					if (bf_on) bf_g |= (0x80 >> bf_bit);
 				}
 			}
 
-			data [col*SPR_COL_BYTES + line*2] = g;
-			data [col*SPR_COL_BYTES + line*2 + 1] = m;
+			bf_data [bf_col*SPR_COL_BYTES + bf_line*2] = bf_g;
+			bf_data [bf_col*SPR_COL_BYTES + bf_line*2 + 1] = bf_m;
 		}
 	}
 }
 
 void init_sprites (void) {
-	unsigned char i;
-
-	for (i = 0; i < 2; i ++) {
-		unsigned char *data = sprite_data + i*2*SPR_FRAME_BYTES;
+	for (si = 0; si < 2; si ++) {
+		sd = sprite_data + si*2*SPR_FRAME_BYTES;
 
 		// frame 0 and frame 1 of this sprite, laid out so that the
 		// distance between them is always SPR_FRAME_BYTES
-		build_frame (data, i, 0);
-		build_frame (data + SPR_FRAME_BYTES, i, 1);
+		bf_data = sd; bf_style = si; bf_frame = 0;
+		build_frame ();
+		bf_data = sd + SPR_FRAME_BYTES; bf_frame = 1;
+		build_frame ();
 
 		// sprite: 16x16 pixels = 2 columns of 8 pixels, 2 rows of characters
-		spr [i] = sp_CreateSpr (sp_MASK_SPRITE, 2, data, 1);
-		sp_AddColSpr (spr [i], data + SPR_COL_BYTES);
+		spr [si] = sp_CreateSpr (sp_MASK_SPRITE, 2, sd, 1);
+		sp_AddColSpr (spr [si], sd + SPR_COL_BYTES);
 
-		cur_frame [i] = data;
-		next_frame [i] = data;
+		cur_frame [si] = sd;
+		next_frame [si] = sd;
 
-		spr_x [i] = 20 + i*60;
-		spr_y [i] = 30 + i*40;
-		spr_dx [i] = 1 + i;
-		spr_dy [i] = 1;
+		spr_x [si] = 20 + si*60;
+		spr_y [si] = 30 + si*40;
+		spr_dx [si] = 1 + si;
+		spr_dy [si] = 1;
 	}
 }
 
 // Fill the display list with random tiles.
 void random_background (void) {
-	unsigned char row, col;
-
-	for (row = 0; row < SCR_ROWS; row ++) {
-		for (col = 0; col < SCR_COLS; col ++) {
+	for (rb_row = 0; rb_row < SCR_ROWS; rb_row ++) {
+		for (rb_col = 0; rb_col < SCR_COLS; rb_col ++) {
 			// attribute: bright white on black, or one of its cousins
-			unsigned char attr = 0x07;
-			unsigned char r = rnd ();
-			if (r == 0) attr = 0x0e;
-			else if (r == 1) attr = 0x1a;
+			rb_attr = 0x07;
+			rb_r = rnd ();
+			if (rb_r == 0) rb_attr = 0x0e;
+			else if (rb_r == 1) rb_attr = 0x1a;
 
-			sp_PrintAtInv (row, col, attr, rnd ());
+			sp_PrintAtInv (rb_row, rb_col, rb_attr, rnd ());
 		}
 	}
 }
@@ -249,37 +275,35 @@ void random_background (void) {
 // ---------------------------------------------------------------- game
 
 void move_sprites (void) {
-	unsigned char i;
+	for (mi = 0; mi < 2; mi ++) {
+		mb = sprite_data + mi*2*SPR_FRAME_BYTES;
 
-	for (i = 0; i < 2; i ++) {
-		unsigned char *base = sprite_data + i*2*SPR_FRAME_BYTES;
-
-		spr_x [i] += spr_dx [i];
-		spr_y [i] += spr_dy [i];
+		spr_x [mi] += spr_dx [mi];
+		spr_y [mi] += spr_dy [mi];
 
 		// bounce
-		if (spr_x [i] < 0) { spr_x [i] = 0; spr_dx [i] = -spr_dx [i]; }
-		if (spr_x [i] > SCR_COLS*8 - 17) { spr_x [i] = SCR_COLS*8 - 17; spr_dx [i] = -spr_dx [i]; }
-		if (spr_y [i] < 0) { spr_y [i] = 0; spr_dy [i] = -spr_dy [i]; }
-		if (spr_y [i] > SCR_ROWS*8 - 17) { spr_y [i] = SCR_ROWS*8 - 17; spr_dy [i] = -spr_dy [i]; }
+		if (spr_x [mi] < 0) { spr_x [mi] = 0; spr_dx [mi] = -spr_dx [mi]; }
+		if (spr_x [mi] > SCR_COLS*8 - 17) { spr_x [mi] = SCR_COLS*8 - 17; spr_dx [mi] = -spr_dx [mi]; }
+		if (spr_y [mi] < 0) { spr_y [mi] = 0; spr_dy [mi] = -spr_dy [mi]; }
+		if (spr_y [mi] > SCR_ROWS*8 - 17) { spr_y [mi] = SCR_ROWS*8 - 17; spr_dy [mi] = -spr_dy [mi]; }
 
 		// animate: toggle between the two frames
-		if (cur_frame [i] == base) next_frame [i] = base + SPR_FRAME_BYTES;
-		else next_frame [i] = base;
+		if (cur_frame [mi] == mb) next_frame [mi] = mb + SPR_FRAME_BYTES;
+		else next_frame [mi] = mb;
 
 		// the displacement between the current and the new frame: splib2
 		// adds it to the graphic pointers of the sprite
 		sp_MoveSprAbs (
-			spr [i],
+			spr [mi],
 			&screen_clip,
-			next_frame [i] - cur_frame [i],
-			(unsigned char) (spr_y [i] >> 3),   // row
-			(unsigned char) (spr_x [i] >> 3),   // column
-			(unsigned char) (spr_x [i] & 7),    // horizontal pixel
-			(unsigned char) (spr_y [i] & 7)     // vertical pixel
+			next_frame [mi] - cur_frame [mi],
+			(unsigned char) (spr_y [mi] >> 3),   // row
+			(unsigned char) (spr_x [mi] >> 3),   // column
+			(unsigned char) (spr_x [mi] & 7),    // horizontal pixel
+			(unsigned char) (spr_y [mi] & 7)     // vertical pixel
 		);
 
-		cur_frame [i] = next_frame [i];
+		cur_frame [mi] = next_frame [mi];
 	}
 }
 
