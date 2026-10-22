@@ -1,15 +1,15 @@
 # MSC4 — Mojon Script Compiler 4
 ## Especificación del lenguaje de scripts y de su integración con el motor
 
-*Aplica a:* `msc4.bas` / `msc4.exe` — versión `msc v4.6.20260729`.
-*Implementación de referencia:* `/msc4/`.
-*Juego de referencia:* `games_old/papaya` (motor MK1 v3.2, CPC + ZX Spectrum).
+*Aplica a:* `msc4/msc4.bas` / `msc4/msc4.exe` — versión `msc v4.6.20260729`.
+*Implementación de referencia:* `msc4/`.
+*Juego de referencia:* `games/papaya` (motor MK1 v3.2, CPC + ZX Spectrum).
 *Versión en inglés:* [msc4-scripting.md](./msc4-scripting.md).
 
 > Este documento describe **MSC4**, el "Mojon Script Compiler 4", tal y como está
-> realmente implementado en `/msc4/msc4.bas`. No es una descripción del
-> lenguaje "msc" antiguo documentado en `docs/manual.md` (capítulo 7) ni de las
-> notas de diseño abandonadas de `/msc4/LANGSPECS.md`. Cuando la
+> realmente implementado en `msc4/msc4.bas`. No es una descripción del
+> lenguaje "msc" antiguo documentado en `docs/manual_32.md` (capítulo 7) ni de las
+> notas de diseño abandonadas de `msc4/LANGSPECS.md`. Cuando la
 > implementación y las notas de diseño no coincidan, **manda la implementación**;
 > todos esos casos se señalan en
 > [§16. Trucos y errores corregidos](#16-trucos-y-errores-corregidos).
@@ -106,7 +106,7 @@ Los detalles están en el [§18](#18-apéndice--formato-del-binario).
 
 ### Receta típico de `comp.bat`
 
-Sacado de `games_old/papaya/dev/comp.bat`:
+Sacado de `games/papaya/dev/comp.bat`:
 
 ```bat
 cd ..\script
@@ -126,7 +126,7 @@ Spectrum y a `_cpc_UpdateNow` en CPC.
 ## 3. Línea de comandos
 
 ```
-msc4.exe in=f1.spt[,f2.spt,...] v=3|4|5 target=cpc|zx rooms=N [text=text.bin]
+msc4.exe in=f1.spt[,f2.spt,...] v=3 target=cpc|zx rooms=N [text=text.bin]
          [interpreter=msci.asm] [noindexed] [fastnpant] [jumptable]
          [debug] [textdebug]
 ```
@@ -134,7 +134,7 @@ msc4.exe in=f1.spt[,f2.spt,...] v=3|4|5 target=cpc|zx rooms=N [text=text.bin]
 | Opción | Obligatoria | Significado |
 |---|---|---|
 | `in=` | sí | Lista de ficheros `.spt` de entrada, separados por comas. Se produce un `.bin` por fichero de entrada. |
-| `v=` | sí | Versión base de MK1 del juego destino (3, 4 o 5). De momento sólo se usa como bookkeeping. |
+| `v=` | sí | Versión base de MK1 del juego destino. Para este motor, siempre `v=3`. De momento sólo se usa como bookkeeping. |
 | `target=` | sí | `cpc` o `zx`. Elige la implementación de `SHOW`. |
 | `rooms=N` | no | Número de pantallas del mapa. **Necesario** salvo que el script contenga `ROOMS = N` o se use la opción `jumptable`. |
 | `text=` | no | Nombre del fichero con el pool de textos. Por defecto `text.bin`. |
@@ -204,7 +204,7 @@ sección) y surten efecto desde ese punto. Normalmente se ponen al principio.
 
 | Directiva | Sintaxis | Efecto |
 |---|---|---|
-| `ROOMS` | `ROOMS = N` | Número de pantallas del mapa. Necesario para dimensionar el índice de secciones. También se puede dar en la línea de comandos (`rooms=N`); manda el valor del script. |
+| `ROOMS` | `ROOMS = N` | Número de pantallas del mapa. Necesario para dimensionar el índice de secciones (salvo que se use `jumptable`, en cuyo caso el índice tiene siempre 16 entradas). También se puede dar en la línea de comandos (`rooms=N`); manda el valor del script. |
 | `ALIAS` | `ALIAS %NOMBRE = N` | Liga el nombre `%NOMBRE` al número de flag `N`. Ver [§8.3](#83-los-alias). |
 | `ITEM SLOT` | `ITEM SLOT = N` | Qué flag guarda el "objeto que llevas" (ver [§14](#14-el-inventario-de-un-solo-hueco)). El número queda *quemado* en el intérprete. |
 | `ITEM EMPTY` | `ITEM EMPTY = N` | Qué valor de tile significa "no llevo nada" (por defecto `0`). La palabra `EMPTY` en el script se sustituye por este número. |
@@ -253,7 +253,7 @@ compilador: son funcionalidades *planificadas* (ver
 [§16.3](#163-secciones-planificadas-pero-no-implementadas)).
 
 `PLAYER GOT SOMETHING` es el nombre canónico de la sección 3. (El
-`PLAYER GETS COIN` que menciona el borrador antiguo de `/msc4/msc4.md` no
+`PLAYER GETS COIN` que menciona el borrador antiguo de `msc4/msc4.md` no
 existe; la sección 3 se dispara cuando el jugador recoge un hotspot, que en
 la mayoría de los juegos es un objeto o una moneda.)
 
@@ -495,7 +495,7 @@ Notas:
   (`(gpx + 8) >> 4`, `(gpy + 8) >> 4` y el tile en esa posición). El motor los
   refresca en cada frame, así que son válidos en cualquier sección.
 * `OPANT` vale `0xFF` mientras la partida está empezando, por eso los scripts
-  comprueban `OPANT < 60` antes de fiarse de él (mira `games_old/ababol`).
+  comprueban `OPANT < 60` antes de fiarse de él (mira `games/ababol`).
 * `EN_N` lee la global `enit` del motor. En MK1 v3.2 `enit` es el índice del
   enemigo en proceso, así que `EN_N` vale 0, 1, 2… — *no* es el tipo de
   enemigo (eso es `EN_T`).
@@ -545,7 +545,7 @@ como una condición "siempre cierta".
 | `IF PLAYER NOT_FALLING` | La negación de lo anterior: `vy <= 0` **o** `player.possee != 0`. También se puede escribir `PLAYER NOT FALLING`. |
 | `IF PLAYER STILL` | `vx == 0 && vy == 0`. |
 
-> **`TOUCHES` no es `TOUCHES`.** En MSC3, `PLAYER TOUCHES` significaba
+> **`TOUCHES` no es `TOUCHES`.** En el "msc" antiguo, `PLAYER TOUCHES` significaba
 > "cualquier parte del sprite solapa el tile". En MSC4 tanto `TOUCHES` como
 > `AT` se compilan al mismo opcode, que compara el *tile del centro* del
 > jugador con `(x, y)`. Usa `TX`/`TY` (o `PX`/`PY`) si necesitas más
@@ -617,7 +617,7 @@ vale 0 da 255.
 
 | Se escribe | Efecto |
 |---|---|
-| `RECHARGE` | Pone la vida del jugador a `PLAYER_LIFE` (una constante que define el intérprete generado, 99 por defecto). |
+| `RECHARGE` | Pone la vida del jugador a `PLAYER_LIFE` (la constante de `config.h`; el intérprete generado la referencia por su nombre, así que el valor es el que tengas puesto en tu `config.h`). |
 | `SHOW` | Fuerza un refresco de pantalla (`SPUpdateNow` / `_cpc_UpdateNow`). |
 | `PAUSE n` | Espera `n` frames (bucle de `halt`). |
 
@@ -782,8 +782,10 @@ Consecuencias:
 * Las cadenas de las opciones pasan por el mismo codificador de 5 bits, así que
   aplican las mismas restricciones de caracteres.
 * **Las comas son separadores de opciones**: una opción no puede contener
-  comas. Los espacios valen (internamente se codifican como `_` y se
-  decodifican de vuelta).
+  comas. Los espacios valen tal cual (se codifican con el valor 31 del
+  codificador de 5 bits). Además, en las opciones de diálogo un `_` en el
+  fuente se convierte en un espacio antes de codificarse, por si prefieres
+  escribirlo así.
 * El motor debe proporcionar una función `dialog (unsigned char *ptr)` que
   recibe las tres cadenas decodificadas (32 bytes cada una) y devuelve la
   opción elegida en `L` (1, 2 o 3).
@@ -857,19 +859,26 @@ juego/
     script.spt.bin    <- bytecode generado
     text.bin          <- pool de textos generado
   dev/
-    msc4i.h           <- la "interfaz" de MSC4 (a mano, propia de cada juego)
+    msc4i.h           <- la "interfaz" de MSC4 (fichero del framework, no tocar)
     msc4i.asm         <- el intérprete generado
     msc.txt           <- el log de depuración de la compilación (opcional)
+    extern.h          <- TU código: los callbacks de EXTERN / TEXT BOX / DIALOG
 ```
 
-`msc4i.h` es el puente entre el motor y el script. La versión que usa papaya
-es la referencia; proporciona:
+`msc4i.h` es el puente entre el motor y el script, y pertenece al
+**framework**: la copia de `src/dev/msc4i.h` (el esqueleto de un juego) es
+byte a byte idéntica a la de `games/papaya/dev/`. Proporciona:
 
 * las constantes de número de sección (`SC_ENTERING_GAME`, …);
 * el punto de entrada `script (unsigned char n)`;
 * el decodificador de textos de 5 bits y el pegamento de `textbox` / `dialog`;
 * las directivas `BINARY` que incrustan `script.spt.bin` y `text.bin` en el
   juego.
+
+Eso no significa que sea intocable: **Sir Ababol** (`games/ababol/dev/msc4i.h`)
+lo adapta, porque su `decode_text` salta directamente a `_textbox` en vez de
+pasar por `run_text_box`, y no usa `DIALOG` en absoluto. Pero si no tienes una
+razón para tocarlo, deja el fichero tal cual.
 
 ### 15.2 El punto de entrada `script()`
 
@@ -926,31 +935,67 @@ define eso en `config.h` si tu juego no las usa.
 //#define NO_INDEXED_SCRIPTING // (opcional) sin secciones por pantalla
 #define ENABLE_ENCODED_TEXT     // (opcional) soporte de TEXT BOX
 #define ENABLE_DIALOG           // (opcional) soporte de DIALOG
-#define MAX_FLAGS 32            // número de flags disponibles para el script
 #define ITEM_FLAG 0             // el flag que se muestra en el marcador como "el objeto"
 #define ITEM_X 28
 #define ITEM_Y 1
 ```
 
+Ojo: `MAX_FLAGS` **no** está en `config.h`: se define en `dev/churromain.c` (32 por
+defecto), y es el tamaño del array `flags[]` que comparten el motor y el script.
+
 Con `ACTIVATE_SCRIPTING` definido, el motor v3.2 termina la partida cuando
-`script_result` pasa a 1 (victoria) o 2 (derrota). (`WIN_ON_SCRIPTING` es una
-característica de MK1 v4 / MSC3 y no existe en el motor v3.2.)
+`script_result` pasa a 1 (victoria) o 2 (derrota).
 
 ### 15.5 El lado del motor de `EXTERN`
 
-`EXTERN n, m` llama a `do_extern_action (n, m)`, que el juego debe implementar
-en `extern.h`. Aquí es donde enganchas el script a tu propio código C:
+`EXTERN n, m` llama a `do_extern_action (n, m)`, que vive en **`extern.h`, un
+fichero del juego, no del motor**. El motor sólo la llama: nunca la
+implementa.
+
+El esqueleto de un juego (`src/dev/extern.h`) tiene los cuerpos vacíos con
+los `#ifdef` ya puestos:
+
+```c
+    void do_extern_action (unsigned char n, unsigned char m) {
+    }
+
+    #ifdef ENABLE_ENCODED_TEXT
+        // Text has been decoded in a 256 bytes buffer pointed by ptr.
+        void __FASTCALL__ textbox (unsigned char *ptr) {
+        }
+
+        #ifdef ENABLE_DIALOG
+            // Options have been decoded in three 32 bytes buffers pointed by ptr.
+            unsigned char __FASTCALL__ dialog (unsigned char *ptr) {
+                return 0;
+            }
+        #endif
+    #endif
+```
+
+Copias ese esqueleto a tu juego y lo rellenas. Un ejemplo completo es
+`games/papaya/dev/extern.h`, que implementa las cuatro acciones de
+`EXTERN` de **Papaya** (un bitmap `persistence[]` de 640 bytes que recuerda
+qué papayas se han recogido en cada pantalla), más la `textbox()` (la caja con
+su marco, el redibujado del fondo y la espera de una tecla) y la `dialog()`.
+
+Aquí es donde enganchas el script a tu propio código C:
 
 ```c
 void do_extern_action (unsigned char n, unsigned char m) {
 	switch (n) {
 		case 0: /* reset de la persistencia */ break;
-		case 1: /* marca el tile actual como persistente */ break;
+		case 1: /* marcar el tile actual como persistente */ break;
 		case 2: /* lee la persistencia, borra las papayas */ break;
 		case 3: /* actualiza el marcador */ break;
 	}
 }
 ```
+
+Fíjate en que `textbox()` y `dialog()` son también **tuyos**: el motor
+decodifica el texto y te lo pasa, pero dibujar la caja y presentar el menú es
+cosa tuya. Si activas `ENABLE_ENCODED_TEXT` y no escribes una `textbox()`, el
+juego no enlazará.
 
 ### 15.6 `script_result`
 
@@ -1029,11 +1074,13 @@ van a morder primero.
     aviso). `BREAK`, `WIN GAME`, `GAME OVER` y `RERUN` hacen `RET` en el
     intérprete, así que los bytes de más son peso muerto.
 
-11. **El valor de `ROOMS` tiene que ser correcto.** El índice se dimensiona
-    con él; un valor equivocado produce un binario cuyo índice no coincide con
-    lo que espera el motor. Pon las directivas al *principio* del script: el
-    tamaño del índice se calcula mientras se lee el script, así que una
-    directiva `ROOMS` posterior a un `CALL` daría offsets inconsistentes.
+11. **El valor de `ROOMS` tiene que ser correcto** (salvo que compiles con
+    `jumptable`, en cuyo caso el índice tiene siempre 16 entradas y `ROOMS`
+    no afecta al binario). El índice se dimensiona con él; un valor
+    equivocado produce un binario cuyo índice no coincide con lo que espera
+    el motor. Pon las directivas al *principio* del script: el tamaño del
+    índice se calcula mientras se lee el script, así que una directiva
+    `ROOMS` posterior a un `CALL` daría offsets inconsistentes.
 
 12. **`EN_N` lee la global `enit` del motor.** En MK1 v3.2 `enit` es el índice
     del enemigo en proceso, así que `EN_N` vale 0, 1, 2… — *no* es el tipo de
@@ -1089,7 +1136,7 @@ at N" y que la sección se ignore.
 
 ### 17.1 La caja de papaya
 
-De `games_old/papaya/script/script.spt`. El juego añade una caja (un cajón)
+De `games/papaya/script/script.spt`. El juego añade una caja (un cajón)
 que el jugador puede coger y dejar. La posición de la caja se guarda en tres
 flags, y una subrutina hace el pintado de verdad, porque hay que hacerlo tanto
 al coger la caja como al soltarla.
@@ -1323,12 +1370,12 @@ Cómo funciona:
 * El `BREAK` al final de una rama para la sección, de modo que las otras
   cláusulas `IF PARAM = …` no se evalúan.
 
-> Recuerda el punto 8 de §16.2: escribir directamente en `PARAM` no funciona;
-> `RERUN` es la forma soportada de pasar un parámetro.
+> Recuerda el punto 8 de §16.1: la forma soportada de pasar un parámetro a
+> una sección es `RERUN`.
 
 ### 17.4 El idioma `&%ALIAS`
 
-De `games_old/ababol`, donde el mismo código tiene que abrir cinco puertas
+De `games/ababol`, donde el mismo código tiene que abrir cuatro puertas
 distintas y recoger cuatro medallones distintos, pero el *flag* que hay que
 poner sólo se conoce en tiempo de ejecución:
 
@@ -1367,6 +1414,11 @@ END
 * `&%MEDA1` evalúa al *número* del flag ligado a `%MEDA1`.
 * `%G` guarda ese número.
 * `$%G = 1` pone a 1 el flag cuyo número está guardado en `%G`.
+
+> El fuente original de **Sir Ababol** escribe `SET TILE (%GX, %GY), 0` con una
+> coma en vez de un `=`. Eso ya no compila con la versión actual del
+> compilador: el `=` es obligatorio, y su ausencia es un error de sintaxis.
+> (El juego se compiló con una versión anterior del compilador, la v4.5.)
 
 ---
 
