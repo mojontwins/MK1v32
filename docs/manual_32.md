@@ -37,7 +37,9 @@ Las librerías que usa el motor están en `lib/`:
   `spritepack.h` va al `include` del `z88dk10`.
 * `lib/cpcrslib-mt/` — la librería del CPC. Hay dos variantes: `cpcrslib_mt.lib` y
   `cpcrslib_fg_mt.lib` (la "fg" es la que usa **Papaya** y **Sir Ababol**), más la
-  cabecera `cpcrslib_mt.h`.
+  cabecera `cpcrslib_mt.h`. La variante "fg" dibuja los sprites por detrás de
+  ciertos tiles, y para eso el juego tiene que proporcionar la tabla
+  `behindtilemasks` (ver el capítulo 9).
 
 `lib/updatelib.bat` se encarga de copiarlas a la instalación del `z88dk10`:
 
@@ -1843,6 +1845,49 @@ cuatro: fuera, cueva, agua y la última cueva), hay que:
 **Ojo**: el esqueleto de `src/dev/cpc/` **no** incluye los ficheros `pal0.h` a `pal3.h`,
 de modo que si activas `AUTO_SPLIT` en MODE 1 tendrás que crearlos tú (o copiar los de
 **Sir Ababol**).
+
+### La librería del CPC: las dos variantes
+
+El backend del CPC usa la librería recortada de `lib/cpcrslib-mt/`, que se compila en
+dos variantes:
+
+| Librería | Variante | Enlace en `comp.bat` |
+|---|---|---|
+| `cpcrslib_mt.lib` | normal | `-lcpcrslib_mt` |
+| `cpcrslib_fg_mt.lib` | "fg" (`PASARPORDETRAS`) | `-lcpcrslib_fg_mt` |
+
+La diferencia está en la configuración de la librería (`CPCconfig.def`): la variante
+"fg" define `PASARPORDETRAS = 1`, y con ella las rutinas de dibujo de sprites pasan a
+pintar los sprites **detrás** de ciertos tiles del fondo. La variante normal no tiene
+esa capacidad.
+
+#### `behindtilemasks`: la tabla de tiles en primer plano
+
+Con la variante "fg", la librería necesita saber qué tiles del fondo deben quedar
+**por delante** de los sprites. Para eso lee una tabla de **256 bytes, uno por tile**, en
+el símbolo `behindtilemasks`:
+
+* `0` → tile normal: el sprite se dibuja por delante.
+* `1` → tile en primer plano: el sprite se dibuja por detrás.
+
+Esa tabla **no la pone la librería: la pone el juego**. El sitio es
+`dev/system/tilemap_conf.asm`, en la etiqueta `.behindtilemasks`:
+
+```asm
+    .behindtilemasks
+    XDEF behindtilemasks
+    ; TODO: generate this automaticly
+        defb 0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0
+        ...                                ; 256 bytes en total
+```
+
+Los juegos que usan la variante "fg" (**Papaya** y **Sir Ababol**) rellenan esa tabla
+con los tiles que deben quedar por delante de los sprites. Los juegos que enlazan con
+la variante normal no necesitan la tabla: la librería no la mira.
+
+**Ojo**: el esqueleto de `src/dev/system/tilemap_conf.asm` deja la etiqueta **sin
+datos** (sólo el `TODO`), porque el esqueleto enlaza con la variante normal. Si vas a
+usar la variante "fg", tienes que rellenar los 256 bytes.
 
 ## El loader
 

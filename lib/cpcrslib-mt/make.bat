@@ -15,3 +15,6 @@ z80asm -v -xcpcrslib_fg_mt.lib @cpcrslib.lst
 :copystuff
 copy *.lib c:\z88dk10-orig\lib\clibs
 copy cpcrslib_mt.h c:\z88dk10-orig\include
+
+rem Restore the versioned config (normal variant)
+copy CPCconfig_normal.def CPCconfig.def >nul
