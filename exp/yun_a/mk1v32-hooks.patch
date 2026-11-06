@@ -1,0 +1,467 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index 241cc23..9d97a90 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -263,7 +263,11 @@ Orden por frame (resumido; los números de línea están en `mainloop.h`):
+ `ENTERING ANY` corre **antes** que `ENTERING SCREEN n`. Ídem para la tecla de acción.
+ 
+ Con `ACTIVATE_SCRIPTING` las condiciones de victoria `PLAYER_NUM_OBJETOS` y
+-`SCR_FIN` **se compilan fuera**: sólo `WIN GAME` gana la partida.
++`SCR_FIN` **se compilan fuera**: sólo `WIN GAME` gana la partida (o, si está
++definido, `WIN_ON_KILLS`, que se suma con OR).
++
++Sin scripting, las condiciones definidas de entre `PLAYER_NUM_OBJETOS`, `SCR_FIN` y
++`WIN_ON_KILLS n` (`player.killed >= n`) se combinan con AND.
+ 
+ ---
+ 
+@@ -429,6 +433,16 @@ de 640 bytes.
+ | `extra_enems_killed()` | tras matar al enemigo `enit` | `_en_t` ya tiene el bit 128 puesto |
+ | `this_enemy_kills()` | al colisionar | devolver 0 = el enemigo no hace daño ni se aplasta |
+ | `custom_hotspots()` | al tocar un hotspot | poner `rdi = 1` impide borrarlo y ejecutar el script |
++| `custom_sprites_create()` | una vez, tras crear los sprites del motor (`ENABLE_CUSTOM_SPRITES`) | ZX: `sp_CreateSpr` (sube `NUMBLOCKS`); CPC: `sp_sw [SP_CUSTOM_BASE + n]` (define `MAX_CUSTOM_SW_SPRITES`) |
++| `custom_sprites_render()` | cada frame, al final de `render_all_sprites()` | mover tus sprites |
++| `custom_sprites_hide()` | en `saca_a_todo_el_mundo_de_aqui()` | sacarlos de pantalla |
++| `custom_game_start()` | al empezar partida, antes de pintar la primera pantalla (`ENABLE_CUSTOM_GAME_START`) | inicializar tu estado |
++| `custom_screen_enter()` | al final de `draw_scr()`, tras enemigos y scripts de entrada (`ENABLE_CUSTOM_SCREEN_ENTER`) | `on_pant` aún es la pantalla anterior (0xff en la primera) |
++| `custom_pre_move()` | cada frame al principio de `move()`, tras `pad_read()` (`ENABLE_CUSTOM_PRE_MOVE`) | enemigos y plataformas ya movidos (`gotten`, `ptgmx`, `ptgmy`); lo que pongas en `vy`/`ptgmx`/`ptgmy` pasa por la gravedad, el salto y las colisiones del motor |
++
++Directivas relacionadas: `JUMP_ON_UP_ONLY` (salto sólo con ARRIBA, como con
++`PLAYER_CAN_FIRE`, para dejar FUEGO libre) y `ENEMIES_CAN_DIE` (`enems_kill()` y el
++marcador `KILLED_X` sin `PLAYER_KILLS_ENEMIES`, para matar desde `custom.h`).
+ 
+ Para que un enemigo custom tenga gráfico propio: `enems_en_an_calc(tipo - 1)`.
+ 
+@@ -465,7 +479,8 @@ motor no los provee.
+ | Modo | IM2 | `cpc_SetMode(1)` o `cpc_SetMode(0)` |
+ 
+ ZX: `NUMBLOCKS` 40 de 14 bytes en `AD_FREE`; cada sprite 16x16 gasta 10 bloques, uno
+-de 8x8 gasta 5. Sube `NUMBLOCKS` en 5 por cada bala.
++de 8x8 gasta 5. Sube `NUMBLOCKS` en 5 por cada bala. Se puede redefinir en `config.h`
++(p. ej. para los sprites de `ENABLE_CUSTOM_SPRITES`).
+ 
+ CPC: raster split con `AUTO_SPLIT` (paleta del juego en la línea 3, la del HUD desde
+ la 6), `ALWAYS_SPLIT` (split permanente, imprescindible con `DIRECT_TO_PLAY`),
+diff --git a/docs/manual_32.md b/docs/manual_32.md
+index 43bdc61..5e3d577 100644
+--- a/docs/manual_32.md
++++ b/docs/manual_32.md
+@@ -956,6 +956,13 @@ Ver el capítulo 7.
+   define como `(flags[31])` para que el juego pueda "desbloquear" la ability de matar
+   enemigos en tiempo de ejecución.
+ 
++* `ENEMIES_CAN_DIE`: los enemigos pueden morir (`enems_kill()`, el contador
++  `player.killed` y el marcador `KILLED_X`) sin que pisarlos los mate. Es para juegos
++  que matan enemigos desde `custom.h` (con burbujas, por ejemplo).
++
++* `JUMP_ON_UP_ONLY`: el salto va sólo en ARRIBA, como cuando se define
++  `PLAYER_CAN_FIRE`, pero sin motor de disparos: FUEGO queda libre para tu código.
++
+ * `SIMPLE_PLATFORMS`: no hay tiles de tipo 4, o no hay tiles de tipo 8 encima de tiles de
+   tipo 4. Simplifica las colisiones.
+ 
+@@ -979,6 +986,12 @@ Ver el capítulo 7.
+     //#define ENABLE_CUSTOM_FLICK                // define flick_* in custom_flick.h, return 0 to override flick
+     //#define CUSTOM_SPRITE_CELLS                // Use your own sprite cell luts from custom_sprite_cells.h
+     //#define ENEMS_CELL_OFFSET         8        // If the above is defined, this is the 1st cell for the enemies.
++    //#define ENABLE_CUSTOM_SPRITES              // custom_sprites_create/render/hide () for your own sprites
++    //#define NUMBLOCKS                40        // (ZX) splib2 blocks: raise 10 per 16x16 / 5 per 8x8 custom sprite
++    //#define MAX_CUSTOM_SW_SPRITES     0        // (CPC) sprite slots for you, from SP_CUSTOM_BASE
++    //#define ENABLE_CUSTOM_GAME_START           // custom_game_start () when a game starts
++    //#define ENABLE_CUSTOM_SCREEN_ENTER         // custom_screen_enter () after a screen is set up
++    //#define ENABLE_CUSTOM_PRE_MOVE             // custom_pre_move () every frame: keys read, enemies done, player not moved yet
+ ```
+ 
+ Ver el capítulo 8.
+@@ -1380,7 +1393,12 @@ Y se **borra al empezar cada partida** (no al cambiar de pantalla).
+ * `GAME OVER` pone `script_result = 2`, y el motor hace el game over.
+ 
+ **Con `ACTIVATE_SCRIPTING` activado, las condiciones de victoria `PLAYER_NUM_OBJETOS` y
+-`SCR_FIN` se compilan fuera**: la única forma de ganar es con `WIN GAME` en el script.
++`SCR_FIN` se compilan fuera**: la única forma de ganar es con `WIN GAME` en el script, o
++con `WIN_ON_KILLS` si está definido.
++
++`WIN_ON_KILLS n` da la partida por ganada cuando `player.killed` llega a `n`. Sin
++scripting se combina con AND con `PLAYER_NUM_OBJETOS` y `SCR_FIN` (todas las condiciones
++definidas tienen que cumplirse); con scripting se combina con OR con `WIN GAME`.
+ 
+ ## El log de compilación
+ 
+@@ -1718,6 +1736,41 @@ tipo del hotspot (1 = objeto, 2 = llave, 3 = recarga). Si pones `rdi = 1`, el ho
+ **no** se borra y el script no se ejecuta (útil para "no puedes coger esto hasta haber
+ hablado con alguien").
+ 
++### Sprites propios
++
++Con `ENABLE_CUSTOM_SPRITES` el motor llama a tres funciones tuyas:
++
++```c
++    void custom_sprites_create (void);   // una vez, al arrancar, tras crear los suyos
++    void custom_sprites_render (void);   // cada frame, al final de render_all_sprites ()
++    void custom_sprites_hide (void);     // en saca_a_todo_el_mundo_de_aqui ()
++```
++
++En el Spectrum creas los sprites con `sp_CreateSpr` como hace `speccy.h` (y llamas a
++`fix_sprites` para la tercera columna) y los mueves con `SPMoveSprAbs`; sube `NUMBLOCKS`
++en `config.h` (10 bloques por sprite de 16x16, 5 por uno de 8x8). En el CPC defines
++`MAX_CUSTOM_SW_SPRITES` y tus sprites son `sp_sw [SP_CUSTOM_BASE + n]`.
++
++### Inicio de partida, entrada en pantalla y antes de mover
++
++```c
++    void custom_game_start (void);     // ENABLE_CUSTOM_GAME_START
++    void custom_screen_enter (void);   // ENABLE_CUSTOM_SCREEN_ENTER
++    void custom_pre_move (void);       // ENABLE_CUSTOM_PRE_MOVE
++```
++
++* `custom_game_start()` se llama al empezar cada partida, con jugador, hotspots, enemigos
++  y `n_pant` ya inicializados y antes de pintar la primera pantalla.
++* `custom_screen_enter()` se llama al final de `draw_scr()`, con la pantalla pintada, sus
++  enemigos preparados y los scripts de entrada ejecutados. `on_pant` todavía tiene la
++  pantalla anterior (0xff en la primera pantalla de la partida).
++* `custom_pre_move()` se llama cada frame al principio de `move()`, justo después de leer
++  el teclado: los enemigos (y las plataformas móviles) ya se han movido, así que
++  `player.gotten`, `ptgmx` y `ptgmy` están puestos, y el jugador aún no se ha movido. Lo
++  que escribas en `player.vy`, `ptgmx` o `ptgmy` pasa por la gravedad (que se suma
++  después), el salto y las colisiones del motor. Es la forma de llevar al jugador con algo
++  que no es un enemigo sin reescribir el eje vertical con `PLAYER_CUSTOM_VENG`.
++
+ ## `custom_flick.h`: las transiciones de pantalla
+ 
+ Con `ENABLE_CUSTOM_FLICK` el motor te pregunta antes de dejar al jugador pasar a la
+@@ -1770,7 +1823,7 @@ En el Spectrum, el motor reserva su memoria con el asignador de bloques de splib
+ 
+ `NUMBLOCKS` (40) bloques de 14 bytes en `AD_FREE` (61440 - 40*15 = 60840). Cada sprite
+ 16x16 gasta 10 bloques y uno de 8x8, 5. Si usas disparos, hay que subir `NUMBLOCKS` en 5
+-por cada bala.
++por cada bala. `NUMBLOCKS` se puede redefinir en `config.h`.
+ 
+ En el CPC **no hay memoria dinámica**: las estructuras de sprite son un array estático.
+ 
+diff --git a/src/dev/churromain.c b/src/dev/churromain.c
+index 4db6a03..00eb987 100644
+--- a/src/dev/churromain.c
++++ b/src/dev/churromain.c
+@@ -10,7 +10,7 @@
+ #define MAX_ENEMS 3
+ #define MAX_FLAGS 32
+ 
+-#if defined PLAYER_KILLS_ENEMIES || defined PLAYER_CAN_FIRE
++#if defined PLAYER_KILLS_ENEMIES || defined PLAYER_CAN_FIRE || defined ENEMIES_CAN_DIE
+ 	#define ENEMIES_MAY_DIE
+ #endif
+ 
+diff --git a/src/dev/config.h b/src/dev/config.h
+index ca138d4..c7801d8 100644
+--- a/src/dev/config.h
++++ b/src/dev/config.h
+@@ -31,6 +31,7 @@
+ //#define PLAYER_FIN_X				99		//
+ //#define PLAYER_FIN_Y				99		// Player tile coordinates to finish game
+ #define PLAYER_NUM_OBJETOS			26		// Objects to get to finish game
++//#define WIN_ON_KILLS				20		// Win when player.killed reaches this (ANDed with the above if defined)
+ #define PLAYER_LIFE 				99		// Max and starting life gauge.
+ #define PLAYER_REFILL				10		// Life recharge
+ 
+@@ -99,9 +100,11 @@
+ // ----------
+ 
+ #define PLAYER_HAS_JUMP 					// If defined, player is able to jump.
++//#define JUMP_ON_UP_ONLY 					// Jump with UP only (as with PLAYER_CAN_FIRE), leaving FIRE for custom.h
+ //#define PLAYER_HAS_JETPAC 				// If defined, player can thrust a vertical jetpac
+ //#define PLAYER_KILLS_ENEMIES		  		// If defined, stepping on enemies kills them
+ //#define PLAYER_MIN_KILLABLE 		3		// Only kill enemies with id >= PLAYER_MIN_KILLABLE
++//#define ENEMIES_CAN_DIE					// enems_kill () + KILLED counter without PLAYER_KILLS_ENEMIES (kill from custom.h)
+ #define SIMPLE_PLATFORMS 					// No type 4 tiles or no type 8s over type 4s.
+ //#define AVOID_PLATFORM_HOP 				// Only works if SIMPLE_PLATFORMS is DISABLED!
+ //#define JUMP_DOWN_PLATFORM 				// Use down on type 4s to jump down.
+@@ -116,6 +119,12 @@
+ //#define PLAYER_CUSTOM_BG_HIT 				// Implement your own bounce.
+ //#define ENABLE_CUSTOM_HOTSPOTS 			// Add your own hotspots!
+ //#define ENABLE_CUSTOM_FLICK 				// define flick_* in custom_flicks.h, return 0 to override flick
++//#define ENABLE_CUSTOM_SPRITES 			// custom_sprites_create/render/hide () for your own sprites
++//#define NUMBLOCKS 				40		// (ZX) splib2 blocks: raise 10 per 16x16 / 5 per 8x8 custom sprite
++//#define MAX_CUSTOM_SW_SPRITES		0		// (CPC) sprite slots for you, from SP_CUSTOM_BASE
++//#define ENABLE_CUSTOM_GAME_START 			// custom_game_start () when a game starts
++//#define ENABLE_CUSTOM_SCREEN_ENTER 		// custom_screen_enter () after a screen is set up
++//#define ENABLE_CUSTOM_PRE_MOVE 			// custom_pre_move () every frame: keys read, enemies done, player not moved yet
+ 
+ //#define CUSTOM_SPRITE_CELLS 				// Use your own sprite cell luts from custom_sprite_cells.h
+ //#define ENEMS_CELL_OFFSET 		8 		// If the above is defined, this is the 1st cell for the enemies.
+diff --git a/src/dev/cpc.h b/src/dev/cpc.h
+index eb417a9..9a99ac3 100644
+--- a/src/dev/cpc.h
++++ b/src/dev/cpc.h
+@@ -101,7 +101,7 @@ unsigned char wyz_signal;
+ #define SP_BULLETS_BASE 	(SP_ENEMS_BASE + MAX_ENEMS)
+ #define SP_SWORD_BASE 		(SP_BULLETS_BASE + MAX_BULLETS)
+ #define SP_COCOS_BASE 		(SP_SWORD_BASE + SWORD_SW_SPRITE_ON)
+-#define SP_CUSTOM_BASE		(SP_COCOS_BASE + MAX_ENEMS)
++#define SP_CUSTOM_BASE		(SP_SWORD_BASE + SWORD_SW_SPRITE_ON)	// No cocos in v3.2: SW_SPRITES_ALL reserves no slots for them
+ 
+ #ifdef MODE_1
+ 	// P_0 P_1 P_2 P_3
+@@ -593,6 +593,11 @@ void system_init (void) {
+ 			add ix, de
+ 			djnz sp_sw_init_turnoff_loop
+ 	#endasm	
++
++	#ifdef ENABLE_CUSTOM_SPRITES
++		// Your sprites live in sp_sw [SP_CUSTOM_BASE .. SP_CUSTOM_BASE + MAX_CUSTOM_SW_SPRITES - 1]
++		custom_sprites_create ();
++	#endif
+ }
+ 
+ void _tile_address (void) {
+@@ -1466,6 +1471,10 @@ void render_all_sprites (void) {
+ 			bspr_it ++;
+ 		}
+ 	#endif
++
++	#ifdef ENABLE_CUSTOM_SPRITES
++		custom_sprites_render ();
++	#endif
+ }
+ 
+ void saca_a_todo_el_mundo_de_aqui (void) {
+@@ -1484,6 +1493,10 @@ void saca_a_todo_el_mundo_de_aqui (void) {
+ 	#endasm
+ 
+ 	// Old version is crap
++
++	#ifdef ENABLE_CUSTOM_SPRITES
++		custom_sprites_hide ();
++	#endif
+ }
+ 
+ // cpc_UpdateNow () - Updates the screen.
+diff --git a/src/dev/custom.h b/src/dev/custom.h
+index 5c5e4eb..b959c76 100644
+--- a/src/dev/custom.h
++++ b/src/dev/custom.h
+@@ -63,6 +63,46 @@ void before_vsync (void) {
+ 
+ #endif
+ 
++#ifdef ENABLE_CUSTOM_SPRITES
++	void custom_sprites_create (void) {
++		// Called once at boot, after the engine has created its sprites.
++		// ZX: sp_CreateSpr your sprites (raise NUMBLOCKS in config.h).
++		// CPC: set up sp_sw [SP_CUSTOM_BASE + n] (define MAX_CUSTOM_SW_SPRITES).
++	}
++
++	void custom_sprites_render (void) {
++		// Called every frame at the end of render_all_sprites ().
++	}
++
++	void custom_sprites_hide (void) {
++		// Called from saca_a_todo_el_mundo_de_aqui (): move them off screen.
++	}
++#endif
++
++#ifdef ENABLE_CUSTOM_GAME_START
++	void custom_game_start (void) {
++		// A game starts: player, hotspots, enemies and n_pant are initialised,
++		// the first screen hasn't been drawn yet.
++	}
++#endif
++
++#ifdef ENABLE_CUSTOM_SCREEN_ENTER
++	void custom_screen_enter (void) {
++		// A screen has been drawn and its enemies set up (after ENTERING scripts).
++		// on_pant is the previous screen (0xff on the first one of a game).
++	}
++#endif
++
++#ifdef ENABLE_CUSTOM_PRE_MOVE
++	void custom_pre_move (void) {
++		// Every frame, at the start of move (): keys have just been read (pad0,
++		// pad_this_frame), enemies and moving platforms are done (player.gotten,
++		// ptgmx, ptgmy), the player hasn't moved. Whatever you write to
++		// player.vy / ptgmx / ptgmy goes through the engine's gravity (added
++		// after this), jump and collisions.
++	}
++#endif
++
+ #ifdef ENABLE_CUSTOM_HOTSPOTS
+ 	unsigned char custom_hotspots() {
+ 		// hotspot type is hotspot_t.
+diff --git a/src/dev/definitions.h b/src/dev/definitions.h
+index 5a52a3c..c5f6ebd 100644
+--- a/src/dev/definitions.h
++++ b/src/dev/definitions.h
+@@ -162,6 +162,24 @@ unsigned char *_baddies_pointer;
+ unsigned char map_attr [150] @ BASE_ROOM_BUFFERS;
+ unsigned char map_buff [150] @ BASE_ROOM_BUFFERS+150;
+ 
++// Custom hooks implemented in custom.h, which is included after speccy.h / cpc.h
++// and engine.h's users, so they need prototypes here.
++
++#ifdef ENABLE_CUSTOM_SPRITES
++	void custom_sprites_create (void);
++	void custom_sprites_render (void);
++	void custom_sprites_hide (void);
++#endif
++#ifdef ENABLE_CUSTOM_GAME_START
++	void custom_game_start (void);
++#endif
++#ifdef ENABLE_CUSTOM_SCREEN_ENTER
++	void custom_screen_enter (void);
++#endif
++#ifdef ENABLE_CUSTOM_PRE_MOVE
++	void custom_pre_move (void);
++#endif
++
+ // Hotspot related shortcut variables. hotspot_x and hotspot_y contain
+ // the pixel coordinates of the current screen hotspot.
+ // If hotspot is empty / deactivated, they are set to (240, 240),
+diff --git a/src/dev/engine.h b/src/dev/engine.h
+index 470dbc7..584826b 100644
+--- a/src/dev/engine.h
++++ b/src/dev/engine.h
+@@ -765,6 +765,12 @@ void move (void) {
+ 			call _pad_read
+ 	#endasm
+ 
++	#ifdef ENABLE_CUSTOM_PRE_MOVE
++		// Keys just read (pad0, pad_this_frame), enemies and moving platforms
++		// already done (player.gotten, ptgmx, ptgmy), player not moved yet.
++		custom_pre_move ();
++	#endif
++
+ 	// =================================================
+ 	//                     Vertical
+ 	// =================================================
+@@ -1018,7 +1024,7 @@ void move (void) {
+ 
+ 					ld  a, (_pad_this_frame)
+ 
+-					#ifdef PLAYER_CAN_FIRE
++					#if defined PLAYER_CAN_FIRE || defined JUMP_ON_UP_ONLY
+ 						and sp_UP
+ 						jr  nz, m_jump_start_done
+ 					#else
+@@ -1051,7 +1057,7 @@ void move (void) {
+ 				.m_jump_start_done
+ 
+ 					ld  a, (_pad0)
+-					#ifdef PLAYER_CAN_FIRE
++					#if defined PLAYER_CAN_FIRE || defined JUMP_ON_UP_ONLY
+ 						and sp_UP
+ 						jr  nz, m_jump_perform_not_pressing
+ 					#else
+@@ -2904,6 +2910,12 @@ void draw_scr (void) {
+ 			script (SC_ENTERING_SCREEN + (n_pant << 1));
+ 		#endif
+ 	#endif
++
++	#ifdef ENABLE_CUSTOM_SCREEN_ENTER
++		// New screen fully set up (tiles, enemies, scripts). on_pant still holds
++		// the previous screen: 0xff on the first screen of a game.
++		custom_screen_enter ();
++	#endif
+ }
+ 
+ #ifdef PLAYER_CAN_FIRE
+diff --git a/src/dev/mainloop.h b/src/dev/mainloop.h
+index 818d0a1..620a5df 100644
+--- a/src/dev/mainloop.h
++++ b/src/dev/mainloop.h
+@@ -79,6 +79,10 @@ void main (void) {
+ 			script (SC_ENTERING_GAME);
+ 		#endif
+ 
++		#ifdef ENABLE_CUSTOM_GAME_START
++			custom_game_start ();
++		#endif
++
+ 		#asm
+ 				xor a 
+ 				ld  (_maincounter), a 
+@@ -171,7 +175,7 @@ void main (void) {
+ 				}
+ 			#endif
+ 
+-			#if defined PLAYER_KILLS_ENEMIES && defined KILLED_X	 
++			#if (defined PLAYER_KILLS_ENEMIES || defined ENEMIES_CAN_DIE) && defined KILLED_X
+ 				if (player.killed != killed_old) {
+ 					draw_2_digits (KILLED_X, KILLED_Y, player.killed);
+ 					killed_old = player.killed;	
+@@ -496,11 +500,15 @@ void main (void) {
+ 
+ 			// Win game condition
+ 			
+-			#if defined ACTIVATE_SCRIPTING || defined PLAYER_NUM_OBJETOS || defined SCR_FIN
++			#if defined ACTIVATE_SCRIPTING || defined PLAYER_NUM_OBJETOS || defined SCR_FIN || defined WIN_ON_KILLS
+ 				if (
+ 					#ifdef ACTIVATE_SCRIPTING
+ 						script_result == 1
++						#ifdef WIN_ON_KILLS
++							|| player.killed >= WIN_ON_KILLS
++						#endif
+ 					#else
++						// Every condition defined must hold
+ 						#ifdef PLAYER_NUM_OBJETOS
+ 							player.objs == PLAYER_NUM_OBJETOS
+ 						#endif 
+@@ -512,6 +520,12 @@ void main (void) {
+ 							(gpx >> 4) == PLAYER_FIN_X &&
+ 							(gpy >> 4) == PLAYER_FIN_Y
+ 						#endif
++						#if (defined PLAYER_NUM_OBJETOS || defined SCR_FIN) && defined WIN_ON_KILLS
++							&&
++						#endif
++						#ifdef WIN_ON_KILLS
++							player.killed >= WIN_ON_KILLS
++						#endif
+ 					#endif
+ 				){
+ 					saca_a_todo_el_mundo_de_aqui ();
+diff --git a/src/dev/speccy.h b/src/dev/speccy.h
+index 8a2779f..4e6b0b2 100644
+--- a/src/dev/speccy.h
++++ b/src/dev/speccy.h
+@@ -56,7 +56,9 @@
+ // Add 10 for each 16x16 sprite.
+ // Add 13 for each 16x24 sprite.
+ // Add 5 for each 8x8 sprite (such as bullets or sword)
+-#define NUMBLOCKS 			40
++#ifndef NUMBLOCKS
++	#define NUMBLOCKS 		40		// Override in config.h if you create extra sprites
++#endif
+ 
+ #define STACK_ADDR 			61936
+ #define AD_FREE				61440-(NUMBLOCKS*15)
+@@ -252,6 +254,10 @@ void system_init (void) {
+ 			sp_AddColSpr (sp_bullets [rdi], spr_bullet_b);
+ 		}
+ 	#endif
++
++	#ifdef ENABLE_CUSTOM_SPRITES
++		custom_sprites_create ();
++	#endif
+ }
+ 
+ void draw_coloured_tile (unsigned char x, unsigned char y, unsigned char t) {
+@@ -1195,6 +1201,10 @@ void render_all_sprites (void) {
+ 			}
+ 		}
+ 	#endif
++
++	#ifdef ENABLE_CUSTOM_SPRITES
++		custom_sprites_render ();
++	#endif
+ }
+ 
+ void saca_a_todo_el_mundo_de_aqui (void) {
+@@ -1243,6 +1253,10 @@ void saca_a_todo_el_mundo_de_aqui (void) {
+ 			call SPMoveSprAbs			
+ 		#endif
+ 	#endasm
++
++	#ifdef ENABLE_CUSTOM_SPRITES
++		custom_sprites_hide ();
++	#endif
+ }
+ 
+ void fix_sprites() {

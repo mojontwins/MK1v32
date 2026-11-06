@@ -1,0 +1,9 @@
+Load 3 (nes2load.py)
+
+level 0 (NES level 7, map 6): 6x4 screens, start screen 14 at (1, 4), 62 kills, lock tile 15, linear kinds ['5', '4', '6'], merged {'2': 1}
+  behs [0, 0, 0, 0, 0, 8, 2, 8, 4, 8, 8, 40, 41, 1, 4, 10]
+level 1 (NES level 8, map 7): 9x3 screens, start screen 0 at (2, 3), 56 kills, lock tile none, linear kinds ['6', '5', '2'], merged {'7': 1, '4': 2}, dropped ['screen 20 0a']
+  behs [0, 8, 8, 8, 4, 8, 8, 8, 0, 0, 0, 0, 8, 8, 1, 0]
+
+hotspot tiles: 21 (bulbs: True)
+CPC inks: levels [[0, 4, 13, 17], [0, 10, 13, 17]], sprites [3, 15, 17]
