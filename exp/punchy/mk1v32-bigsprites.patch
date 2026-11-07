@@ -1,0 +1,779 @@
+diff -ru a/cpc.h b/cpc.h
+--- a/src/dev/cpc.h	2026-11-07 12:48:44.129308607 +0100
++++ b/src/dev/cpc.h	2026-11-07 13:30:10.198385223 +0100
+@@ -623,6 +623,10 @@
+ 			sp_sw [cd_i].sp0 = sp_sw [cd_i].sp1 = (int) spr_empty;
+ 			sp_sw [cd_i].cox = sp_sw [cd_i].coy = 0;
+ 		}
++		#ifdef BIG_SPRITES
++			// 16x32 player and enemies, drawn 16 lines above their box
++			for (cd_i = 0; cd_i <= MAX_ENEMS; cd_i ++) sp_sw [cd_i].coy = -16;
++		#endif
+ 		cd_init ();
+ 	#endif
+ 
+@@ -1594,7 +1598,7 @@
+ 
+ void saca_a_todo_el_mundo_de_aqui (void) {
+ 	#asm
+-			ld  de, 16
++			ld  de, 15
+ 			ld  b, SW_SPRITES_ALL
+ 			ld  hl, BASE_SPRITES
+ 		.clear_sprites_loop
+@@ -1603,7 +1607,7 @@
+ 			inc hl
+ 			ld  a, #(_spr_empty/256)
+ 			ld  (hl), a 
+-			add hl, de
++			add hl, de 			// 1 + 15: the next sprite
+ 			djnz clear_sprites_loop
+ 	#endasm
+ 
+diff -ru a/cpc_dirty.h b/cpc_dirty.h
+--- a/src/dev/cpc_dirty.h	2026-11-07 12:48:44.122902443 +0100
++++ b/src/dev/cpc_dirty.h	2026-11-07 13:30:10.195705687 +0100
+@@ -40,9 +40,18 @@
+ //   AB80 ...         variables
+ //   AC00 CD_TMAP     30 x 20 pattern numbers
+ //   B000 CD_CACHE    8 x 96: sprite caches (columns 32-aligned)
+-//   B300 CD_SPRT     8 x 10: x(byte) y cache(2) c0 c1 r0 r1 shift flags
++//   B300 CD_SPRT     16 per sprite: x(byte) y cache(2) c0 c1 r0 r1 shift
++//                    flags, lines (drawn), h, w (bytes), cache base (2)
+ //   B400 CD_DIRTY    30 x 20 generation stamps (== CD_GEN: dirty)
+ //   B658-BFFF        free for the game
++//
++// CD_GEOMETRY (mode 0): every slot has its own size, h = 8, 16 or 32 lines
++// and w = 2 or 4 bytes (8 or 16 pixels of the game, 4 or 8 mode 0 pixels),
++// from cd_geom [] (h, w per slot, set by the game before cd_init). A cache
++// is w / 2 + 1 columns of 2 * h bytes, aligned to 2 * h: put the tallest
++// slots first. They go from B000 to CD_CACHE_END, then CD_SPRT, CD_DIRTY.
++// Sprites can go up out of the viewport (they are cut at its top edge),
++// not down out of it (hidden).
+ 
+ #define CD_PAT 		0x9000
+ #define CD_ROWBUF 	0xA000
+@@ -59,6 +68,7 @@
+ #define CD_SAVESP 	0xAB88
+ #define CD_OR_K 	0xAB8A
+ #define CD_OR_3COL 	0xAB8B
++#define CD_OR_K2 	0xABAC
+ #define CD_OR_ENTRY 0xAB8C
+ #define CD_MR_R 	0xAB8E
+ #define CD_GEN 		0xAB8F
+@@ -67,6 +77,7 @@
+ #define CD_CELLREC 	0xABA4
+ #define CD_TMAP 	0xAC00
+ #define CD_CACHE 	0xB000
++#define CD_RECSZ 	16
+ #ifdef MODE_1
+ 	#define CD_CSIZE 	160
+ 	#define CD_SPRT 	0xB500
+@@ -75,9 +86,16 @@
+ 	#define CD_FREE 	0xB958
+ #else
+ 	#define CD_CSIZE 	96
+-	#define CD_SPRT 	0xB300
+-	#define CD_DIRTY 	0xB400
+-	#define CD_FREE 	0xB658
++	#ifdef CD_CACHE_END
++		// CD_GEOMETRY: caches of any size up to CD_CACHE_END (page aligned)
++		#define CD_SPRT 	CD_CACHE_END
++		#define CD_DIRTY 	CD_CACHE_END + 0x100 	// (no brackets: z80asm reads "ld hl, (x)" as a load)
++		#define CD_FREE 	CD_CACHE_END + 0x358
++	#else
++		#define CD_SPRT 	0xB300
++		#define CD_DIRTY 	0xB400
++		#define CD_FREE 	0xB658
++	#endif
+ #endif
+ #define CD_TMP 		0xABB0
+ 
+@@ -101,6 +119,10 @@
+ 		BINARY "cpc/patterns.zx0"
+ #endasm
+ 
++#if defined CD_GEOMETRY && !defined MODE_1
++	extern unsigned char cd_geom [];	// the game's: h, w (bytes) per sprite slot
++#endif
++
+ unsigned char cd_intc;
+ unsigned char *cd_pal_bg, *cd_pal_spr;
+ 
+@@ -179,6 +201,7 @@
+ unsigned char cd_py;
+ SPR *cd_spp;
+ unsigned char *cd_rec;
++unsigned int cd_ca;
+ 
+ // ----------------------------------------------------------------------------
+ // Init: tables, patterns, empty state
+@@ -223,7 +246,7 @@
+ 			inc ix
+ 			djnz cd_init_rowtab
+ 
+-			// sprite records: caches
++			// sprite records: caches, 16 x 16 (4 bytes) by default
+ 			ld  ix, CD_SPRT
+ 			ld  hl, CD_CACHE
+ 			ld  de, CD_CSIZE
+@@ -231,9 +254,14 @@
+ 		.cd_init_sprt
+ 			ld  (ix+2), l
+ 			ld  (ix+3), h
++			ld  (ix+13), l
++			ld  (ix+14), h
++			ld  (ix+10), 16
++			ld  (ix+11), 16
++			ld  (ix+12), 4
+ 			add hl, de
+ 			push de
+-			ld  de, 10
++			ld  de, CD_RECSZ
+ 			add ix, de
+ 			pop de
+ 			djnz cd_init_sprt
+@@ -282,6 +310,20 @@
+ 			call my_inks
+ 	#endasm
+ 	for (cd_i = 0; cd_i < CD_NSPR; cd_i ++) cd_key_sp [cd_i] = 0;
++	#if defined CD_GEOMETRY && !defined MODE_1
++		// caches: w / 2 + 1 columns of 2h bytes, each aligned to 2h
++		cd_ca = CD_CACHE;
++		for (cd_i = 0; cd_i < CD_NSPR; cd_i ++) {
++			cd_rec = (unsigned char *) (CD_SPRT + cd_i * CD_RECSZ);
++			cd_s = cd_geom [cd_i + cd_i]; cd_ph = cd_geom [cd_i + cd_i + 1];
++			cd_rec [10] = cd_rec [11] = cd_s; cd_rec [12] = cd_ph;
++			cd_ca = (cd_ca + cd_s + cd_s - 1) & ~(cd_s + cd_s - 1);
++			cd_rec [13] = cd_rec [2] = cd_ca & 0xff;
++			cd_rec [14] = cd_rec [3] = cd_ca >> 8;
++			cd_ca += (cd_ph / 2 + 1) * (cd_s + cd_s);
++		}
++		// (cd_ca must end up <= CD_SPRT: caches up to CD_CACHE_END)
++	#endif
+ 
+ 	// ROWINT: screen row VIEWPORT_Y + r has been drawn at VSYNC + 72 + 8 (row + 1);
+ 	// interrupt n comes at VSYNC + 2 + 52 (n - 1); count from the 3rd one.
+@@ -396,13 +438,15 @@
+ 		bit 0, (ix+9)
+ 		jp  z, cd_ms_next
+ 		set 1, (ix+9)
+-		// c0 = x >> 1, c1 = (x + 3 + s) >> 1, r0 = y >> 3, r1 = (y + 15) >> 3
++		// c0 = x >> 1, c1 = (x + w - 1 + s) >> 1, r0 = y >> 3,
++		// r1 = (y + lines - 1) >> 3
+ 		ld  a, (ix+0)
+ 		ld  c, a
+ 		srl a
+ 		ld  (ix+4), a
+ 		ld  a, c
+-		add a, 3
++		add a, (ix+12)
++		dec a
+ 		add a, (ix+8)
+ 		srl a
+ 		ld  (ix+5), a
+@@ -413,18 +457,21 @@
+ 		srl a
+ 		ld  (ix+6), a
+ 		ld  a, c
+-		add a, 15
++		add a, (ix+10)
++		dec a
+ 		srl a
+ 		srl a
+ 		srl a
+ 		ld  (ix+7), a
+ 		call cd_mark_rect
+-		// list it in the rows it crosses
++		// list it in the rows it crosses (8 at most per row)
+ 		ld  c, (ix+6)
+ 	.cd_ms_rows
+ 		ld  l, c
+ 		ld  h, CD_ROWSN / 256
+ 		ld  a, (hl)
++		cp  8
++		jr  nc, cd_ms_full
+ 		inc (hl)
+ 		ld  e, a
+ 		ld  a, c
+@@ -436,12 +483,13 @@
+ 		ld  h, CD_ROWSPR / 256
+ 		ld  a, ixl
+ 		ld  (hl), a
++	.cd_ms_full
+ 		ld  a, c
+ 		inc c
+ 		cp  (ix+7)
+ 		jr  c, cd_ms_rows
+ 	.cd_ms_next
+-		ld  de, 10
++		ld  de, CD_RECSZ
+ 		add ix, de
+ 		pop bc
+ 		dec b
+@@ -655,14 +703,16 @@
+ #endasm
+ #else
+ #asm
+-	// HL = frame, DE = cache, B = b0, C = s
++	// HL = frame, DE = cache, B = b0, C = s; cd_bc_h lines, cd_bc_w bytes
++	// a line, cd_bc_st = 2h - 1 (CD_GEOMETRY; else 16 lines, 4 bytes)
+ 	.cd_build_cache
+ 		ld  (cd_bc_dst), de
+ 		ld  a, b
+ 		ld  (cd_bc_b0), a
+ 		ld  a, c
+ 		ld  (cd_bc_s), a
+-		ld  b, 16
++		ld  a, (cd_bc_h)
++		ld  b, a
+ 	.cd_bc_line
+ 		push bc
+ 		// TMP = 7 zero bytes
+@@ -682,18 +732,21 @@
+ 		add hl, de
+ 		ex  de, hl
+ 		pop hl
++		ld  a, (cd_bc_w)
++		ld  b, a
+ 		ld  a, (cd_bc_s)
+ 		or  a
+ 		jr  nz, cd_bc_shift
+-		ldi
+-		ldi
+-		ldi
+-		ldi
++	.cd_bc_cp
++		ld  a, (hl)
++		ld  (de), a
++		inc hl
++		inc de
++		djnz cd_bc_cp
+ 		jr  cd_bc_store
+ 	.cd_bc_shift
+ 		// out = ((prev & 0x55) << 1) | ((cur & 0xAA) >> 1)
+ 		ld  c, 0
+-		ld  b, 4
+ 	.cd_bc_sh
+ 		ld  a, c
+ 		and $55
+@@ -715,27 +768,27 @@
+ 		add a, a
+ 		ld  (de), a
+ 	.cd_bc_store
+-		// TMP [0..5] -> cache + 0, 1, 32, 33, 64, 65 (+ line * 2)
++		// TMP [0..] -> cache + 0, 1, 2h, 2h + 1, 4h... (+ line * 2), w / 2 + 1 columns
+ 		push hl
+ 		ld  hl, (cd_bc_dst)
+-		ld  de, 31
+-		ld  a, (CD_TMP)
+-		ld  (hl), a
+-		inc hl
+-		ld  a, (CD_TMP + 1)
+-		ld  (hl), a
+-		add hl, de
+-		ld  a, (CD_TMP + 2)
++		ld  de, CD_TMP
++		ld  a, (cd_bc_w)
++		srl a
++		inc a
++		ld  b, a
++	.cd_bc_st_col
++		ld  a, (de)
+ 		ld  (hl), a
++		inc de
+ 		inc hl
+-		ld  a, (CD_TMP + 3)
++		ld  a, (de)
+ 		ld  (hl), a
++		inc de
++		push de
++		ld  de, (cd_bc_st)
+ 		add hl, de
+-		ld  a, (CD_TMP + 4)
+-		ld  (hl), a
+-		inc hl
+-		ld  a, (CD_TMP + 5)
+-		ld  (hl), a
++		pop de
++		djnz cd_bc_st_col
+ 		ld  hl, (cd_bc_dst)
+ 		inc hl
+ 		inc hl
+@@ -744,6 +797,12 @@
+ 		pop bc
+ 		djnz cd_bc_line
+ 		ret
++	.cd_bc_h
++		defb 16
++	.cd_bc_w
++		defb 4
++	.cd_bc_st
++		defw 31
+ 	.cd_bc_dst
+ 		defw 0
+ 	.cd_bc_b0
+@@ -1009,8 +1068,6 @@
+ 			push iy
+ 			ld  ix, BASE_SPRITES 		// sp_sw []
+ 			ld  iy, CD_SPRT
+-			ld  hl, CD_CACHE
+-			ld  (cd_cs_cache), hl
+ 			ld  hl, _cd_key_sp
+ 			ld  (cd_cs_ksp), hl
+ 			ld  hl, _cd_key_ph
+@@ -1058,10 +1115,39 @@
+ 			ld  e, a 					// px
+ 			ld  a, (ix+9)
+ 			sub VIEWPORT_Y * 8
+-			jp  c, cd_cs_hide
+-			cp  145
++			jr  nc, cd_cs_ypos
++			// above the viewport: skip the lines out of it
++			neg
++			cp  (iy+11)
+ 			jp  nc, cd_cs_hide
++			ld  c, a
++			ld  a, (iy+11)
++			sub c
++			ld  (iy+10), a 				// lines drawn
++			xor a
++			ld  (iy+1), a 				// y
++			ld  a, c
++			add a, a
++			add a, (iy+13)
++			ld  (iy+2), a
++			ld  a, (iy+14)
++			adc a, 0
++			ld  (iy+3), a 				// cache + skipped lines
++			jr  cd_cs_xdo
++		.cd_cs_ypos
+ 			ld  (iy+1), a 				// y
++			ld  c, a
++			ld  a, (iy+11)
++			ld  (iy+10), a 				// lines drawn = h
++			add a, c
++			jp  c, cd_cs_hide
++			cp  161
++			jp  nc, cd_cs_hide
++			ld  a, (iy+13)
++			ld  (iy+2), a
++			ld  a, (iy+14)
++			ld  (iy+3), a
++		.cd_cs_xdo
+ 			ld  a, e
+ 			and 1
+ 			ld  c, a 					// s
+@@ -1104,8 +1190,18 @@
+ 			ld  (hl), e
+ 			inc hl
+ 			ld  (hl), d
++		#ifndef MODE_1
++			ld  a, (iy+11)
++			ld  (cd_bc_h), a
++			add a, a
++			dec a
++			ld  (cd_bc_st), a
++			ld  a, (iy+12)
++			ld  (cd_bc_w), a
++		#endif
+ 			ld  hl, (_cd_sp0)
+-			ld  de, (cd_cs_cache)
++			ld  e, (iy+13)
++			ld  d, (iy+14)
+ 			push ix
+ 			push iy
+ 			call cd_build_cache 		// HL frame, DE cache, B b0, C s
+@@ -1117,12 +1213,8 @@
+ 		.cd_cs_next
+ 			ld  de, 16
+ 			add ix, de
+-			ld  de, 10
++			ld  de, CD_RECSZ
+ 			add iy, de
+-			ld  hl, (cd_cs_cache)
+-			ld  de, CD_CSIZE
+-			add hl, de
+-			ld  (cd_cs_cache), hl
+ 			ld  hl, (cd_cs_ksp)
+ 			inc hl
+ 			inc hl
+@@ -1136,8 +1228,6 @@
+ 			pop iy
+ 			jp  cd_mark_sprites
+ 
+-		.cd_cs_cache
+-			defw 0
+ 		.cd_cs_ksp
+ 			defw 0
+ 		.cd_cs_kph
+diff -ru a/cpc_dirty_flush.h b/cpc_dirty_flush.h
+--- a/src/dev/cpc_dirty_flush.h	2026-11-07 12:48:44.126249040 +0100
++++ b/src/dev/cpc_dirty_flush.h	2026-11-07 13:30:10.197059823 +0100
+@@ -471,11 +471,11 @@
+ 		ret
+ 	#else
+ 	; OR the part of sprite IX inside char row CD_CUR_R into CD_ROWBUF.
+-	; Sprite graphics are stored in cell-column order (16 lines x 2 bytes
+-	; per column, columns 32-aligned): 2 columns for even x at gfx,
+-	; 3 columns (shifted one byte) for odd x at gfx+64; mark_all leaves the
+-	; right one in ix+2/3. CD_ROWBUF cells are 32 bytes apart too, so after a
+-	; column both pointers move on by the same 32 - 2*lines.
++	; Sprite caches are stored in cell-column order (h lines x 2 bytes per
++	; column, columns 2h-aligned, 2 or 3 of them, the cache pointer in ix+2/3
++	; past the lines cut at the top). CD_ROWBUF cells are 32 bytes apart:
++	; after a column the destination moves on 32 - 2*lines, the source
++	; 2h - 2*lines.
+ 	.cd_or_row
+ 		ld  a, (CD_CUR_R)
+ 		add a, a
+@@ -490,6 +490,11 @@
+ 		neg
+ 		add a, 8
+ 		ld  b, a
++		ld  a, (ix+10)
++		cp  b
++		jr  nc, cd_or_in_cnt
++		ld  b, a 			; a short sprite may end inside the row
++	.cd_or_in_cnt
+ 		ld  d, 0
+ 		jr  cd_or_go
+ 	.cd_or_above
+@@ -497,7 +502,7 @@
+ 		neg
+ 		ld  d, a
+ 		ld  c, a
+-		ld  a, 16
++		ld  a, (ix+10)
+ 		sub c
+ 		cp  8
+ 		jr  c, cd_or_cnt
+@@ -509,9 +514,14 @@
+ 		; b = lines, d = sy0, e = l0
+ 		ld  a, b
+ 		add a, a
++		ld  c, a
+ 		neg
+ 		add a, 32
+ 		ld  (CD_OR_K), a
++		ld  a, (ix+11)
++		add a, a
++		sub c
++		ld  (CD_OR_K2), a
+ 		; entry into the unrolled block: or_block + (8 - lines) * 10
+ 		ld  a, 8
+ 		sub b
+@@ -529,8 +539,9 @@
+ 		push hl
+ 		ld  a, (ix+5)
+ 		sub (ix+4)
+-		ld  (CD_OR_3COL), a
+-		; src = gfx (parity) + sy0*2
++		inc a
++		ld  (CD_OR_3COL), a 	; columns
++		; src = cache + sy0*2
+ 		ld  a, d
+ 		add a, a
+ 		add a, (ix+2)
+@@ -552,23 +563,26 @@
+ 		and $1F
+ 		or  CD_ROWBUF / 256
+ 		ld  d, a
+-		ld  a, (CD_OR_K)
+-		ld  c, a
+-		ld  b, 0
+ 		pop ix
+-		call cd_or_jp
+-		ex  de, hl
+-		add hl, bc
+-		ex  de, hl
+-		add hl, bc
++	.cd_or_cols
+ 		call cd_or_jp
+ 		ld  a, (CD_OR_3COL)
+ 		dec a
+ 		ret z
+-		ex  de, hl
+-		add hl, bc
+-		ex  de, hl
+-		add hl, bc
++		ld  (CD_OR_3COL), a
++		ld  a, (CD_OR_K)
++		add a, e
++		ld  e, a
++		adc a, d
++		sub e
++		ld  d, a
++		ld  a, (CD_OR_K2)
++		add a, l
++		ld  l, a
++		adc a, h
++		sub l
++		ld  h, a
++		jr  cd_or_cols
+ 	.cd_or_jp
+ 		jp  (ix)
+ 	.cd_or_block
+diff -ru a/engine.h b/engine.h
+--- a/src/dev/engine.h	2026-11-07 12:48:44.132089585 +0100
++++ b/src/dev/engine.h	2026-11-07 13:30:10.199731476 +0100
+@@ -176,18 +176,28 @@
+ 			ret c
+ 
+ 			// _en_y + 12 >= gpy or _en_y + 16 >= gpy
++			// (PLAYER_VSTRETCH_FG: the player's box goes that much higher)
+ 			ld  a, (_gpy)
+ 			ld  c, a
+ 			ld  a, (__en_y)
++		#ifdef PLAYER_VSTRETCH_FG
++			add BOUNDING_SIZE + PLAYER_VSTRETCH_FG
++		#else
+ 			add BOUNDING_SIZE
++		#endif
+ 			cp  c
+ 			ret c
+ 
+ 			// _en_y <= gpy + 12; gpy + 12 >= _en_y
++			// (ENEMS_VSTRETCH_FG: the enemy's box goes that much higher)
+ 			ld  a, (__en_y)
+ 			ld  c, a
+ 			ld  a, (_gpy)
++		#ifdef ENEMS_VSTRETCH_FG
++			add BOUNDING_SIZE + ENEMS_VSTRETCH_FG
++		#else
+ 			add BOUNDING_SIZE
++		#endif
+ 			cp  c
+ 			ret c
+ 
+@@ -615,6 +625,42 @@
+ 	#endasm
+ }
+ 
++#ifdef PLAYER_VSTRETCH_BG
++	// A tall player (VSTRETCH) can touch 3 rows of tiles: or the middle one,
++	// (gpy + 4) >> 4 at cx1, into at1.
++	void cm_mid_point (void) {
++		#asm
++				ld  a, (_cx1)
++				cp  15
++				ret nc
++				ld  a, (_gpy)
++				add 4
++				srl a
++				srl a
++				srl a
++				srl a
++				cp  10
++				ret nc
++				ld  b, a
++				sla a
++				sla a
++				sla a
++				sla a
++				sub b
++				ld  b, a
++				ld  a, (_cx1)
++				add b
++				ld  e, a
++				ld  d, 0
++				ld  hl, _map_attr
++				add hl, de
++				ld  a, (_at1)
++				or  (hl)
++				ld  (_at1), a
++		#endasm
++	}
++#endif
++
+ #if !defined DEACTIVATE_KEYS || defined PLAYER_PUSH_BOXES
+ 	void check_lock_or_box_horz (void) {
+ 		#ifdef FIRE_TO_USE_KEY
+@@ -1388,10 +1434,17 @@
+ 
+ 		.m_vert_coll_up
+ 
+-			// Collide up
++			// Collide up (PLAYER_VSTRETCH_BG: the head is that much higher)
+ 
+ 			ld  a, (_gpy) 
++		#ifdef PLAYER_VSTRETCH_BG
++			sub PLAYER_VSTRETCH_BG - 4
++			jr  nc, m_vert_coll_up_vs
++			xor a 						// head above the screen: row 0
++		.m_vert_coll_up_vs
++		#else
+ 			add 4 
++		#endif
+ 			srl a 
+ 			srl a 
+ 			srl a 
+@@ -1435,8 +1488,17 @@
+ 			ld  (_player + 8), hl 	// player.vy
+ 
+ 			ld  a, (_gpy)
++		#ifdef PLAYER_VSTRETCH_BG
++			sub PLAYER_VSTRETCH_BG - 4
++			jr  nc, m_vert_coll_up_vs2
++			xor a
++		.m_vert_coll_up_vs2
++			and 0xf0
++			add 12 + PLAYER_VSTRETCH_BG
++		#else
+ 			and 0xf0
+ 			add 12 
++		#endif
+ 			ld  (_gpy), a 
+ 			call Ashl16_HL
+ 			ld  (_player + 2), HL 
+@@ -1713,9 +1775,17 @@
+ 		.m_horz_coll_do
+ 
+ 			// _y = (gpy + 4) >> 4; _y2 = (gpy + 15) >> 4;
++			// (PLAYER_VSTRETCH_BG: _y = the head, (gpy + 4) >> 4 checked as well)
+ 			ld  a, (_gpy)
+ 			ld  c, a
++		#ifdef PLAYER_VSTRETCH_BG
++			sub PLAYER_VSTRETCH_BG - 4
++			jr  nc, m_horz_vs_y
++			xor a
++		.m_horz_vs_y
++		#else
+ 			add 4
++		#endif
+ 			srl a 
+ 			srl a 
+ 			srl a 
+@@ -1748,6 +1818,9 @@
+ 			ld  (_cx2), a
+ 
+ 			call _cm_two_points 
++		#ifdef PLAYER_VSTRETCH_BG
++			call _cm_mid_point
++		#endif
+ 
+ 			// (at1 & 8) || (at2 & 8)
+ 			ld  a, (_at1)
+@@ -1808,6 +1881,9 @@
+ 			ld  (_cx2), a
+ 
+ 			call _cm_two_points
++		#ifdef PLAYER_VSTRETCH_BG
++			call _cm_mid_point
++		#endif
+ 
+ 			ld  a, (_at1)
+ 			and 8 
+@@ -2109,6 +2185,10 @@
+ 		#endasm 
+ 	#endif
+ 
++	#ifdef PLAYER_CUSTOM_FRAME_PTR
++		// custom.h sets player.next_frame (any frame, a flip buffer...)
++		player_custom_frame_ptr ();
++	#else
+ 	//player.next_frame = sprite_cells [player.frame];
+ 	#asm
+ 			ld  hl, (_player + 20) 		// player.frame 
+@@ -2122,6 +2202,7 @@
+ 			ld  l, a 
+ 			ld  (_player + 17), hl 		// player.next_frame
+ 	#endasm
++	#endif
+ }
+ 
+ void shl_player_coords (void) {
+diff -ru a/speccy.h b/speccy.h
+--- a/src/dev/speccy.h	2026-11-07 12:48:44.135548929 +0100
++++ b/src/dev/speccy.h	2026-11-07 13:30:10.201071881 +0100
+@@ -207,6 +207,20 @@
+ 			sp_AddColSpr (sp_moviles [rdi], sprite_9_b);	// This is a dummy and will be overwritten later	
+ 			en_an_current_frame [rdi] = sprite_9_a;
+ 		}
++	#elif defined BIG_SPRITES
++		// 16x32 player and enemies: 4 + 1 rows, columns of (32 + 8) lines
++		// (mkts_om mode=sprites metasize=2,4: column b is 80 bytes after a)
++		sp_player = sp_CreateSpr (sp_MASK_SPRITE, 5, BIG_SPR_FRAME0, 1);
++		sp_AddColSpr (sp_player, BIG_SPR_FRAME0 + 80);
++		sp_AddColSpr (sp_player, BIG_SPR_FRAME0 + 80);	// dummy, nulled by fix_sprites
++		player.current_frame = player.next_frame = BIG_SPR_FRAME0;
++		
++		for (rdi = 0; rdi < MAX_ENEMS; rdi ++) {
++			sp_moviles [rdi] = sp_CreateSpr(sp_MASK_SPRITE, 5, BIG_SPR_FRAME0, 2);
++			sp_AddColSpr (sp_moviles [rdi], BIG_SPR_FRAME0 + 80);
++			sp_AddColSpr (sp_moviles [rdi], BIG_SPR_FRAME0 + 80);	// dummy
++			en_an_current_frame [rdi] = BIG_SPR_FRAME0;
++		}
+ 	#else
+ 		sp_player = sp_CreateSpr (sp_MASK_SPRITE, 3, sprite_2_a, 1);
+ 		sp_AddColSpr (sp_player, sprite_2_b);
+@@ -221,11 +235,17 @@
+ 		}
+ 	#endif
+ 
++	#ifdef BIG_SPRITES
++		#define FIX_SPRITES_MEMBERS 10
++	#else
++		#define FIX_SPRITES_MEMBERS 6
++	#endif
++
+ 	// Create a virtual, non existent third column for sprites.
+ 	
+ 	#asm
+ 		.fix_sprites
+-			ld  b, 6
++			ld  b, FIX_SPRITES_MEMBERS
+ 			ld  hl, (_sp_player) 			// Sprite base pointer
+ 			call _fix_sprites
+ 
+@@ -241,7 +261,7 @@
+ 			ld  h, a
+ 			inc de 
+ 
+-			ld  b, 6
++			ld  b, FIX_SPRITES_MEMBERS
+ 			call _fix_sprites
+ 
+ 			pop bc 
+@@ -1064,11 +1084,16 @@
+ 			ld  c, l 				// ** BC = animate bitdef **	
+ 
+ 			//VIEWPORT_Y + (rdy >> 3), VIEWPORT_X + (rdx >> 3)
++			// (BIG_SPRITES: drawn 2 rows higher, cut by the clip rect)
+ 			ld  a, (_rdy)					
+ 			srl a
+ 			srl a
+ 			srl a
++		#ifdef BIG_SPRITES
++			add VIEWPORT_Y - 2
++		#else
+ 			add VIEWPORT_Y
++		#endif
+ 			ld h, a
+ 
+ 			ld  a, (_rdx)
+@@ -1156,6 +1181,12 @@
+ 		
+ 		.render_player_on_screen
+ 			ld  a, (_gpx) 
++		#ifdef PLAYER_SPR_DX
++			// the sprite at gpx + the game's offset
++			ld  c, a
++			ld  a, (PLAYER_SPR_DX)
++			add a, c
++		#endif
+ 
+ 		.render_player_set_x
+ 			ld  (_rdx), a 
+@@ -1175,7 +1206,11 @@
+ 			srl a
+ 			srl a
+ 			srl a
++		#ifdef BIG_SPRITES
++			add VIEWPORT_Y - 2
++		#else
+ 			add VIEWPORT_Y
++		#endif
+ 			ld  h, a 
+ 
+ 			ld  a, (_rdx)

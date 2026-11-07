@@ -1,0 +1,20 @@
+# Punchy CPC: patterns + tile map (mkts_om mode=scripted, run from dev/)
+#
+# Mode 0 at its own resolution (a 16x16 tile is 8x16 pixels in the PNGs),
+# split palette: backgrounds use pens 0, 4, 8, 12 (pal_cnvtiles.png). The
+# font (patterns 0-63) is drawn in background ink 3: the HUD prints those
+# pixels in sprite ink 3. Then tiles 0-19 as in the ZX version.
+
+cpcmode 0
+brickinput off
+
+pal ../gfx/cpc/pal_cnvtiles.png
+open ../gfx/cpc/font.png
+charset 0 0 32 2 0 0 64
+
+open ../gfx/cpc/ts.png
+metatileset 0 0 20 1 2 2 0
+output tmaps cpc/ts_tmaps.bin
+
+stats
+output patterns cpc/patterns.bin

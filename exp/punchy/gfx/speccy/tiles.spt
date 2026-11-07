@@ -1,0 +1,15 @@
+# Punchy ZX: charset + tile map (mkts_om mode=scripted, run from dev/)
+#
+# Patterns 0-63: the font (ASCII 32-95, DIGIT_BASE 16), then the tiles. The
+# tile map is 8 bytes per tile, (attribute, pattern) x 4: 0-15 the map tiles,
+# 16-18 hotspots (object, key, refill), 19 a breakable tile breaking.
+
+open ../gfx/speccy/font.png
+charset 0 0 32 2 0 0 64
+
+open ../gfx/speccy/ts.png
+metatileset 0 0 20 1 2 2 0
+output tmaps ts_tmaps.bin
+
+stats
+output patterns tileset.bin
