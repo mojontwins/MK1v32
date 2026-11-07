@@ -28,6 +28,8 @@
  *   -scrwrites F1-F2         per frame, report screen writes that hit the
  *                            character row the beam is drawing (tearing risk)
  *   -prof                    PC histogram
+ *   -profrange F1-F2         only count frames F1-F2, in NOPs, not halted (with -prof)
+ *   -profout file            write the whole histogram (addr nops) there (with -prof)
  *   -beam                    screenshots show each line as the beam drew it
  *                            (latched at the start of the line) instead of
  *                            screen memory at the end of the frame, so a
@@ -255,6 +257,7 @@ static void default_crtc (void) {
 
 int main (int argc, char **argv) {
 	long frames = 100; int do_prof = 0, loaded = 0;
+	long pr_f1 = -1, pr_f2 = -1; char *pr_out = 0;
 	memset (&z, 0, sizeof z);
 	z.mem = mem; z.in = port_in; z.out = port_out;
 	z80_reset (&z);
@@ -274,6 +277,8 @@ int main (int argc, char **argv) {
 		else if (!strcmp (a, "-pc")) { z.pc = strtol (argv [++ i], 0, 0); z.sp = 0xc000; z.im = 1; }
 		else if (!strcmp (a, "-f")) frames = atol (argv [++ i]);
 		else if (!strcmp (a, "-prof")) do_prof = 1;
+		else if (!strcmp (a, "-profrange")) sscanf (argv [++ i], "%ld-%ld", &pr_f1, &pr_f2);
+		else if (!strcmp (a, "-profout")) pr_out = argv [++ i];
 		else if (!strcmp (a, "-beam")) beam_mode = 1;
 		else if (!strcmp (a, "-k")) {
 			KeySpan *k = &spans [nspans ++]; memset (k, 0, sizeof *k);
@@ -332,9 +337,13 @@ int main (int argc, char **argv) {
 				}
 				if (nmarks) for (int m = 0; m < nmarks; m ++)
 					if (z.pc == marks [m] && !z.halted) printf ("mark %04x frame %ld line %d nop %d\n", marks [m], frame, cur_line, nops);
-				if (prof) prof [z.pc] ++;
+				int pc0 = z.pc, hl0 = z.halted;
 				int t = z80_step (&z);
 				nops += (t + 3) / 4;
+				if (prof) {
+					if (pr_f1 < 0) prof [pc0] ++;
+					else if (frame >= pr_f1 && frame <= pr_f2 && !hl0) prof [pc0] += (t + 3) / 4;
+				}
 			}
 
 			/* HSYNC: interrupt counter */
@@ -361,6 +370,10 @@ int main (int argc, char **argv) {
 			printf ("scrwrites frame %ld: %ld writes, %ld in the row being displayed\n", frame, sw_total - fw_total, sw_hit - fw_hit);
 	}
 	fprintf (stderr, "ran %ld frames, PC=%04x SP=%04x IM=%d IFF=%d mode=%d\n", frames, z.pc, z.sp, z.im, z.iff1, ga_mode);
+	if (prof && pr_out) {
+		FILE *f = fopen (pr_out, "w");
+		if (f) { for (int a = 0; a < 65536; a ++) if (prof [a]) fprintf (f, "%04x %lu\n", a, prof [a]); fclose (f); }
+	}
 	if (prof) {
 		for (int n = 0; n < 15; n ++) {
 			unsigned long best = 0; int bi = 0;

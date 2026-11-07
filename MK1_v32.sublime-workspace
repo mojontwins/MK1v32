@@ -1,1 +1,935 @@
-{}
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"_a",
+				"_nametable_address\tabc"
+			],
+			[
+				"invent",
+				"inventory_render\tabc"
+			],
+			[
+				"cpc_key",
+				"cpc_TestKey\t(engine.h)"
+			],
+			[
+				"clea",
+				"clear_tiles_on_enter\t(persistence.h)"
+			],
+			[
+				"persis",
+				"persistence_yx\tabc"
+			],
+			[
+				"clear",
+				"clear_tile\t(engine.h)"
+			],
+			[
+				"persistence_",
+				"persistence_n_pant\tabc"
+			],
+			[
+				"persiste",
+				"persistence_n_pant\t(definitions.h)"
+			],
+			[
+				"MAX",
+				"MAX_BOATS\tabc"
+			],
+			[
+				"STATE",
+				"STATE_KILLED\t(definitions.h)"
+			],
+			[
+				"OBJ_PI",
+				"OBJ_PISTOL\t(definitions.h)"
+			],
+			[
+				"invenot",
+				"inventory_shift\t(inventory.h)"
+			],
+			[
+				"obstacle",
+				"obstacle_at_rda_rdb\tabc"
+			],
+			[
+				"BLACK_",
+				"BLACK_COLOUR_BYTE\tabc"
+			],
+			[
+				"cpc_UpdaT",
+				"cpc_UpdTileTable\tabc"
+			],
+			[
+				"WYZ_",
+				"WYZ_FX_CHANNEL\t(wyz_player.h)"
+			],
+			[
+				"saim",
+				"saimazoom.bin\tabc"
+			],
+			[
+				"move_",
+				"move_jones\tabc"
+			],
+			[
+				"STAT",
+				"STATE_IDLE\tabc"
+			],
+			[
+				"DI",
+				"DIRECTION_LEFT\t(definitions.h)"
+			],
+			[
+				"DIR",
+				"DIRECTION_DOWN\t(definitions.h)"
+			],
+			[
+				"rcube",
+				"rcube_sandetel\tabc"
+			],
+			[
+				"invalida",
+				"invalidate_request_token"
+			],
+			[
+				"all",
+				"all_extra_fields\tabc"
+			],
+			[
+				"search_res",
+				"search_result_line\tabc"
+			],
+			[
+				"searc",
+				"search_result_line\tabc"
+			],
+			[
+				"search",
+				"search_result_line\tabc"
+			],
+			[
+				"cache",
+				"cached_values\t(rcube_sandetel.php)"
+			],
+			[
+				"get_uid_fro",
+				"get_uid_from_uidshort\t(rcube_sandetel.php)"
+			],
+			[
+				"forbid",
+				"forbidden_styles\tabc"
+			],
+			[
+				"domains",
+				"domains_whitelist\tabc"
+			],
+			[
+				"domai",
+				"domains_whitelist\tabc"
+			],
+			[
+				"domain",
+				"domains_whitelist\t(avelsieve.php)"
+			],
+			[
+				"rcu",
+				"rcube_sandetel\tabc"
+			],
+			[
+				"wri",
+				"write_log\tabc"
+			],
+			[
+				"html",
+				"html_signature\tabc"
+			],
+			[
+				"sig",
+				"signature\tabc"
+			],
+			[
+				"str_rpe",
+				"str_replace"
+			],
+			[
+				"v3_contac",
+				"v3_contactgroup_id\tabc"
+			],
+			[
+				"v3_conta",
+				"v3_contactgroup\tabc"
+			],
+			[
+				"contactgrp",
+				"contactgroup_id\tabc"
+			],
+			[
+				"contactgroup",
+				"contactgroupmember\tabc"
+			],
+			[
+				"exis",
+				"existing_groups\tabc"
+			],
+			[
+				"roundcube",
+				"roundcubemail\tabc"
+			],
+			[
+				"round",
+				"roundcube\tabc"
+			],
+			[
+				"roudn",
+				"roundcube\tabc"
+			],
+			[
+				"mysqli",
+				"mysqli_query\tabc"
+			],
+			[
+				"resu",
+				"resultado\tabc"
+			],
+			[
+				"passca",
+				"pass_caducado\tabc"
+			],
+			[
+				"kill",
+				"kill_session\t(rcmail.php)"
+			],
+			[
+				"check",
+				"check_pass_caducado\tabc"
+			],
+			[
+				"auth_mth",
+				"auth_methods_supported\tabc"
+			],
+			[
+				"auth_methods",
+				"auth_methods_supported\tabc"
+			],
+			[
+				"janombreapellido",
+				"janombreapellidosarray\t(password.php)"
+			],
+			[
+				"wrti",
+				"write_log\tabc"
+			],
+			[
+				"ciphertext",
+				"ciphertext_dec\tabc"
+			],
+			[
+				"ciph",
+				"ciphertext_dec\tabc"
+			],
+			[
+				"home",
+				"homeDirectory\tabc"
+			],
+			[
+				"JA",
+				"JAwinFlag\tabc"
+			],
+			[
+				"employ",
+				"employeeNumber\tabc"
+			],
+			[
+				"user_em",
+				"user_email_address\tabc"
+			],
+			[
+				"transac",
+				"transaction_id\tabc"
+			],
+			[
+				"X",
+				"XPCOMUtils"
+			],
+			[
+				"DO",
+				"DOUBLE_WIDTH"
+			],
+			[
+				"addressboo",
+				"addressbook_export\t(export.inc)"
+			],
+			[
+				"bedework_rec",
+				"bedework_records_starting_with\t(simple_bedework_rest_client.php)"
+			],
+			[
+				"start",
+				"start_row"
+			],
+			[
+				"bedewo",
+				"bedework_client"
+			],
+			[
+				"allow",
+				"allow_report"
+			],
+			[
+				"bedew",
+				"bedework_client"
+			],
+			[
+				"bede",
+				"bedework_client"
+			],
+			[
+				"cookie",
+				"cookie_jar"
+			],
+			[
+				"curl",
+				"curl_setup"
+			],
+			[
+				"cooke",
+				"cookie_jar"
+			],
+			[
+				"coo",
+				"cookie_jar"
+			],
+			[
+				"current",
+				"current_rule"
+			],
+			[
+				"getg",
+				"get_group\t(list.inc)"
+			],
+			[
+				"rcmail",
+				"rcmail::write_log"
+			],
+			[
+				"grou",
+				"group_id"
+			],
+			[
+				"vcard_",
+				"vcard_filename"
+			],
+			[
+				"toa",
+				"total_entries"
+			],
+			[
+				"write",
+				"write_log"
+			],
+			[
+				"webdav_abook",
+				"webdav_abook_user_url"
+			],
+			[
+				"u",
+				"uid\t(rcube_webdav_addressbook.php)"
+			],
+			[
+				"webdav_aboo",
+				"webdav_abook_dir"
+			],
+			[
+				"sande",
+				"rcube_sandetel"
+			],
+			[
+				"uploadf",
+				"uploadform\t(app.js)"
+			],
+			[
+				"back",
+				"background-position"
+			],
+			[
+				"upload_pr",
+				"upload_progress_start\t(app.js)"
+			],
+			[
+				"upload_progres",
+				"upload_progress_time\t(app.js)"
+			],
+			[
+				"async",
+				"async_upload_form_consigna"
+			],
+			[
+				"prefsf",
+				"prefs_file"
+			],
+			[
+				"sqm",
+				"sqm_bookmarks_file"
+			],
+			[
+				"bookmar",
+				"bookmark_a"
+			],
+			[
+				"sq",
+				"sqm_bookmarks_file"
+			],
+			[
+				"pass",
+				"pass_caducado"
+			],
+			[
+				"permiso",
+				"permiso_organismo"
+			],
+			[
+				"labeled",
+				"labeledUri"
+			],
+			[
+				"nusoap",
+				"nusoap_client"
+			],
+			[
+				"inline",
+				"inline-block"
+			],
+			[
+				"num",
+				"numGroups"
+			],
+			[
+				"Hash",
+				"HashMap"
+			],
+			[
+				"dir",
+				"dirEscritura"
+			],
+			[
+				"modificaAtribu",
+				"modificaAtributoGUIA"
+			],
+			[
+				"modificaAtri",
+				"modificaAtributoGUIA"
+			],
+			[
+				"ExcepcionConex",
+				"ExcepcionConexionYaAbierta"
+			],
+			[
+				"codi",
+				"codides"
+			],
+			[
+				"marcaGUIa",
+				"marcaGUIAformateaSalida"
+			],
+			[
+				"ape",
+				"apellido2"
+			],
+			[
+				"usuariosEncontradosReservad",
+				"usuariosEncontradosReservadosDeMiTipo"
+			],
+			[
+				"usuariosEnco",
+				"usuariosEncontradosReservadosGUIA"
+			],
+			[
+				"usuariosEncontradosGUIA",
+				"usuariosEncontradosReservadosGUIA"
+			],
+			[
+				"usuarioEncontradosRe",
+				"usuariosEncontradosReservadosGUIA"
+			],
+			[
+				"codide",
+				"codide"
+			],
+			[
+				"trasladaUsuario",
+				"trasladaUsuarioLDAPdn"
+			],
+			[
+				"Baja",
+				"quitaEstadoBaja"
+			],
+			[
+				"usuariosEn",
+				"usuariosEncontradosReservadosGUIA"
+			],
+			[
+				"usuariosEncontradosReser",
+				"usuariosEncontradosReservadosGUIA"
+			],
+			[
+				"marcaUid",
+				"marcarUidGUIA"
+			],
+			[
+				"fadeout",
+				"fade_out_bucle"
+			],
+			[
+				"in",
+				"in_KeyPressed"
+			],
+			[
+				"use_pla",
+				"use_placement_x"
+			],
+			[
+				"music",
+				"music_play"
+			],
+			[
+				"PLA",
+				"PLAYER_VX_MIN"
+			],
+			[
+				"pobjs",
+				"pobjs_starter"
+			],
+			[
+				"ppu",
+				"ppu_wait_nmi"
+			],
+			[
+				"gp",
+				"gp_addr"
+			],
+			[
+				"PLAYER",
+				"PLAYER_VY_JUMP_MAX"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "/C/Users/na_th/Desktop/manager.txt",
+			"settings":
+			{
+				"buffer_size": 27327,
+				"encoding": "UTF-8",
+				"line_ending": "Windows",
+				"name": "Manager de un deporte inventao"
+			}
+		},
+		{
+			"file": "/C/Users/na_th/Desktop/manager-respuesta.txt",
+			"settings":
+			{
+				"buffer_size": 6981,
+				"encoding": "UTF-8",
+				"line_ending": "Windows",
+				"name": "Qué gustazo releer esto: el cubo de Podewr, la gal"
+			}
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 132.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"install",
+				"Package Control: Install Package"
+			],
+			[
+				"beauti",
+				"Beautify::Beautify File"
+			],
+			[
+				"mini",
+				"Minify::Default File Settings"
+			],
+			[
+				"format",
+				"Format: Javascript"
+			],
+			[
+				"boxy",
+				"Boxy Theme: Preferences"
+			],
+			[
+				"markdow",
+				"Set Syntax: Markdown Extended"
+			],
+			[
+				"remove ",
+				"Package Control: Remove Package"
+			],
+			[
+				"instal",
+				"Package Control: Install Package"
+			],
+			[
+				"ter",
+				"Terminal: Open"
+			],
+			[
+				"package",
+				"Package Control: Install Package"
+			],
+			[
+				"Package Control: ",
+				"Package Control: Install Package"
+			]
+		],
+		"width": 382.0
+	},
+	"console":
+	{
+		"height": 118.0,
+		"history":
+		[
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/D/Git/mk1v32"
+	],
+	"file_history":
+	[
+		"/C/Users/na_th/AppData/Local/Temp/7zO43ECACF6/enemies.h",
+		"/C/Users/na_th/AppData/Local/Temp/7zO43EDBFEB/main.c",
+		"/C/Users/na_th/AppData/Local/Temp/7zO43E18CBA/assets.h",
+		"/D/Git/mk1v3.100/src/dev/engine.h",
+		"/D/Git/mk1v3.100/src/dev/gb/printer.h",
+		"/D/OneDrive/Examine these Backups/Backup de H dospuno [19-abril-2004]/_Programación/incoming/_/NEWKMS/KMS1/working/MYQBLIB.BAS",
+		"/D/Git/mk1v4/src_zx/dev/loader.bas",
+		"/D/OneDrive/Examine these Backups/Backup de H dospuno [19-abril-2004]/_Programación/_/NewJ1/MYQBLIB.BAS",
+		"/D/OneDrive/Examine these Backups/Backup de H dospuno [19-abril-2004]/_Programación/Ls/MYQBLIB/MYQBLIB.BI",
+		"/D/OneDrive/Examine these Backups/Backup de H dospuno [19-abril-2004]/_Programación/Ls/MYQBLIB/MYQBLIB.MAP",
+		"/D/OneDrive/Examine these Backups/Backup de H dospuno [19-abril-2004]/_Programación/Ls/MYQBLIB/SOURCES/HISTORIA.DOC",
+		"/D/OneDrive/Examine these Backups/Backup de H dospuno [19-abril-2004]/_Programación/Ls/MYQBLIB/MYQBLIB.BAS",
+		"/D/OneDrive/Examine these Backups/Backup de H dospuno [19-abril-2004]/_Programación/Ls/JILL/MYQBLIB.BAS",
+		"/C/Users/na_th/AppData/Local/Temp/7zO043102AD/readme.txt",
+		"/D/OneDrive/Examine these Backups/Backup de H dospuno [19-abril-2004]/_Programación/Ls/MYQBLIB/SOURCES/GUION.TXT",
+		"/D/OneDrive/Examine these Backups/Backup de H dospuno [19-abril-2004]/_Programación/Ls/MYQBLIB/S1.BAS",
+		"/D/Git/saimazoom/lib/cpcrslib/cpc_InvalidateRect.asm",
+		"/D/Git/saimazoom/dev/engine.h",
+		"/D/Git/saimazoom/dev/menu.h",
+		"/D/Git/saimazoom/dev/numbers.h",
+		"/D/Git/saimazoom/dev/saimazoom.map",
+		"/D/Git/saimazoom/dev/init.h",
+		"/D/Git/saimazoom/dev/assets/ts.h",
+		"/D/git/saimazoom/dev/main.h",
+		"/D/git/saimazoom/dev/definitions.h",
+		"/D/git/saimazoom/dev/compile.bat",
+		"/D/git/saimazoom/dev/printer.h",
+		"/D/git/saimazoom/dev/persistence.h",
+		"/D/git/saimazoom/dev/init.h",
+		"/D/git/saimazoom/dev/system.h",
+		"/D/git/saimazoom/dev/engine.h",
+		"/D/git/saimazoom/dev/inventory.h",
+		"/D/git/saimazoom/dev/bitmaps.h",
+		"/D/git/saimazoom/dev/menu.h",
+		"/D/git/saimazoom/dev/saimazoom.c",
+		"/D/git/saimazoom/dev/saimazoom.map",
+		"/D/git/saimazoom/dev/objects.h",
+		"/D/git/saimazoom/dev/zx0.h",
+		"/D/temp/MC_WORK/mcp719/docs/README-MCP.TXT",
+		"/C/Users/jcastano/AppData/Local/Temp/7zOCD1AE9C9/SAIMZOOM.TXT",
+		"/D/git/saimazoom/dev/assets/mapa.h",
+		"/D/git/saimazoom/tests/mapAdjust.bas",
+		"/C/Users/jcastano/AppData/Local/Temp/7zOC39FD55A/MAPEADOR.CPP",
+		"/D/git/saimazoom/dev/assets/ssmaps.h",
+		"/D/git/saimazoom/tests/mapDeConvert.bas",
+		"/D/Proyectos/remote/selco/sftp-config.json",
+		"/D/git/saimazoom/tests/mavDeConvert.bas",
+		"/D/git/saimazoom/lib/cpcrslib/cpc_UpdTileTable.asm",
+		"/D/git/saimazoom/lib/cpcrslib/CPCconfig.def",
+		"/D/git/saimazoom/lib/cpcrslib/cpc_PutSpTileMap12x24CA.asm",
+		"/D/git/saimazoom/lib/cpcrslib/cpc_PutTrSp12x24TileMap2bGCA.asm",
+		"/C/Users/jcastano/Desktop/pikapika.txt",
+		"/D/git/saimazoom/dev/assets/ss.h",
+		"/D/git/saimazoom/dev/assets/map.h",
+		"/D/git/saimazoom/dev/wyz/wyz_player.h",
+		"/D/git/saimazoom/utils/mkts_om.bas",
+		"/D/git/saimazoom/dev/assets/ts.h",
+		"/C/Users/jcastano/AppData/Local/Temp/7zO434E2316/TEMPO.CPP",
+		"/D/git/MK1_Pestecera/src/dev/printer.h",
+		"/C/Users/jcastano/Downloads/SAIMZOOM.TXT",
+		"/C/Users/jcastano/AppData/Local/Temp/7zO4349F01A/MAPEADOR.CPP",
+		"/D/git/saimazoom/dev/update.h",
+		"/D/git/saimazoom/dev/numbers.h",
+		"/D/Proyectos/2023/20230207 - Fix redirección a cambio de password en Webmail con passCaducado/password.php",
+		"/D/Proyectos/2022/20221102c - Actualización leyenda cambio de password (Webmail)/password.php",
+		"/D/Proyectos/2023/20230216 - Reparación cambio de contraseña Webmail - URGENTE/instrucciones.txt",
+		"/D/Proyectos/CIs.txt",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/plugins/ldap_search/ldap_search.php",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/program/lib/Roundcube/rcube.php",
+		"/D/temp/delete_me/games_zx/helmet/diario.md",
+		"/D/git/MK1v4/wip/helmet.md",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/plugins/password/password.php",
+		"/D/Proyectos/2023/20230207 - Fix redirección a cambio de password en Webmail con passCaducado/instrucciones.txt",
+		"/D/Proyectos/2022/20220609a - Mejoras Webmail (ldap_search, MariaDB 10.5, etc)/instrucciones.txt",
+		"/C/Users/jcastano/Downloads/instrucciones (3).txt",
+		"/C/Users/jcastano/Downloads/password.php",
+		"/C/Users/jcastano/Downloads/pepsi2.bas",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/program/include/rcmail.php",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/index.php",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/program/lib/Roundcube/rcube_sandetel.php",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/program/lib/Roundcube/rcube_plugin_api.php",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/plugins/sandetel_login/sandetel_login.php",
+		"/D/Proyectos/2023/20230208 - Fix acceso a Webmail mediante SSOWeb de usuarios desautorizados/instrucciones.txt",
+		"/D/Proyectos/2022/20220916a - Reserva de Recursos 1.27.0.0/instrucciones.txt",
+		"/D/cosas/pepsi/pepsi2.bas",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/program/include/rcmail_output_html.php",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/program/js/app.js",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/plugins/_deactivated/markasjunk/markasjunk.php",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/skins/larry_sandetel/templates/login.html",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/program/include/iniset.php",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/simplesamlphp/lib/SimpleSAML/Memcache.php",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/plugins/consigna_attachments/consigna_attachments.js",
+		"/D/Proyectos/2022/20221214a - Desactivar rc_smime en Webmail/instrucciones.txt",
+		"/D/cosas/CPCbasic3/test1.bas",
+		"/D/Proyectos/remote/desowncl02/consultas_usuarios.md",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/simplesamlphp/config/authsources.php",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/simplesamlphp/config/config.php",
+		"/D/Proyectos/2023/20230132 - Reserva de Recursos v1.31.0.0 - Migración organismos Sync/instrucciones.txt",
+		"/C/Users/jcastano/Downloads/oc_accounts.csv",
+		"/D/Proyectos/2023/20230132 - Reserva de Recursos v1.31.0.0 - Migración organismos Sync/act-rr--20230102a/tpl/login.tpl",
+		"/D/git/nes_work/GoddessR/utils/colsmapper.bas",
+		"/C/Users/jcastano/Desktop/[SPAM]Correo marcado como basura que no lo es - Sonia Maria Torres Llanera (sonia.torres@juntadeandalucia.es) - 2023-01-31 0948.eml",
+		"/C/Users/jcastano/AppData/Local/Temp/7zO4F08B214/Nota sobre seriales animados.txt",
+		"/C/Users/jcastano/Downloads/pepsi.bas",
+		"/D/cosas/CPCbasic3/pepsi1.bas",
+		"/D/Proyectos/2022/20221125a - Webmail - arreglo adjuntos/rcube.php",
+		"/D/Proyectos/2022/20221125a - Webmail - arreglo adjuntos/instrucciones.txt",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/agendaapi/ldap.php",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/agendaapi/get_all/index.php",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/program/include/bc.php",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/program/lib/Roundcube/rcube_string_replacer.php",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/program/lib/Roundcube/rcube_washtml.php",
+		"/D/temp/MC_WORK/b1.9/src/minecraft/net/minecraft/src/Item.java",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/program/lib/Roundcube/rcube_utils.php",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/config/defaults.inc.php",
+		"/D/Proyectos/2022/20221102c - Actualización leyenda cambio de password (Webmail)/instrucciones.txt",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/plugins/ldap_search/localization/es_ES.inc",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/plugins/ldap_search/ldap_search.js",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/plugins/ldap_search/client.js",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/plugins/avelsieve/avelsieve.php",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/program/lib/Roundcube/html.php",
+		"/D/Proyectos/2022/20220527a - Reserva de Recursos 1.25.0.0/instrucciones.txt",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/plugins/password/password_strength.js",
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/plugins/password/password.min.js",
+		"/C/Users/jcastano/AppData/Local/Temp/7zOCE5A4B81/org.multimc.jarmod.04980a57-9601-4a95-9981-92c6ddfa147a.json",
+		"/C/Users/jcastano/AppData/Local/Temp/7zOCE5B5561/mmc-pack.json",
+		"/D/git/MK1_Pestecera/src/dev/wyz_player.h",
+		"/D/Proyectos/remote/desccobuz05/diario.md"
+	],
+	"find":
+	{
+		"height": 30.0
+	},
+	"find_in_files":
+	{
+		"height": 134.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": true,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 1,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "/C/Users/na_th/Desktop/manager.txt",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 27327,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								27327
+							]
+						],
+						"settings":
+						{
+							"auto_name": "Manager de un deporte inventao",
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 8895.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "/C/Users/na_th/Desktop/manager-respuesta.txt",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 6981,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								6495,
+								6495
+							]
+						],
+						"settings":
+						{
+							"auto_name": "Qué gustazo releer esto: el cubo de Podewr, la gal",
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 30.0
+	},
+	"input":
+	{
+		"height": 46.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "",
+	"project": "MK1_v32.sublime-project",
+	"replace":
+	{
+		"height": 56.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 500.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"",
+				"D:\\Proyectos\\remote\\desres01.sublime-project"
+			]
+		],
+		"width": 380.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 250.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

@@ -52,7 +52,9 @@ Medidas:
   caen en la fila de caracteres que el haz está pintando en ese momento (riesgo
   de tearing).
 - `-prof`, `-dump`, `-pokeat`, `-every`, como en `zxheadless` (hasta 4096
-  `-dump`).
+  `-dump`). Con `-profrange F1-F2`, `-prof` solo cuenta esos frames, en NOPs
+  y sin el tiempo en `HALT`; `-profout fichero` escribe el histograma entero
+  (`dir nops`) para sumarlo por funciones con el `.map` (`tools/profsum.py`).
 - `-beam`: las capturas enseñan cada línea tal como la pintó el haz (se
   copia de memoria al empezar la línea) en vez de la memoria de pantalla al
   final del frame. Sirve para ver el tearing de un render que compite con el

@@ -1,0 +1,3255 @@
+diff --git a/src/dev/churromain.c b/src/dev/churromain.c
+index 4db6a03..00eb987 100644
+--- a/src/dev/churromain.c
++++ b/src/dev/churromain.c
+@@ -10,7 +10,7 @@
+ #define MAX_ENEMS 3
+ #define MAX_FLAGS 32
+ 
+-#if defined PLAYER_KILLS_ENEMIES || defined PLAYER_CAN_FIRE
++#if defined PLAYER_KILLS_ENEMIES || defined PLAYER_CAN_FIRE || defined ENEMIES_CAN_DIE
+ 	#define ENEMIES_MAY_DIE
+ #endif
+ 
+diff --git a/src/dev/config.h b/src/dev/config.h
+index ca138d4..05ec922 100644
+--- a/src/dev/config.h
++++ b/src/dev/config.h
+@@ -31,6 +31,7 @@
+ //#define PLAYER_FIN_X				99		//
+ //#define PLAYER_FIN_Y				99		// Player tile coordinates to finish game
+ #define PLAYER_NUM_OBJETOS			26		// Objects to get to finish game
++//#define WIN_ON_KILLS				20		// Win when player.killed reaches this (ANDed with the above if defined)
+ #define PLAYER_LIFE 				99		// Max and starting life gauge.
+ #define PLAYER_REFILL				10		// Life recharge
+ 
+@@ -99,9 +100,11 @@
+ // ----------
+ 
+ #define PLAYER_HAS_JUMP 					// If defined, player is able to jump.
++//#define JUMP_ON_UP_ONLY 					// Jump with UP only (as with PLAYER_CAN_FIRE), leaving FIRE for custom.h
+ //#define PLAYER_HAS_JETPAC 				// If defined, player can thrust a vertical jetpac
+ //#define PLAYER_KILLS_ENEMIES		  		// If defined, stepping on enemies kills them
+ //#define PLAYER_MIN_KILLABLE 		3		// Only kill enemies with id >= PLAYER_MIN_KILLABLE
++//#define ENEMIES_CAN_DIE					// enems_kill () + KILLED counter without PLAYER_KILLS_ENEMIES (kill from custom.h)
+ #define SIMPLE_PLATFORMS 					// No type 4 tiles or no type 8s over type 4s.
+ //#define AVOID_PLATFORM_HOP 				// Only works if SIMPLE_PLATFORMS is DISABLED!
+ //#define JUMP_DOWN_PLATFORM 				// Use down on type 4s to jump down.
+@@ -116,6 +119,13 @@
+ //#define PLAYER_CUSTOM_BG_HIT 				// Implement your own bounce.
+ //#define ENABLE_CUSTOM_HOTSPOTS 			// Add your own hotspots!
+ //#define ENABLE_CUSTOM_FLICK 				// define flick_* in custom_flicks.h, return 0 to override flick
++//#define ENABLE_CUSTOM_SPRITES 			// custom_sprites_create/render/hide () for your own sprites
++//#define NUMBLOCKS 				40		// (ZX) splib2 blocks: raise 10 per 16x16 / 5 per 8x8 custom sprite
++//#define MAX_CUSTOM_SW_SPRITES		0		// (CPC) sprite slots for you, from SP_CUSTOM_BASE
++//#define ENABLE_CUSTOM_GAME_START 			// custom_game_start () when a game starts
++//#define ENABLE_CUSTOM_SCREEN_ENTER 		// custom_screen_enter () after a screen is set up
++//#define ENABLE_CUSTOM_PRE_MOVE 			// custom_pre_move () every frame: keys read, enemies done, player not moved yet
++//#define ENABLE_CUSTOM_LEVELS 			// custom_level_setup () before each game/level, custom_level_won () to go on
+ 
+ //#define CUSTOM_SPRITE_CELLS 				// Use your own sprite cell luts from custom_sprite_cells.h
+ //#define ENEMS_CELL_OFFSET 		8 		// If the above is defined, this is the 1st cell for the enemies.
+@@ -148,10 +158,19 @@
+ 
+ // Graphic FX, uncomment which applies...
+ 
++// (CPC) build with -DCPC_DIRTY for the renderer without superbuffer (cpc_dirty.h)
++//#define CHR_MAPPED_TILES 				// tile t = 4 chars from tile_map [t*8..] (mkts_om tile maps: attr, char x 4; CPC_DIRTY: 4 patterns)
++//#define TILE_ATTR_MASK 				// (ZX, CHR_MAPPED_TILES) tiles drawn with (attr & tile_attr_and) | tile_attr_or
++//#define VARIABLE_MAP_W 				// map width per level in map_w; MAP_W x MAP_H only sizes the arrays
++//#define DIGIT_BASE 				16		// (ZX) character of '0' for the HUD numbers
++//#define GAME_OVER_TEXT 			my_text	// char array (codes + 32, 0-ended) for game over; default "GAME OVER!"
+ //#define USE_AUTO_SHADOWS				// Automatic shadows made of darker attributes
+ //#define USE_AUTO_TILE_SHADOWS			// Automatic shadows using specially defined tiles 32-47.
+ //#define UNPACKED_MAP					// Full, uncompressed maps. Shadows settings are ignored.
+ //#define RLE_MAP 					53 	// Use RLE compression (values 44, 54, 62; see docs)
++//#define MAPPED_TILESETS 				// RLE_MAP: tile = tileset_mappings [tile] (pointer to 16 bytes you set)
++//#define CUSTOM_RENDERER 				// RLE_MAP: custom_renderer () may change each tile before it is drawn
++//#define CUSTOM_CLEAR_TILE 			// custom_clear_tile () sets _t, _n: what an opened lock leaves (default tile 0)
+ //#define NO_MASKS		sp_OR_SPRITE 	// Sprites are rendered using OR instead of masks.
+ //#define PLAYER_ALTERNATE_ANIMATION	// If defined, animation is 1,2,3,1,2,3... 
+ #define NO_ALT_BG 						// No subs 0 for 19 at random
+diff --git a/src/dev/cpc.h b/src/dev/cpc.h
+index eb417a9..e63e0fb 100644
+--- a/src/dev/cpc.h
++++ b/src/dev/cpc.h
+@@ -9,11 +9,15 @@
+ #asm
+ 	// Imports
+ 
++	#ifndef CPC_DIRTY
+ 		XREF _nametable
++	#endif
+ 		XREF tabla_teclas
+ 		LIB cpc_KeysData
++	#ifndef CPC_DIRTY
+ 		LIB cpc_UpdTileTable
+ 		LIB cpc_InvalidateRect
++	#endif
+ 		LIB cpc_TestKeyboard
+ 
+ 	// Exports
+@@ -39,7 +43,9 @@ unsigned char wyz_signal;
+ #if !defined AUTO_SPLIT || defined NO_PAL_MAP
+ 	#include "cpc/pal.h"
+ #endif
+-#include "cpc/spriteset_mappings.h"
++#ifndef CPC_DIRTY
++	#include "cpc/spriteset_mappings.h"
++#endif
+ 
+ #include "wyz/efectos.h"
+ #include "wyz/instrumentos.h"
+@@ -101,7 +107,7 @@ unsigned char wyz_signal;
+ #define SP_BULLETS_BASE 	(SP_ENEMS_BASE + MAX_ENEMS)
+ #define SP_SWORD_BASE 		(SP_BULLETS_BASE + MAX_BULLETS)
+ #define SP_COCOS_BASE 		(SP_SWORD_BASE + SWORD_SW_SPRITE_ON)
+-#define SP_CUSTOM_BASE		(SP_COCOS_BASE + MAX_ENEMS)
++#define SP_CUSTOM_BASE		(SP_SWORD_BASE + SWORD_SW_SPRITE_ON)	// No cocos in v3.2: SW_SPRITES_ALL reserves no slots for them
+ 
+ #ifdef MODE_1
+ 	// P_0 P_1 P_2 P_3
+@@ -121,6 +127,7 @@ unsigned char wyz_signal;
+ 								|((BLACK_PEN&1)<<6)|((BLACK_PEN&1)<<7)
+ #endif
+ 
++#ifndef CPC_DIRTY
+ extern unsigned char trpixlutc [0];
+ 
+ #asm
+@@ -129,6 +136,7 @@ extern unsigned char trpixlutc [0];
+ 	._trpixlutc
+ 		BINARY "trpixlutc.bin"
+ #endasm
++#endif
+ 
+ #define BORDER(b) 				cpc_Border((b))
+ 
+@@ -232,6 +240,13 @@ typedef struct sprite {
+ SPR sp_sw [SW_SPRITES_ALL] 					@ BASE_SPRITES;
+ unsigned char *spr_next [SW_SPRITES_ALL] 	@ BASE_SPRITES + (SW_SPRITES_ALL)*16;
+ 
++#ifdef CPC_DIRTY
++	// No superbuffer: the dirty-cell renderer (cpc_dirty.h)
++	#define cpc_ShowTileMap(a)
++	unsigned char cd_rx, cd_ry, cd_sx, cd_sy;
++	#include "cpc_dirty.h"
++#endif
++
+ #ifndef ENEMS_CELL_OFFSET
+ 	#define ENEMS_CELL_OFFSET 8
+ #endif
+@@ -334,6 +349,11 @@ void system_init (void) {
+ 			push bc
+ 			push ix
+ 			push iy 
++
++		#ifdef CPC_DIRTY
++				ld  hl, _cd_intc 		// beam clock for cpc_dirty.h
++				inc (hl)
++		#endif
+ 			
+ 			ld  a, (isr_c1)
+ 			inc a
+@@ -411,6 +431,7 @@ void system_init (void) {
+ 
+ 	cpc_Border (0x54);
+ 	
++	#ifndef CPC_DIRTY
+ 	// Decompress LUT in place
+ 
+ 	//unpack ((unsigned int) (trpixlutc), BASE_LUT);
+@@ -419,9 +440,10 @@ void system_init (void) {
+ 			ld  de, BASE_LUT
+ 			call depack
+ 	#endasm
++	#endif
+ 
+ 	// Make M! rotation luts
+-	#if defined MODE_1 && !defined NO_MASKS
++	#if defined MODE_1 && !defined NO_MASKS && !defined CPC_DIRTY
+ 		cpc_MakeM1RotationLUTs ();
+ 	#endif
+ 
+@@ -480,6 +502,7 @@ void system_init (void) {
+ 			out   (c), c
+ 	#endasm
+ 
++#ifndef CPC_DIRTY
+ 	// Sprite creation
+ 
+ 	// Player 
+@@ -576,6 +599,7 @@ void system_init (void) {
+ 		#endasm
+ 	#endif		
+ 
++#endif
+ 	// Turn off all sprites
+ 
+ 	#asm
+@@ -593,9 +617,23 @@ void system_init (void) {
+ 			add ix, de
+ 			djnz sp_sw_init_turnoff_loop
+ 	#endasm	
++
++	#ifdef CPC_DIRTY
++		for (cd_i = 0; cd_i < SW_SPRITES_ALL; cd_i ++) {
++			sp_sw [cd_i].sp0 = sp_sw [cd_i].sp1 = (int) spr_empty;
++			sp_sw [cd_i].cox = sp_sw [cd_i].coy = 0;
++		}
++		cd_init ();
++	#endif
++
++	#ifdef ENABLE_CUSTOM_SPRITES
++		// Your sprites live in sp_sw [SP_CUSTOM_BASE .. SP_CUSTOM_BASE + MAX_CUSTOM_SW_SPRITES - 1]
++		custom_sprites_create ();
++	#endif
+ }
+ 
+ void _tile_address (void) {
++#ifndef CPC_DIRTY
+ 	#asm
+ 			ld  a, (__y)
+ 
+@@ -623,6 +661,7 @@ void _tile_address (void) {
+ 
+ 			; DE = buffer address
+ 	#endasm
++#endif
+ }
+ 
+ #ifdef USE_AUTO_TILE_SHADOWS
+@@ -640,6 +679,24 @@ void _tile_address (void) {
+ #endif
+ 
+ void draw_coloured_tile (unsigned char x, unsigned char y, unsigned char t) {
++#ifdef CPC_DIRTY
++	#asm
++			ld  hl, 6
++			add hl, sp
++			ld  a, (hl)
++			ld  (__x), a
++			dec hl
++			dec hl
++			ld  a, (hl)
++			ld  (__y), a
++			dec hl
++			dec hl
++			ld  a, (hl)
++			ld  (__t), a
++		._draw_coloured_tile_do
++			jp  _cd_draw_tile
++	#endasm
++#else
+ 	//_x = x; _y = y; _t = t;
+ 	#asm
+ 			; Copy params for speed & size
+@@ -994,6 +1051,7 @@ void draw_coloured_tile (unsigned char x, unsigned char y, unsigned char t) {
+ 			inc e
+ 			call cpc_UpdTileTable				
+ 	#endasm
++#endif
+ }
+ 
+ void set_map_tile (unsigned char x, unsigned char y, unsigned char t, unsigned char n) {
+@@ -1056,6 +1114,9 @@ void set_map_tile (unsigned char x, unsigned char y, unsigned char t, unsigned c
+ }
+ 
+ void invalidate_viewport (void) {
++#ifdef CPC_DIRTY
++	cd_invalidate_viewport ();
++#else
+ 	#asm
+ 			ld  B, VIEWPORT_Y
+ 			ld  C, VIEWPORT_X
+@@ -1063,9 +1124,42 @@ void invalidate_viewport (void) {
+ 			ld  E, VIEWPORT_X+29
+ 			call cpc_InvalidateRect
+ 	#endasm
++#endif
+ }
+ 
+ void draw_2_digits (unsigned char x, unsigned char y, unsigned char value) {
++#ifdef CPC_DIRTY
++	#asm
++			ld  hl, 6
++			add hl, sp
++			ld  a, (hl)
++			ld  (__x), a
++			dec hl
++			dec hl
++			ld  a, (hl)
++			ld  (__y), a
++			dec hl
++			dec hl
++			ld  a, (hl)
++		.draw_2_digits_shortcut
++			ld  d, 0
++			ld  e, a
++			ld  hl, 10
++			call l_div_u 	// HL = division, DE = rest
++			ld  a, e
++			add DIGIT_BASE
++			ld  (__n), a 	// _n = units
++			ld  a, l
++			add DIGIT_BASE
++			ld  (__t), a 	// _t = tens
++			call _cd_put_char
++			ld  hl, __x
++			inc (hl)
++			ld  a, (__n)
++			ld  (__t), a
++			call _cd_put_char
++	#endasm
++#else
+ 	#asm
+ 			ld  hl, 6
+ 			add hl, sp
+@@ -1110,9 +1204,18 @@ void draw_2_digits (unsigned char x, unsigned char y, unsigned char value) {
+ 			inc e
+ 			call cpc_UpdTileTable
+ 	#endasm
++#endif
+ }
+ 
+ void draw_text (unsigned char x, unsigned char y, char *s) {
++#ifdef CPC_DIRTY
++	_x = x; _y = y; gp_gen = (unsigned char *) s;
++	while (*gp_gen) {
++		_t = *gp_gen - 32;
++		cd_char ();
++		_x ++; gp_gen ++;
++	}
++#else
+ 	#asm
+ 			ld  hl, 6
+ 			add hl, sp
+@@ -1188,6 +1291,7 @@ void draw_text (unsigned char x, unsigned char y, char *s) {
+ 	
+ 
+ 	#endasm
++#endif
+ }
+ 
+ void pad_read (void) {
+@@ -1262,13 +1366,28 @@ void step () {
+ }
+ 
+ void unpack_screen (void) {
++#ifdef CPC_DIRTY
++	#asm
++			jp  _cd_unpack_screen 		// HL = source
++	#endasm
++#else
+ 	#asm
+ 			ld  de, BASE_SUPERBUFF
+ 			call depack 
+ 	#endasm 
++#endif
+ }
+ 
+-void draw_rectangle (void) {	
++void draw_rectangle (void) {
++#ifdef CPC_DIRTY
++	// (cd_char uses rda, rdb: keep _x, _y elsewhere)
++	cd_sx = _x; cd_sy = _y;
++	for (cd_ry = cd_sy; cd_ry <= _y2; cd_ry ++) for (cd_rx = cd_sx; cd_rx <= _x2; cd_rx ++) {
++		_x = cd_rx; _y = cd_ry; _t = 0;
++		cd_char ();
++	}
++	_x = cd_sx; _y = cd_sy;
++#else	
+ 	#asm
+ 			call __tile_address		// DE = buffer address
+ 
+@@ -1323,6 +1442,7 @@ void draw_rectangle (void) {
+ 
+ 			call cpc_InvalidateRect
+ 	#endasm
++#endif
+ }
+ 
+ void render_this_enemy (void) {
+@@ -1466,6 +1586,10 @@ void render_all_sprites (void) {
+ 			bspr_it ++;
+ 		}
+ 	#endif
++
++	#ifdef ENABLE_CUSTOM_SPRITES
++		custom_sprites_render ();
++	#endif
+ }
+ 
+ void saca_a_todo_el_mundo_de_aqui (void) {
+@@ -1484,6 +1608,10 @@ void saca_a_todo_el_mundo_de_aqui (void) {
+ 	#endasm
+ 
+ 	// Old version is crap
++
++	#ifdef ENABLE_CUSTOM_SPRITES
++		custom_sprites_hide ();
++	#endif
+ }
+ 
+ // cpc_UpdateNow () - Updates the screen.
+@@ -1492,6 +1620,9 @@ void saca_a_todo_el_mundo_de_aqui (void) {
+ // if you write your code by hand ... 
+ 
+ void cpc_UpdateNow (unsigned char sprites) {
++#ifdef CPC_DIRTY
++	cd_update (sprites);
++#else
+ 	
+ 	if (sprites) {
+ 		#asm
+@@ -1648,6 +1779,7 @@ void cpc_UpdateNow (unsigned char sprites) {
+ 			call cpc_ShowTouchedTiles
+ 			call cpc_ResetTouchedTiles
+ 	#endasm
++#endif
+ }
+ 
+ void __FASTCALL__ cpc_HardPause (unsigned char n) {
+@@ -1702,6 +1834,7 @@ void __FASTCALL__ enems_en_an_calc (unsigned char n) {
+ 			add hl, de 			// HL ->en_an_base_frame [enit]
+ 			ld  (hl), a 		// en_an_base_frame [enit] = (n << 1) + ENEMS_OFFSET
+ 
++		#ifndef CPC_DIRTY
+ 			// sp_sw struct is 16 bytes wide. This is easy
+ 			// 0   2   4      6   7   8  9  10 11 12      14
+ 			// sp0 sp1 coord0 cox coy cx cy ox oy invfunc updfunc
+@@ -1745,6 +1878,7 @@ void __FASTCALL__ enems_en_an_calc (unsigned char n) {
+ 			ld  (ix + 14), e 
+ 			ld  (ix + 15), d 	// Write 16 bits			
+ 		
++		#endif
+ 			jp _enems_calc_frame
+ 	#endasm
+ }
+diff --git a/src/dev/cpc_dirty.h b/src/dev/cpc_dirty.h
+new file mode 100644
+index 0000000..4276186
+--- /dev/null
++++ b/src/dev/cpc_dirty.h
+@@ -0,0 +1,1186 @@
++// MTE MK1 v3.2
++// Copyleft 2011, 2026 by The Mojon Twins
++
++// cpc_dirty.h - CPC backend without superbuffer (CPC_DIRTY)
++//
++// MODE_1 (4 pens, shared by tiles and sprites): sprites are 16x16 (4 bytes x
++// 16 lines) with pen 0 transparent, as cpcrslib does it: no mask in the
++// graphics, the cache keeps an AND mask (from CD_MLUT, pen 0 = keep the
++// background) next to each byte. Pixel aligned (4 shifts). The cache is in
++// byte columns (5 x 16 lines x mask + data = 160 bytes), so it depends on
++// the frame and the shift only, not on which byte of a cell the sprite
++// starts at: moving 4 pixels doesn't rebuild it. The rest below (cells,
++// beam race, marking) is the same; the differences are marked MODE_1.
++// Memory: CD_CACHE B000-B4FF, CD_SPRT B500, CD_MLUT B600 (256 masks),
++// CD_DIRTY B700-B957, free from B958.
++//
++// Mode 0, split palette: pen = bg * 4 + spr. Background patterns use pen bits
++// 2-3 (byte mask 0x33), sprites pen bits 0-1 (0xCC) and are ORed, unmasked.
++// The viewport (30 x 20 char cells of 2 bytes x 8 lines) lives in CD_TMAP as
++// pattern numbers. Tiles and sprites mark the cells they touch; cd_update ()
++// rebuilds every dirty cell from its pattern plus the sprites over it, row by
++// row from the top, racing behind the beam so a row changes between two
++// frames, and writes it to the screen in one go: no superbuffer, no flicker.
++//
++// Sprites: sp_sw [] as in cpc.h (cx in mode 0 pixels, cy in lines, sp0 the
++// frame: 4 bytes x 16 lines, sprite pens only; spr_empty = nothing). Each one
++// has a 96 byte cache in cell-column order (3 columns x 16 lines x 2 bytes)
++// that is rebuilt when its frame, byte parity or half-byte shift changes.
++//
++// Memory (the 12K the superbuffer used):
++//   9000 CD_PAT      256 patterns x 16 bytes (2 bytes x 8 lines)
++//   A000 CD_ROWBUF   30 cells, one every 32 bytes (the row being composed)
++//   A400 CD_BUCKET   20 x 32: dirty columns of each row, $FF sentinel
++//   A700 CD_ROWD     20 per-row dirty counts
++//   A800 CD_ROWINT   20: interrupts after the 3rd one of a frame by which the
++//                    beam has drawn row r
++//   A900 CD_ROWSN    20: sprites crossing row r
++//   AA00 CD_ROWSPR   20 x 8: low bytes of their CD_SPRT records
++//   AB00 CD_ROWTAB   20 x 4: TMAP + r*30 (word), screen address of row r (word)
++//   AB80 ...         variables
++//   AC00 CD_TMAP     30 x 20 pattern numbers
++//   B000 CD_CACHE    8 x 96: sprite caches (columns 32-aligned)
++//   B300 CD_SPRT     8 x 10: x(byte) y cache(2) c0 c1 r0 r1 shift flags
++//   B400 CD_DIRTY    30 x 20 generation stamps (== CD_GEN: dirty)
++//   B658-BFFF        free for the game
++
++#define CD_PAT 		0x9000
++#define CD_ROWBUF 	0xA000
++#define CD_BUCKET 	0xA400
++#define CD_ROWD 	0xA700
++#define CD_ROWINT 	0xA800
++#define CD_ROWSN 	0xA900
++#define CD_ROWSPR 	0xAA00
++#define CD_ROWTAB 	0xAB00
++#define CD_CUR_R 	0xAB80
++#define CD_FL_BK 	0xAB82
++#define CD_ROW_D 	0xAB84
++#define CD_ROW_SCR 	0xAB86
++#define CD_SAVESP 	0xAB88
++#define CD_OR_K 	0xAB8A
++#define CD_OR_3COL 	0xAB8B
++#define CD_OR_ENTRY 0xAB8C
++#define CD_MR_R 	0xAB8E
++#define CD_GEN 		0xAB8F
++#define CD_INTC0 	0xAB90
++#define CD_FULLREC 	0xAB98
++#define CD_CELLREC 	0xABA4
++#define CD_TMAP 	0xAC00
++#define CD_CACHE 	0xB000
++#ifdef MODE_1
++	#define CD_CSIZE 	160
++	#define CD_SPRT 	0xB500
++	#define CD_MLUT 	0xB600
++	#define CD_DIRTY 	0xB700
++	#define CD_FREE 	0xB958
++#else
++	#define CD_CSIZE 	96
++	#define CD_SPRT 	0xB300
++	#define CD_DIRTY 	0xB400
++	#define CD_FREE 	0xB658
++#endif
++#define CD_TMP 		0xABB0
++
++// MODE_1: pattern 0 must be all BLACK_PEN (the flush fills those cells with
++// this, mode 0 with 0). Pen bit 0 is in the high nibble, bit 1 in the low.
++#if BLACK_PEN == 1
++	#define CD_BLACK_WORD 0xF0F0
++#elif BLACK_PEN == 2
++	#define CD_BLACK_WORD 0x0F0F
++#elif BLACK_PEN == 3
++	#define CD_BLACK_WORD 0xFFFF
++#else
++	#define CD_BLACK_WORD 0
++#endif
++
++#define CD_NSPR 	SW_SPRITES_ALL
++
++extern unsigned char cd_patterns_c [];
++#asm
++	._cd_patterns_c
++		BINARY "cpc/patterns.zx0"
++#endasm
++
++unsigned char cd_intc;
++unsigned char *cd_pal_bg, *cd_pal_spr;
++
++// cd_pal_bg and cd_pal_spr are 16-entry hardware ink tables (mkts_om mode=pals):
++// pen p = bg * 4 + s shows cd_pal_spr [s] if s, else cd_pal_bg [bg * 4] (so a
++// pal_cnvtilesN.png gives the background inks and pal_cnvspr.png the sprite
++// ones). The border gets cd_pal_bg [0].
++#ifdef MODE_1
++// MODE_1: cd_pal_bg is the 4 hardware inks of pens 0-3 (mkts_om mode=pals of
++// a 4 colour png); the border gets pen 0's. cd_pal_spr is not used.
++void cd_set_palette (void) {
++	#asm
++			ld  hl, (_cd_pal_bg)
++			ld  bc, 0x7F00
++			ld  e, 0
++		.cd_sp_loop1
++			ld  a, (hl)
++			inc hl
++			or  0x40
++			out (c), e
++			out (c), a
++			inc e
++			ld  a, e
++			cp  4
++			jr  nz, cd_sp_loop1
++			ld  hl, (_cd_pal_bg)
++			ld  a, (hl)
++			or  0x40
++			ld  e, 16
++			out (c), e
++			out (c), a
++	#endasm
++}
++#else
++void cd_set_palette (void) {
++	#asm
++			ld  e, 0
++		.cd_sp_loop
++			ld  a, e
++			and 3
++			jr  z, cd_sp_bg
++			ld  hl, (_cd_pal_spr)
++			jr  cd_sp_get
++		.cd_sp_bg
++			ld  a, e
++			ld  hl, (_cd_pal_bg)
++		.cd_sp_get
++			add a, l
++			ld  l, a
++			jr  nc, cd_sp_nc
++			inc h
++		.cd_sp_nc
++			ld  a, (hl)
++			or  0x40
++			ld  bc, 0x7F00
++			out (c), e
++			out (c), a
++			inc e
++			ld  a, e
++			cp  16
++			jr  nz, cd_sp_loop
++			ld  hl, (_cd_pal_bg)
++			ld  a, (hl)
++			or  0x40
++			ld  c, 16
++			out (c), c
++			out (c), a
++	#endasm
++}
++#endif
++unsigned char cd_i, cd_vis, cd_xb, cd_s, cd_ph;
++unsigned char *cd_sp0, *cd_cache_dst;
++unsigned char *cd_key_sp [CD_NSPR];
++unsigned char cd_key_ph [CD_NSPR];
++signed int cd_px;
++unsigned char cd_py;
++SPR *cd_spp;
++unsigned char *cd_rec;
++
++// ----------------------------------------------------------------------------
++// Init: tables, patterns, empty state
++
++void cd_init (void) {
++	#asm
++			// patterns
++			ld  hl, _cd_patterns_c
++			ld  de, CD_PAT
++			call depack
++
++			// clear A000 to CD_FREE: buffers, counts, map, stamps (what is
++			// above, the game's, is kept)
++			ld  hl, 0xA000
++			ld  de, 0xA001
++			ld  bc, CD_FREE - 0xA001
++			xor a
++			ld  (hl), a
++			ldir
++
++			// ROWTAB: TMAP + r*30, 0xC000 + (VIEWPORT_Y + r) * 64 + VIEWPORT_X * 2
++			ld  ix, CD_ROWTAB
++			ld  hl, CD_TMAP
++			ld  de, 0xC000 + VIEWPORT_Y * 64 + VIEWPORT_X * 2
++			ld  b, 20
++		.cd_init_rowtab
++			ld  (ix+0), l
++			ld  (ix+1), h
++			ld  (ix+2), e
++			ld  (ix+3), d
++			push bc
++			ld  bc, 30
++			add hl, bc
++			ex  de, hl
++			ld  bc, 64
++			add hl, bc
++			ex  de, hl
++			pop bc
++			inc ix
++			inc ix
++			inc ix
++			inc ix
++			djnz cd_init_rowtab
++
++			// sprite records: caches
++			ld  ix, CD_SPRT
++			ld  hl, CD_CACHE
++			ld  de, CD_CSIZE
++			ld  b, CD_NSPR
++		.cd_init_sprt
++			ld  (ix+2), l
++			ld  (ix+3), h
++			add hl, de
++			push de
++			ld  de, 10
++			add ix, de
++			pop de
++			djnz cd_init_sprt
++
++		#ifdef MODE_1
++			// CD_MLUT [b] = AND mask of byte b: 0 bits for pixels not pen 0
++			ld  hl, CD_MLUT
++		.cd_init_mlut
++			ld  a, l
++			ld  c, a
++			rrca
++			rrca
++			rrca
++			rrca
++			or  c
++			and $0F
++			ld  b, a
++			rlca
++			rlca
++			rlca
++			rlca
++			or  b
++			cpl
++			ld  (hl), a
++			inc l
++			jr  nz, cd_init_mlut
++			ld  a, 0xff 			// no shifts patched yet
++			ld  (cd_bc_curs), a
++		#endif
++
++			// full viewport rect: c0 c1 r0 r1 at +4
++			ld  hl, CD_FULLREC + 4
++			ld  (hl), 0
++			inc hl
++			ld  (hl), 29
++			inc hl
++			ld  (hl), 0
++			inc hl
++			ld  (hl), 19
++
++			ld  a, 1
++			ld  (CD_GEN), a
++	#endasm
++	// the 16 pens of pal.png (cpc/pal.h): titles, frame, ending
++	#asm
++			call my_inks
++	#endasm
++	for (cd_i = 0; cd_i < CD_NSPR; cd_i ++) cd_key_sp [cd_i] = 0;
++
++	// ROWINT: screen row VIEWPORT_Y + r has been drawn at VSYNC + 72 + 8 (row + 1);
++	// interrupt n comes at VSYNC + 2 + 52 (n - 1); count from the 3rd one.
++	for (cd_i = 0; cd_i < 20; cd_i ++) {
++		cd_px = 72 + 8 * (VIEWPORT_Y + cd_i + 1);
++		cd_s = 1;
++		while (2 + 52 * (cd_s - 1) < cd_px) cd_s ++;
++		((unsigned char *) CD_ROWINT) [cd_i] = cd_s > 3 ? cd_s - 3 : 0;
++	}
++}
++
++// ----------------------------------------------------------------------------
++// Marking
++
++#asm
++	// Mark one cell: A = column, C = row (viewport cells). Keeps BC.
++	.cd_mark_cell
++		push bc
++		ld  (CD_CELLREC + 4), a
++		ld  (CD_CELLREC + 5), a
++		ld  a, c
++		ld  (CD_CELLREC + 6), a
++		ld  (CD_CELLREC + 7), a
++		push ix
++		ld  ix, CD_CELLREC
++		call cd_mark_rect
++		pop ix
++		pop bc
++		ret
++
++	// Mark cells c0..c1 x r0..r1 of the rect at IX+4..7
++	.cd_mark_rect
++		ld  a, (ix+6)
++		ld  (CD_MR_R), a
++	.cd_mr_row
++		ld  a, (CD_MR_R)
++		ld  c, a
++		add a, a
++		add a, a
++		ld  l, a
++		ld  h, CD_ROWTAB / 256
++		ld  e, (hl)
++		inc l
++		ld  d, (hl)
++		ld  hl, CD_DIRTY - CD_TMAP
++		add hl, de
++		ld  e, (ix+4)
++		ld  d, 0
++		add hl, de
++		// DE = BUCKET + r*32 + ROWD [r]
++		ld  e, c
++		ld  d, CD_ROWD / 256
++		ld  a, (de)
++		ld  b, a
++		ld  a, c
++		and 7
++		rrca
++		rrca
++		rrca
++		or  b
++		ld  e, a
++		ld  a, c
++		srl a
++		srl a
++		srl a
++		add a, CD_BUCKET / 256
++		ld  d, a
++		ld  a, (ix+5)
++		sub (ix+4)
++		inc a
++		ld  b, a
++		ld  c, (ix+4)
++	.cd_mr_col
++		ld  a, (CD_GEN)
++		cp  (hl)
++		jr  z, cd_mr_skip
++		ld  (hl), a
++		ld  a, c
++		ld  (de), a
++		inc e
++	.cd_mr_skip
++		inc hl
++		inc c
++		djnz cd_mr_col
++		ld  a, (CD_MR_R)
++		ld  l, a
++		ld  h, CD_ROWD / 256
++		ld  a, e
++		and 31
++		ld  (hl), a
++		ld  a, (CD_MR_R)
++		cp  (ix+7)
++		ret nc
++		inc a
++		ld  (CD_MR_R), a
++		jr  cd_mr_row
++
++	// Sprites: erase where they were, list and mark where they are
++	.cd_mark_sprites
++		ld  hl, CD_ROWSN
++		ld  de, CD_ROWSN + 1
++		ld  bc, 19
++		ld  (hl), 0
++		ldir
++		ld  ix, CD_SPRT
++		ld  b, CD_NSPR
++	.cd_ms_loop
++		push bc
++		bit 1, (ix+9)
++		call nz, cd_mark_rect
++		res 1, (ix+9)
++		bit 0, (ix+9)
++		jp  z, cd_ms_next
++		set 1, (ix+9)
++		// c0 = x >> 1, c1 = (x + 3 + s) >> 1, r0 = y >> 3, r1 = (y + 15) >> 3
++		ld  a, (ix+0)
++		ld  c, a
++		srl a
++		ld  (ix+4), a
++		ld  a, c
++		add a, 3
++		add a, (ix+8)
++		srl a
++		ld  (ix+5), a
++		ld  a, (ix+1)
++		ld  c, a
++		srl a
++		srl a
++		srl a
++		ld  (ix+6), a
++		ld  a, c
++		add a, 15
++		srl a
++		srl a
++		srl a
++		ld  (ix+7), a
++		call cd_mark_rect
++		// list it in the rows it crosses
++		ld  c, (ix+6)
++	.cd_ms_rows
++		ld  l, c
++		ld  h, CD_ROWSN / 256
++		ld  a, (hl)
++		inc (hl)
++		ld  e, a
++		ld  a, c
++		add a, a
++		add a, a
++		add a, a
++		add a, e
++		ld  l, a
++		ld  h, CD_ROWSPR / 256
++		ld  a, ixl
++		ld  (hl), a
++		ld  a, c
++		inc c
++		cp  (ix+7)
++		jr  c, cd_ms_rows
++	.cd_ms_next
++		ld  de, 10
++		add ix, de
++		pop bc
++		dec b
++		jp  nz, cd_ms_loop
++		ret
++#endasm
++
++// ----------------------------------------------------------------------------
++// Sprite caches: frame (4 x 16) -> 3 columns x 16 lines x 2 bytes, starting
++// at byte b0 (0/1) of the first column, shifted s (0/1) mode 0 pixels right.
++// MODE_1: s is 0-3 mode 1 pixels, and every byte is stored as (AND mask,
++// data): 3 columns of 64 bytes, 16 lines x (mask, data, mask, data).
++
++#ifdef MODE_1
++#asm
++	// MODE_1. HL = frame (4 bytes x 16 lines), DE = cache (5 x 32 bytes), C = s
++	// (0-3). Byte column k (screen byte xb + k) of line y, (AND mask, data) at
++	// cache + k * 32 + y * 2: out = ((cur >> s) & m1) | ((prev << (4 - s)) & m2)
++	// per nibble (cur = frame byte k, prev = k - 1), m1 = (0x0F >> s) * 0x11,
++	// m2 = ~m1; mask = CD_MLUT [out]. The shifts are rrca / rlca patched into
++	// the code below for this s (only when s changes). Interrupts are off
++	// while SP reads the frame (about 30 raster lines; the Gate Array keeps
++	// the interrupt pending).
++	.cd_build_cache
++		ld  a, (cd_bc_curs)
++		cp  c
++		jr  z, cd_bc_patched
++		push hl
++		push de
++		call cd_bc_patch
++		pop de
++		pop hl
++	.cd_bc_patched
++		push ix
++		push iy
++		ld  ix, 64
++		add ix, de 				// IX = column 2: columns at -64 .. +64
++		ld  (cd_bc_frame), hl
++		di
++		ld  (cd_bc_sp), sp
++		ld  sp, (cd_bc_frame)
++		ld  h, CD_MLUT / 256
++		ld  iyl, 16
++	.cd_bc_line
++		pop bc 					// c = byte 0, b = byte 1
++		pop de 					// e = byte 2, d = byte 3
++		// column 0: R (b0)
++		ld  a, c
++	.cd_r0
++		nop
++		nop
++		nop
++	.cd_r0m
++		and $FF
++		ld  l, a
++		ld  a, (hl)
++		ld  (ix-64), a
++		ld  (ix-63), l
++		// column 1: C (b0) | R (b1)
++		ld  a, c
++	.cd_c0
++		nop
++		nop
++		nop
++	.cd_c0m
++		and $00
++		ld  l, a
++		ld  a, b
++	.cd_r1
++		nop
++		nop
++		nop
++	.cd_r1m
++		and $FF
++		or  l
++		ld  l, a
++		ld  a, (hl)
++		ld  (ix-32), a
++		ld  (ix-31), l
++		// column 2: C (b1) | R (b2)
++		ld  a, b
++	.cd_c1
++		nop
++		nop
++		nop
++	.cd_c1m
++		and $00
++		ld  l, a
++		ld  a, e
++	.cd_r2
++		nop
++		nop
++		nop
++	.cd_r2m
++		and $FF
++		or  l
++		ld  l, a
++		ld  a, (hl)
++		ld  (ix+0), a
++		ld  (ix+1), l
++		// column 3: C (b2) | R (b3)
++		ld  a, e
++	.cd_c2
++		nop
++		nop
++		nop
++	.cd_c2m
++		and $00
++		ld  l, a
++		ld  a, d
++	.cd_r3
++		nop
++		nop
++		nop
++	.cd_r3m
++		and $FF
++		or  l
++		ld  l, a
++		ld  a, (hl)
++		ld  (ix+32), a
++		ld  (ix+33), l
++		// column 4: C (b3)
++		ld  a, d
++	.cd_c3
++		nop
++		nop
++		nop
++	.cd_c3m
++		and $00
++		ld  l, a
++		ld  a, (hl)
++		ld  (ix+64), a
++		ld  (ix+65), l
++		inc ix
++		inc ix
++		dec iyl
++		jp  nz, cd_bc_line
++		ld  sp, (cd_bc_sp)
++		ei
++		pop iy
++		pop ix
++		ret
++
++		// Patch the shifts for s = C
++	.cd_bc_patch
++		ld  a, c
++		ld  (cd_bc_curs), a
++		// m1, m2
++		ld  hl, cd_bc_m1
++		ld  e, a
++		ld  d, 0
++		add hl, de
++		ld  a, (hl)
++		ld  (cd_r0m + 1), a
++		ld  (cd_r1m + 1), a
++		ld  (cd_r2m + 1), a
++		ld  (cd_r3m + 1), a
++		cpl
++		ld  (cd_c0m + 1), a
++		ld  (cd_c1m + 1), a
++		ld  (cd_c2m + 1), a
++		ld  (cd_c3m + 1), a
++		// rrca slots: s of them; rlca slots: 4 - s (s > 0)
++		ld  hl, cd_bc_rot
++		ld  a, c
++		add a, a
++		add a, a
++		add a, a
++		ld  e, a
++		add hl, de 				// HL = 6 opcodes: 3 for R, 3 for C
++		ld  de, cd_r0
++		call cd_bc_p3
++		ld  de, cd_r1
++		call cd_bc_p3
++		ld  de, cd_r2
++		call cd_bc_p3
++		ld  de, cd_r3
++		call cd_bc_p3
++		inc hl
++		inc hl
++		inc hl
++		ld  de, cd_c0
++		call cd_bc_p3
++		ld  de, cd_c1
++		call cd_bc_p3
++		ld  de, cd_c2
++		call cd_bc_p3
++		ld  de, cd_c3
++	.cd_bc_p3
++		push hl
++		ldi
++		ldi
++		ldi
++		pop hl
++		ret
++
++	.cd_bc_m1
++		defb $FF, $77, $33, $11
++	.cd_bc_rot
++		// s = 0..3: R (3), C (3), 2 spare. rrca $0F, rlca $07, nop $00
++		defb $00, $00, $00, $00, $00, $00, 0, 0
++		defb $0F, $00, $00, $07, $07, $07, 0, 0
++		defb $0F, $0F, $00, $07, $07, $00, 0, 0
++		defb $0F, $0F, $0F, $07, $00, $00, 0, 0
++	.cd_bc_curs
++		defb 0
++	.cd_bc_frame
++		defw 0
++	.cd_bc_sp
++		defw 0
++#endasm
++#else
++#asm
++	// HL = frame, DE = cache, B = b0, C = s
++	.cd_build_cache
++		ld  (cd_bc_dst), de
++		ld  a, b
++		ld  (cd_bc_b0), a
++		ld  a, c
++		ld  (cd_bc_s), a
++		ld  b, 16
++	.cd_bc_line
++		push bc
++		// TMP = 7 zero bytes
++		xor a
++		ld  (CD_TMP), a
++		ld  (CD_TMP + 1), a
++		ld  (CD_TMP + 2), a
++		ld  (CD_TMP + 3), a
++		ld  (CD_TMP + 4), a
++		ld  (CD_TMP + 5), a
++		ld  (CD_TMP + 6), a
++		ld  a, (cd_bc_b0)
++		ld  e, a
++		ld  d, 0
++		push hl
++		ld  hl, CD_TMP
++		add hl, de
++		ex  de, hl
++		pop hl
++		ld  a, (cd_bc_s)
++		or  a
++		jr  nz, cd_bc_shift
++		ldi
++		ldi
++		ldi
++		ldi
++		jr  cd_bc_store
++	.cd_bc_shift
++		// out = ((prev & 0x55) << 1) | ((cur & 0xAA) >> 1)
++		ld  c, 0
++		ld  b, 4
++	.cd_bc_sh
++		ld  a, c
++		and $55
++		add a, a
++		ld  c, a
++		ld  a, (hl)
++		inc hl
++		push af
++		and $AA
++		rrca
++		or  c
++		ld  (de), a
++		inc de
++		pop af
++		ld  c, a
++		djnz cd_bc_sh
++		ld  a, c
++		and $55
++		add a, a
++		ld  (de), a
++	.cd_bc_store
++		// TMP [0..5] -> cache + 0, 1, 32, 33, 64, 65 (+ line * 2)
++		push hl
++		ld  hl, (cd_bc_dst)
++		ld  de, 31
++		ld  a, (CD_TMP)
++		ld  (hl), a
++		inc hl
++		ld  a, (CD_TMP + 1)
++		ld  (hl), a
++		add hl, de
++		ld  a, (CD_TMP + 2)
++		ld  (hl), a
++		inc hl
++		ld  a, (CD_TMP + 3)
++		ld  (hl), a
++		add hl, de
++		ld  a, (CD_TMP + 4)
++		ld  (hl), a
++		inc hl
++		ld  a, (CD_TMP + 5)
++		ld  (hl), a
++		ld  hl, (cd_bc_dst)
++		inc hl
++		inc hl
++		ld  (cd_bc_dst), hl
++		pop hl
++		pop bc
++		djnz cd_bc_line
++		ret
++	.cd_bc_dst
++		defw 0
++	.cd_bc_b0
++		defb 0
++	.cd_bc_s
++		defb 0
++#endasm
++#endif
++
++// ----------------------------------------------------------------------------
++// Tiles and text
++
++// Tile t at screen chars (x, y), inside the viewport: 4 patterns from tile_map
++void cd_draw_tile (void) {
++	#asm
++			ld  a, (__y)
++			sub VIEWPORT_Y
++			ld  c, a 					// row
++			add a, a
++			add a, a
++			ld  l, a
++			ld  h, CD_ROWTAB / 256
++			ld  e, (hl)
++			inc l
++			ld  d, (hl) 				// DE = TMAP row
++			ld  a, (__x)
++			sub VIEWPORT_X
++			ld  b, a 					// column
++			ld  l, a
++			ld  h, 0
++			add hl, de
++			push hl
++			ld  a, (__t)
++			add a, a
++			add a, a
++			ld  e, a
++			ld  d, 0
++			ld  hl, _tile_map
++			add hl, de
++			ex  de, hl 					// DE = 4 patterns
++			pop hl 						// HL = TMAP cell
++			ld  a, (de)
++			ld  (hl), a
++			inc de
++			inc hl
++			ld  a, (de)
++			ld  (hl), a
++			inc de
++			push de
++			ld  de, 29
++			add hl, de
++			pop de
++			ld  a, (de)
++			ld  (hl), a
++			inc de
++			inc hl
++			ld  a, (de)
++			ld  (hl), a
++			// mark the 4 cells
++			ld  a, b
++			call cd_mark_cell
++			ld  a, b
++			inc a
++			call cd_mark_cell
++			inc c
++			ld  a, b
++			call cd_mark_cell
++			ld  a, b
++			inc a
++			call cd_mark_cell
++	#endasm
++}
++
++// Pattern __t at screen chars (__x, __y), straight to the screen: its colour
++// 3 pixels in sprite pen 3 (stable whatever the level palette), the rest
++// black. HUD, text outside the viewport.
++void cd_put_char (void) {
++#ifdef MODE_1
++	// MODE_1: the pattern as it is
++	#asm
++			ld  a, (__t)
++			ld  l, a
++			ld  h, 0
++			add hl, hl
++			add hl, hl
++			add hl, hl
++			add hl, hl
++			ld  de, CD_PAT
++			add hl, de
++			ex  de, hl
++			ld  a, (__y)
++			ld  l, a
++			ld  h, 0
++			add hl, hl
++			add hl, hl
++			add hl, hl
++			add hl, hl
++			add hl, hl
++			add hl, hl
++			ld  a, (__x)
++			add a, a
++			ld  c, a
++			ld  b, 0xC0
++			add hl, bc
++			ld  b, 8
++		.cd_pc1_l
++			ld  a, (de)
++			inc de
++			ld  (hl), a
++			inc l
++			ld  a, (de)
++			inc de
++			ld  (hl), a
++			dec l
++			ld  a, h
++			add a, 8
++			ld  h, a
++			djnz cd_pc1_l
++	#endasm
++#else
++	#asm
++			ld  a, (__t)
++			ld  l, a
++			ld  h, 0
++			add hl, hl
++			add hl, hl
++			add hl, hl
++			add hl, hl
++			ld  de, CD_PAT
++			add hl, de
++			ex  de, hl 					// DE = pattern
++			ld  a, (__y)
++			ld  l, a
++			ld  h, 0
++			add hl, hl
++			add hl, hl
++			add hl, hl
++			add hl, hl
++			add hl, hl
++			add hl, hl 					// y * 64
++			ld  a, (__x)
++			add a, a
++			ld  c, a
++			ld  b, 0xC0
++			add hl, bc 					// HL = screen (x even: no carry into H)
++			ld  b, 8
++		.cd_pc_l
++			call cd_pc_byte
++			inc l
++			call cd_pc_byte
++			dec l
++			ld  a, h
++			add a, 8
++			ld  h, a
++			djnz cd_pc_l
++			ret
++
++		// (DE) -> (HL): pixels of colour 3 (bits b2 and b3 set) in sprite
++		// pen 3, the rest 0. Colour 3 in pixel 0: bits 5 and 1, pixel 1: 4 and 0
++		.cd_pc_byte
++			ld  a, (de)
++			inc de
++			ld  c, a
++			rrca
++			rrca
++			rrca
++			rrca
++			and c
++			and 3 					// bit 1: pixel 0, bit 0: pixel 1
++			push hl
++			ld  hl, cd_pc_lut
++			add a, l
++			ld  l, a
++			jr  nc, cd_pc_nc
++			inc h
++		.cd_pc_nc
++			ld  a, (hl)
++			pop hl
++			ld  (hl), a
++			ret
++		.cd_pc_lut
++			defb 0x00, 0x44, 0x88, 0xCC
++	#endasm
++#endif
++}
++
++// Pattern __t at screen chars (__x, __y): into the map if inside the viewport,
++// straight to the screen otherwise.
++void cd_char (void) {
++	// (one comparison per if: sccz80 1.10 duplicates labels in chains of >=)
++	cd_vis = 0;
++	rda = _x - VIEWPORT_X;
++	rdb = _y - VIEWPORT_Y;
++	if (rda < 30) { if (rdb < 20) cd_vis = 1; }
++	if (cd_vis) {
++		#asm
++				ld  a, (__y)
++				sub VIEWPORT_Y
++				ld  c, a
++				add a, a
++				add a, a
++				ld  l, a
++				ld  h, CD_ROWTAB / 256
++				ld  e, (hl)
++				inc l
++				ld  d, (hl)
++				ld  a, (__x)
++				sub VIEWPORT_X
++				ld  l, a
++				ld  h, 0
++				add hl, de
++				ld  b, a
++				ld  a, (__t)
++				ld  (hl), a
++				ld  a, b
++				call cd_mark_cell
++		#endasm
++	} else cd_put_char ();
++}
++
++// Compressed screen: offsets of 8 zx0 streams (words, from the start), then
++// the streams: pixel line k of the 24 char rows each (64 x 24 bytes)
++// A screen: zx0 of a mkts_om superbuffer (64 bytes x 192 lines, linear).
++// It goes through the 12K at 9000-BFFF, which cd_init rebuilds afterwards;
++// the level's sprite cells there are gone too, so screens are unpacked
++// before custom_level_setup. Palette: pal.png's (my_inks), by cd_init.
++void cd_unpack_screen (void) {
++	#asm
++			// HL = source (set by the caller)
++			ld  de, 0x9000
++			call depack
++			ld  hl, 0x9000
++			ld  de, 0xC000
++			ld  a, 192
++		.cd_us_loop
++			ld  bc, 64
++			push de
++			ldir
++			pop de
++			ex  de, hl
++			ld  bc, 0x0800 		// next line
++			add hl, bc
++			jr  nc, cd_us_nc
++			ld  bc, 0xC040 		// past the 8th line: next row (wraps)
++			add hl, bc
++		.cd_us_nc
++			ex  de, hl
++			dec a
++			jr  nz, cd_us_loop
++	#endasm
++	cd_init ();
++}
++
++// ----------------------------------------------------------------------------
++// Update: sprites from sp_sw, then the flush
++
++void cd_sprites (void) {
++	// For every sp_sw sprite: visible? (frame not spr_empty, inside the
++	// viewport) -> its record (x byte, y, shift flag), and its cache rebuilt
++	// if the frame or the phase changed (mode 0: byte parity + shift, MODE_1:
++	// the shift). Then cd_mark_sprites.
++	#asm
++			push iy
++			ld  ix, BASE_SPRITES 		// sp_sw []
++			ld  iy, CD_SPRT
++			ld  hl, CD_CACHE
++			ld  (cd_cs_cache), hl
++			ld  hl, _cd_key_sp
++			ld  (cd_cs_ksp), hl
++			ld  hl, _cd_key_ph
++			ld  (cd_cs_kph), hl
++			ld  b, CD_NSPR
++		.cd_cs_loop
++			push bc
++			// frame
++			ld  l, (ix+0)
++			ld  h, (ix+1)
++			ld  de, _spr_empty
++			or  a
++			sbc hl, de
++			jp  z, cd_cs_hide
++			add hl, de
++			ld  (_cd_sp0), hl
++		#ifdef MODE_1
++			ld  a, (ix+8)
++			sub VIEWPORT_X * 8
++			jp  c, cd_cs_hide
++			cp  225
++			jp  nc, cd_cs_hide
++			ld  e, a 					// px
++			ld  a, (ix+9)
++			sub VIEWPORT_Y * 8
++			jp  c, cd_cs_hide
++			cp  145
++			jp  nc, cd_cs_hide
++			ld  (iy+1), a 				// y
++			ld  a, e
++			and 3
++			ld  c, a 					// s
++			ld  a, e
++			srl a
++			srl a
++			ld  (iy+0), a 				// xb
++			ld  b, 0 					// (parity: not needed)
++			ld  a, c 					// phase = s
++		#else
++			ld  a, (ix+8)
++			sub VIEWPORT_X * 4
++			jp  c, cd_cs_hide
++			cp  113
++			jp  nc, cd_cs_hide
++			ld  e, a 					// px
++			ld  a, (ix+9)
++			sub VIEWPORT_Y * 8
++			jp  c, cd_cs_hide
++			cp  145
++			jp  nc, cd_cs_hide
++			ld  (iy+1), a 				// y
++			ld  a, e
++			and 1
++			ld  c, a 					// s
++			ld  a, e
++			srl a
++			ld  (iy+0), a 				// xb
++			and 1
++			ld  b, a 					// b0
++			add a, a
++			or  c 						// phase = b0 * 2 + s
++		#endif
++			// rec [8]: 1 if the sprite takes one more byte
++			ld  e, a
++			ld  a, c
++			or  a
++			jr  z, cd_cs_s0
++			ld  a, 1
++		.cd_cs_s0
++			ld  (iy+8), a
++			set 0, (iy+9)
++			// same frame and phase as the cache? (key_ph [i], key_sp [i])
++			ld  hl, (cd_cs_kph)
++			ld  a, (hl)
++			cp  e
++			jr  nz, cd_cs_build
++			ld  hl, (cd_cs_ksp)
++			ld  a, (hl)
++			inc hl
++			ld  h, (hl)
++			ld  l, a
++			ld  de, (_cd_sp0)
++			or  a
++			sbc hl, de
++			jr  z, cd_cs_next
++			ld  hl, (cd_cs_kph)
++		.cd_cs_build
++			ld  (hl), e
++			ld  hl, (cd_cs_ksp)
++			ld  de, (_cd_sp0)
++			ld  (hl), e
++			inc hl
++			ld  (hl), d
++			ld  hl, (_cd_sp0)
++			ld  de, (cd_cs_cache)
++			push ix
++			push iy
++			call cd_build_cache 		// HL frame, DE cache, B b0, C s
++			pop iy
++			pop ix
++			jr  cd_cs_next
++		.cd_cs_hide
++			res 0, (iy+9)
++		.cd_cs_next
++			ld  de, 16
++			add ix, de
++			ld  de, 10
++			add iy, de
++			ld  hl, (cd_cs_cache)
++			ld  de, CD_CSIZE
++			add hl, de
++			ld  (cd_cs_cache), hl
++			ld  hl, (cd_cs_ksp)
++			inc hl
++			inc hl
++			ld  (cd_cs_ksp), hl
++			ld  hl, (cd_cs_kph)
++			inc hl
++			ld  (cd_cs_kph), hl
++			pop bc
++			dec b
++			jp  nz, cd_cs_loop
++			pop iy
++			jp  cd_mark_sprites
++
++		.cd_cs_cache
++			defw 0
++		.cd_cs_ksp
++			defw 0
++		.cd_cs_kph
++			defw 0
++	#endasm
++}
++
++void cd_invalidate_viewport (void) {
++	#asm
++			ld  ix, CD_FULLREC
++			call cd_mark_rect
++	#endasm
++}
++
++#include "cpc_dirty_flush.h"
++
++void cd_update (unsigned char sprites) {
++	if (sprites) {
++		cd_sprites ();
++		#ifdef MIN_FAPS_PER_FRAME
++			#asm
++				.cd_min_faps_loop
++					ld  a, (isr_c2)
++					cp  MIN_FAPS_PER_FRAME
++					jr  nc, cd_min_faps_done
++					halt
++					jr  cd_min_faps_loop
++				.cd_min_faps_done
++					xor a
++					ld  (isr_c2), a
++			#endasm
++		#endif
++		// start when the beam has just left viewport row 0: 3rd interrupt
++		#asm
++			.cd_phase_wait
++				ld  a, (isr_c1)
++				cp  3
++				jr  nz, cd_phase_wait
++		#endasm
++	}
++	#asm
++			ld  a, (_cd_intc)
++			ld  (CD_INTC0), a
++			call cd_flush
++	#endasm
++}
+diff --git a/src/dev/cpc_dirty_flush.h b/src/dev/cpc_dirty_flush.h
+new file mode 100644
+index 0000000..c71928c
+--- /dev/null
++++ b/src/dev/cpc_dirty_flush.h
+@@ -0,0 +1,658 @@
++// MTE MK1 v3.2
++// Copyleft 2011, 2026 by The Mojon Twins
++
++// cpc_dirty_flush.h - the flush of cpc_dirty.h (adapted from the cpcdirty bench)
++
++void cd_flush_dummy (void) {
++	#asm
++	; ------------------------------------------------------------ flush
++	; Rows top-down (the beam also goes top-down, so it is raced once per
++	; row). Per dirty row: (a) patterns of its dirty cells -> CD_ROWBUF + c*16,
++	; (b) OR every sprite crossing the row, (c) dirty cells -> screen.
++	; The bucket of the row gets a $FF sentinel so loops need no counter.
++	.cd_flush
++		xor a
++		ld  (CD_CUR_R), a
++	.cd_fl_row
++		ld  a, (CD_CUR_R)
++		ld  l, a
++		ld  h, CD_ROWD / 256
++		ld  a, (hl)
++		or  a
++		jp  z, cd_fl_row_next
++		ld  (hl), 0
++		ld  b, a
++
++		ld  a, (CD_CUR_R)
++		ld  c, a
++		and 7
++		rrca
++		rrca
++		rrca
++		ld  l, a
++		or  b
++		ld  e, a
++		ld  a, c
++		srl a
++		srl a
++		srl a
++		add a, CD_BUCKET / 256
++		ld  h, a
++		ld  d, a
++		ld  (CD_FL_BK), hl
++		ld  a, $FF
++		ld  (de), a
++		ld  a, c
++		add a, a
++		add a, a
++		ld  l, a
++		ld  h, CD_ROWTAB / 256
++		ld  e, (hl)
++		inc l
++		ld  d, (hl)
++		inc l
++		ld  (CD_ROW_D), de
++		ld  e, (hl)
++		inc l
++		ld  d, (hl)
++		ld  (CD_ROW_SCR), de
++
++		; (a) patterns -> CD_ROWBUF + c*32 (pattern 0 is blank: those cells
++		; are just cleared, with interrupts off while SP points there)
++		ld  (CD_SAVESP), sp
++		ld  iy, (CD_FL_BK)
++	.cd_fa_loop
++		ld  a, (iy+0)
++		inc iy
++		cp  $FF
++		jp  z, cd_fa_done
++			ld  c, a
++		ld  b, 0
++		ld  hl, (CD_ROW_D)
++		add hl, bc
++		ld  a, (hl)
++		or  a
++		jp  z, cd_fa_blank
++		; hl = CD_PAT + tile*16 (CD_PAT is 4K aligned)
++		rlca
++		rlca
++		rlca
++		rlca
++		ld  b, a
++		and $F0
++		ld  l, a
++		xor b
++		or  CD_PAT / 256
++		ld  h, a
++		; de = CD_ROWBUF + c*32 (CD_ROWBUF is 1K aligned)
++		ld  a, c
++		rrca
++		rrca
++		rrca
++		ld  b, a
++		and $E0
++		ld  e, a
++		xor b
++		or  CD_ROWBUF / 256
++		ld  d, a
++		ldi
++		ldi
++		ldi
++		ldi
++		ldi
++		ldi
++		ldi
++		ldi
++		ldi
++		ldi
++		ldi
++		ldi
++		ldi
++		ldi
++		ldi
++		ldi
++		jp  cd_fa_loop
++	.cd_fa_blank
++		ld  a, c
++		rrca
++		rrca
++		rrca
++		ld  b, a
++		and $E0
++		or  $10
++		ld  l, a
++		ld  a, b
++		and $1F
++		or  CD_ROWBUF / 256
++		ld  h, a
++		di
++		ld  sp, hl
++	#ifdef MODE_1
++		ld  hl, CD_BLACK_WORD 	// pattern 0 is all BLACK_PEN
++	#else
++		ld  hl, 0
++	#endif
++		push hl
++		push hl
++		push hl
++		push hl
++		push hl
++		push hl
++		push hl
++		push hl
++		ld  sp, (CD_SAVESP)
++		ei
++		jp  cd_fa_loop
++	.cd_fa_done
++
++	.cd_fb_start
++		; (b) sprites crossing the row (listed by mark_all)
++		ld  a, (CD_CUR_R)
++		ld  l, a
++		ld  h, CD_ROWSN / 256
++		ld  b, (hl)
++		inc b
++		dec b
++		jr  z, cd_fb_none
++		add a, a
++		add a, a
++		add a, a
++		ld  l, a
++		ld  h, CD_ROWSPR / 256
++	.cd_fb_loop
++		ld  e, (hl)
++		ld  d, CD_SPRT / 256
++		push hl
++		push bc
++		push de
++		pop ix
++		call cd_or_row
++		pop bc
++		pop hl
++		inc l
++		djnz cd_fb_loop
++	.cd_fb_none
++
++	.cd_fc_start
++		; (c) CD_ROWBUF -> screen. First make sure the beam has already drawn
++		; this row in the current frame (CD_ROWINT [r] = interrupts needed),
++		; so the row changes between two frames and never under the beam.
++		; Cells are popped from CD_ROWBUF with interrupts off, one at a time.
++		ld  a, (CD_CUR_R)
++		ld  l, a
++		ld  h, CD_ROWINT / 256
++		ld  b, (hl)
++	.cd_fc_guard
++		ld  a, (_cd_intc)
++		ld  hl, CD_INTC0
++		sub (hl)
++		cp  b
++		jr  c, cd_fc_guard
++		ld  iy, (CD_FL_BK)
++	.cd_fc_loop
++		ld  a, (iy+0)
++		inc iy
++		cp  $FF
++		jp  z, cd_fc_done
++		di
++		ld  c, a
++		; sp = CD_ROWBUF + c*32
++		rrca
++		rrca
++		rrca
++		ld  b, a
++		and $E0
++		ld  l, a
++		xor b
++		or  CD_ROWBUF / 256
++		ld  h, a
++		ld  sp, hl
++		; hl = CD_ROW_SCR + c*2 (even, so inc l never carries)
++		ld  hl, (CD_ROW_SCR)
++		ld  a, c
++		add a, a
++		add a, l
++		ld  l, a
++		adc a, h
++		sub l
++		ld  h, a
++		pop bc
++		ld  (hl), c
++		inc l
++		ld  (hl), b
++		dec l
++		ld  a, h
++		add a, 8
++		ld  h, a
++		pop bc
++		ld  (hl), c
++		inc l
++		ld  (hl), b
++		dec l
++		ld  a, h
++		add a, 8
++		ld  h, a
++		pop bc
++		ld  (hl), c
++		inc l
++		ld  (hl), b
++		dec l
++		ld  a, h
++		add a, 8
++		ld  h, a
++		pop bc
++		ld  (hl), c
++		inc l
++		ld  (hl), b
++		dec l
++		ld  a, h
++		add a, 8
++		ld  h, a
++		pop bc
++		ld  (hl), c
++		inc l
++		ld  (hl), b
++		dec l
++		ld  a, h
++		add a, 8
++		ld  h, a
++		pop bc
++		ld  (hl), c
++		inc l
++		ld  (hl), b
++		dec l
++		ld  a, h
++		add a, 8
++		ld  h, a
++		pop bc
++		ld  (hl), c
++		inc l
++		ld  (hl), b
++		dec l
++		ld  a, h
++		add a, 8
++		ld  h, a
++		pop bc
++		ld  (hl), c
++		inc l
++		ld  (hl), b
++		ld  sp, (CD_SAVESP)
++		ei
++		jp  cd_fc_loop
++	.cd_fc_done
++
++	.cd_fl_row_next
++		ld  a, (CD_CUR_R)
++		inc a
++		ld  (CD_CUR_R), a
++		cp  20
++		jp  nz, cd_fl_row
++		// new dirty generation (every 255: wipe the stamps, start again at 1)
++		ld  a, (CD_GEN)
++		inc a
++		jr  nz, cd_fl_gen
++		ld  hl, CD_DIRTY
++		ld  de, CD_DIRTY + 1
++		ld  bc, 599
++		ld  (hl), a
++		ldir
++		inc a
++	.cd_fl_gen
++		ld  (CD_GEN), a
++		ret
++
++	#ifdef MODE_1
++	; MODE_1: OR the part of sprite IX inside char row CD_CUR_R into
++	; CD_ROWBUF. The cache (cd_build_cache) is in byte-column order: 4 or 5
++	; columns of 16 lines x (AND mask, data), 32-aligned, one per screen byte
++	; xb + k; each goes to its cell (CD_ROWBUF + (bx >> 1) * 32) and side
++	; (bx & 1), 2 bytes per line.
++	.cd_or_row
++		ld  a, (CD_CUR_R)
++		add a, a
++		add a, a
++		add a, a
++		ld  c, a
++		ld  a, (ix+1)
++		sub c
++		jr  c, cd_or_above
++		; sprite starts inside this row: cell lines l0..7, sprite lines 0..
++		ld  e, a
++		neg
++		add a, 8
++		ld  b, a
++		ld  d, 0
++		jr  cd_or_go
++	.cd_or_above
++		; sprite started above: cell lines 0.., sprite lines sy0..
++		neg
++		ld  d, a
++		ld  c, a
++		ld  a, 16
++		sub c
++		cp  8
++		jr  c, cd_or_cnt
++		ld  a, 8
++	.cd_or_cnt
++		ld  b, a
++		ld  e, 0
++	.cd_or_go
++		; b = lines, d = sy0, e = l0
++		; entry into the unrolled block: or_block + (8 - lines) * 8
++		ld  a, 8
++		sub b
++		add a, a
++		add a, a
++		add a, a
++		ld  hl, cd_or_block
++		add a, l
++		ld  l, a
++		adc a, h
++		sub l
++		ld  h, a
++		ld  (cd_or_call + 1), hl
++		; l0 * 2: the line offset in a cell
++		sla e
++		ld  a, e
++		ld  (cd_or_l0), a
++		; src = cache + sy0*2
++		ld  a, d
++		add a, a
++		add a, (ix+2)
++		ld  l, a
++		ld  a, (ix+3)
++		adc a, 0
++		ld  h, a
++		; columns: 4, 5 if the sprite is shifted
++		ld  a, (ix+8)
++		add a, 4
++		ld  b, a
++		ld  c, (ix+0) 			; bx
++	.cd_or_col
++		push bc
++		push hl
++		; de = CD_ROWBUF + (bx >> 1) * 32 + (bx & 1) + l0 * 2
++		ld  a, c
++		srl a
++		rrca
++		rrca
++		rrca
++		ld  d, a
++		and $E0
++		ld  e, a
++		xor d
++		or  CD_ROWBUF / 256
++		ld  d, a
++		ld  a, c
++		and 1
++		ld  c, a
++		ld  a, (cd_or_l0)
++		or  c
++		or  e
++		ld  e, a
++	.cd_or_call
++		call 0 				; patched: the entry into cd_or_block
++		pop hl
++		ld  bc, 32
++		add hl, bc
++		pop bc
++		inc c
++		djnz cd_or_col
++		ret
++	.cd_or_l0
++		defb 0
++
++		; (de) = (de) AND mask OR data, 8 lines of one byte column
++	.cd_or_block
++		ld  a, (de)
++		and (hl)
++		inc l
++		or  (hl)
++		inc l
++		ld  (de), a
++		inc e
++		inc e
++		ld  a, (de)
++		and (hl)
++		inc l
++		or  (hl)
++		inc l
++		ld  (de), a
++		inc e
++		inc e
++		ld  a, (de)
++		and (hl)
++		inc l
++		or  (hl)
++		inc l
++		ld  (de), a
++		inc e
++		inc e
++		ld  a, (de)
++		and (hl)
++		inc l
++		or  (hl)
++		inc l
++		ld  (de), a
++		inc e
++		inc e
++		ld  a, (de)
++		and (hl)
++		inc l
++		or  (hl)
++		inc l
++		ld  (de), a
++		inc e
++		inc e
++		ld  a, (de)
++		and (hl)
++		inc l
++		or  (hl)
++		inc l
++		ld  (de), a
++		inc e
++		inc e
++		ld  a, (de)
++		and (hl)
++		inc l
++		or  (hl)
++		inc l
++		ld  (de), a
++		inc e
++		inc e
++		ld  a, (de)
++		and (hl)
++		inc l
++		or  (hl)
++		inc l
++		ld  (de), a
++		inc e
++		inc e
++		ret
++	#else
++	; OR the part of sprite IX inside char row CD_CUR_R into CD_ROWBUF.
++	; Sprite graphics are stored in cell-column order (16 lines x 2 bytes
++	; per column, columns 32-aligned): 2 columns for even x at gfx,
++	; 3 columns (shifted one byte) for odd x at gfx+64; mark_all leaves the
++	; right one in ix+2/3. CD_ROWBUF cells are 32 bytes apart too, so after a
++	; column both pointers move on by the same 32 - 2*lines.
++	.cd_or_row
++		ld  a, (CD_CUR_R)
++		add a, a
++		add a, a
++		add a, a
++		ld  c, a
++		ld  a, (ix+1)
++		sub c
++		jr  c, cd_or_above
++		; sprite starts inside this row: cell lines l0..7, sprite lines 0..
++		ld  e, a
++		neg
++		add a, 8
++		ld  b, a
++		ld  d, 0
++		jr  cd_or_go
++	.cd_or_above
++		; sprite started above: cell lines 0.., sprite lines sy0..
++		neg
++		ld  d, a
++		ld  c, a
++		ld  a, 16
++		sub c
++		cp  8
++		jr  c, cd_or_cnt
++		ld  a, 8
++	.cd_or_cnt
++		ld  b, a
++		ld  e, 0
++	.cd_or_go
++		; b = lines, d = sy0, e = l0
++		ld  a, b
++		add a, a
++		neg
++		add a, 32
++		ld  (CD_OR_K), a
++		; entry into the unrolled block: or_block + (8 - lines) * 10
++		ld  a, 8
++		sub b
++		ld  c, a
++		add a, a
++		add a, a
++		add a, c
++		add a, a
++		ld  hl, cd_or_block
++		add a, l
++		ld  l, a
++		adc a, h
++		sub l
++		ld  h, a
++		push hl
++		ld  a, (ix+5)
++		sub (ix+4)
++		ld  (CD_OR_3COL), a
++		; src = gfx (parity) + sy0*2
++		ld  a, d
++		add a, a
++		add a, (ix+2)
++		ld  l, a
++		ld  a, (ix+3)
++		adc a, 0
++		ld  h, a
++		; dst = CD_ROWBUF + c0*32 + l0*2
++		sla e
++		ld  a, (ix+4)
++		rrca
++		rrca
++		rrca
++		ld  c, a
++		and $E0
++		or  e
++		ld  e, a
++		ld  a, c
++		and $1F
++		or  CD_ROWBUF / 256
++		ld  d, a
++		ld  a, (CD_OR_K)
++		ld  c, a
++		ld  b, 0
++		pop ix
++		call cd_or_jp
++		ex  de, hl
++		add hl, bc
++		ex  de, hl
++		add hl, bc
++		call cd_or_jp
++		ld  a, (CD_OR_3COL)
++		dec a
++		ret z
++		ex  de, hl
++		add hl, bc
++		ex  de, hl
++		add hl, bc
++	.cd_or_jp
++		jp  (ix)
++	.cd_or_block
++		ld  a, (de)
++		or  (hl)
++		ld  (de), a
++		inc l
++		inc e
++		ld  a, (de)
++		or  (hl)
++		ld  (de), a
++		inc l
++		inc e
++		ld  a, (de)
++		or  (hl)
++		ld  (de), a
++		inc l
++		inc e
++		ld  a, (de)
++		or  (hl)
++		ld  (de), a
++		inc l
++		inc e
++		ld  a, (de)
++		or  (hl)
++		ld  (de), a
++		inc l
++		inc e
++		ld  a, (de)
++		or  (hl)
++		ld  (de), a
++		inc l
++		inc e
++		ld  a, (de)
++		or  (hl)
++		ld  (de), a
++		inc l
++		inc e
++		ld  a, (de)
++		or  (hl)
++		ld  (de), a
++		inc l
++		inc e
++		ld  a, (de)
++		or  (hl)
++		ld  (de), a
++		inc l
++		inc e
++		ld  a, (de)
++		or  (hl)
++		ld  (de), a
++		inc l
++		inc e
++		ld  a, (de)
++		or  (hl)
++		ld  (de), a
++		inc l
++		inc e
++		ld  a, (de)
++		or  (hl)
++		ld  (de), a
++		inc l
++		inc e
++		ld  a, (de)
++		or  (hl)
++		ld  (de), a
++		inc l
++		inc e
++		ld  a, (de)
++		or  (hl)
++		ld  (de), a
++		inc l
++		inc e
++		ld  a, (de)
++		or  (hl)
++		ld  (de), a
++		inc l
++		inc e
++		ld  a, (de)
++		or  (hl)
++		ld  (de), a
++		inc hl		; the last byte of a column may end a page
++		inc e
++		ret
++	#endif
++	#endasm
++}
+diff --git a/src/dev/custom.h b/src/dev/custom.h
+index 5c5e4eb..f5b1f4f 100644
+--- a/src/dev/custom.h
++++ b/src/dev/custom.h
+@@ -63,6 +63,78 @@ void before_vsync (void) {
+ 
+ #endif
+ 
++#ifdef ENABLE_CUSTOM_SPRITES
++	void custom_sprites_create (void) {
++		// Called once at boot, after the engine has created its sprites.
++		// ZX: sp_CreateSpr your sprites (raise NUMBLOCKS in config.h).
++		// CPC: set up sp_sw [SP_CUSTOM_BASE + n] (define MAX_CUSTOM_SW_SPRITES).
++	}
++
++	void custom_sprites_render (void) {
++		// Called every frame at the end of render_all_sprites ().
++	}
++
++	void custom_sprites_hide (void) {
++		// Called from saca_a_todo_el_mundo_de_aqui (): move them off screen.
++	}
++#endif
++
++#ifdef ENABLE_CUSTOM_GAME_START
++	void custom_game_start (void) {
++		// A game starts: player, hotspots, enemies and n_pant are initialised,
++		// the first screen hasn't been drawn yet.
++	}
++#endif
++
++#ifdef ENABLE_CUSTOM_SCREEN_ENTER
++	void custom_screen_enter (void) {
++		// A screen has been drawn and its enemies set up (after ENTERING scripts).
++		// on_pant is the previous screen (0xff on the first one of a game).
++	}
++#endif
++
++#ifdef ENABLE_CUSTOM_LEVELS
++	void custom_level_setup (void) {
++		// Before every game and every level, before the player, hotspots,
++		// bolts and enemies are initialized: load your level here (map,
++		// enemies, hotspots, bolts, behaviours...). SCR_INICIO, PLAYER_INI_X
++		// and PLAYER_INI_Y can be variables you set here.
++	}
++
++	unsigned char custom_level_won (void) {
++		// The level is won. Return 1 to play the next one (no title, no
++		// ending: custom_level_setup () is called again), 0 to end the game.
++		return 0;
++	}
++#endif
++
++#ifdef ENABLE_CUSTOM_PRE_MOVE
++	void custom_pre_move (void) {
++		// Every frame, at the start of move (): keys have just been read (pad0,
++		// pad_this_frame), enemies and moving platforms are done (player.gotten,
++		// ptgmx, ptgmy), the player hasn't moved. Whatever you write to
++		// player.vy / ptgmx / ptgmy goes through the engine's gravity (added
++		// after this), jump and collisions.
++	}
++#endif
++
++#ifdef CUSTOM_RENDERER
++	void custom_renderer (void) {
++		// RLE_MAP only. Called for every tile of a new screen, once it has been
++		// decoded into map_buff (after MAPPED_TILESETS), before it is drawn:
++		// the tile is in _t, rdi is its index (0-149; the one above is rdi - 15),
++		// rdx, rdy its viewport char coordinates. Change _t to draw something
++		// else (its behaviour goes with it). map_buff [] before rdi is final.
++	}
++#endif
++
++#ifdef CUSTOM_CLEAR_TILE
++	void custom_clear_tile (void) {
++		// An opened lock becomes tile _t, behaviour _n (default: 0, comportamiento_tiles [0])
++		_t = 0; _n = comportamiento_tiles [0];
++	}
++#endif
++
+ #ifdef ENABLE_CUSTOM_HOTSPOTS
+ 	unsigned char custom_hotspots() {
+ 		// hotspot type is hotspot_t.
+diff --git a/src/dev/definitions.h b/src/dev/definitions.h
+index 5a52a3c..542089f 100644
+--- a/src/dev/definitions.h
++++ b/src/dev/definitions.h
+@@ -162,6 +162,24 @@ unsigned char *_baddies_pointer;
+ unsigned char map_attr [150] @ BASE_ROOM_BUFFERS;
+ unsigned char map_buff [150] @ BASE_ROOM_BUFFERS+150;
+ 
++// Custom hooks implemented in custom.h, which is included after speccy.h / cpc.h
++// and engine.h's users, so they need prototypes here.
++
++#ifdef ENABLE_CUSTOM_SPRITES
++	void custom_sprites_create (void);
++	void custom_sprites_render (void);
++	void custom_sprites_hide (void);
++#endif
++#ifdef ENABLE_CUSTOM_GAME_START
++	void custom_game_start (void);
++#endif
++#ifdef ENABLE_CUSTOM_SCREEN_ENTER
++	void custom_screen_enter (void);
++#endif
++#ifdef ENABLE_CUSTOM_PRE_MOVE
++	void custom_pre_move (void);
++#endif
++
+ // Hotspot related shortcut variables. hotspot_x and hotspot_y contain
+ // the pixel coordinates of the current screen hotspot.
+ // If hotspot is empty / deactivated, they are set to (240, 240),
+@@ -188,10 +206,29 @@ typedef struct {
+ SCENERY_INFO scenery_info; 
+ 
+ unsigned char n_pant, on_pant;
++#ifdef ENABLE_CUSTOM_LEVELS
++	unsigned char level_continue;
++	void custom_level_setup (void);
++	unsigned char custom_level_won (void);
++#endif
+ unsigned char pant_just_rendered;	// Will be 1 for 1 frame if just entered a new screen in hook_init_mainloop
+ 
+ #define MAX_SCREENS (MAP_W*MAP_H)
+ 
++#ifdef VARIABLE_MAP_W
++	// MAP_W x MAP_H only sizes the arrays (as many screens as the largest map);
++	// moving between screens goes by map_w, set per level (custom_level_setup)
++	unsigned char map_w;
++	#define MAP_W_NOW map_w
++#else
++	#define MAP_W_NOW MAP_W
++#endif
++
++#ifdef TILE_ATTR_MASK
++	// ZX, CHR_MAPPED_TILES: tiles are drawn with (attr & tile_attr_and) | tile_attr_or
++	unsigned char tile_attr_and = 0xff, tile_attr_or = 0;
++#endif
++
+ unsigned char flags [MAX_FLAGS];
+ 
+ // Aux
+diff --git a/src/dev/engine.h b/src/dev/engine.h
+index 470dbc7..2f960e3 100644
+--- a/src/dev/engine.h
++++ b/src/dev/engine.h
+@@ -254,10 +254,14 @@ unsigned int __FASTCALL__ abs (int n) {
+ 		if (qtile (rdx, rdy) == 15 && player.keys) {
+ 
+ 			#asm
++				#ifdef CUSTOM_CLEAR_TILE
++					call _custom_clear_tile 	;; sets _t, _n
++				#else
+ 					xor a
+ 					ld  (__t), a
+ 					ld  a, (_comportamiento_tiles)	;; beh [0]
+ 					ld  (__n), a
++				#endif
+ 
+ 					ld  a, (_rdx)
+ 					ld  (__x), a 
+@@ -765,6 +769,12 @@ void move (void) {
+ 			call _pad_read
+ 	#endasm
+ 
++	#ifdef ENABLE_CUSTOM_PRE_MOVE
++		// Keys just read (pad0, pad_this_frame), enemies and moving platforms
++		// already done (player.gotten, ptgmx, ptgmy), player not moved yet.
++		custom_pre_move ();
++	#endif
++
+ 	// =================================================
+ 	//                     Vertical
+ 	// =================================================
+@@ -1018,7 +1028,7 @@ void move (void) {
+ 
+ 					ld  a, (_pad_this_frame)
+ 
+-					#ifdef PLAYER_CAN_FIRE
++					#if defined PLAYER_CAN_FIRE || defined JUMP_ON_UP_ONLY
+ 						and sp_UP
+ 						jr  nz, m_jump_start_done
+ 					#else
+@@ -1051,7 +1061,7 @@ void move (void) {
+ 				.m_jump_start_done
+ 
+ 					ld  a, (_pad0)
+-					#ifdef PLAYER_CAN_FIRE
++					#if defined PLAYER_CAN_FIRE || defined JUMP_ON_UP_ONLY
+ 						and sp_UP
+ 						jr  nz, m_jump_perform_not_pressing
+ 					#else
+@@ -2557,6 +2567,18 @@ void draw_scr_background (void) {
+ 			._advance_worm
+ 				ld  a, (_rdc)
+ 
++			#ifdef CUSTOM_RENDERER
++				// Only store it: map_buff [rdi ++] = tile. The screen is
++				// drawn once it is all decoded (below).
++				ld  hl, _rdi
++				ld  c, (hl)
++				inc (hl)
++				ld  b, 0
++				ld  hl, _map_buff
++				add hl, bc
++				ld  (hl), a
++				ret
++			#else
+ 				#ifndef NO_ALT_BG
+ 					call no_alt_bg_subst
+ 				#endif
+@@ -2564,9 +2586,26 @@ void draw_scr_background (void) {
+ 				ld  (__n), a
+ 				call _draw_and_advance
+ 				ret
++			#endif
+ 
+ 			._draw_scr_loop_done
+ 		#endasm		
++
++		#ifdef CUSTOM_RENDERER
++			// map_buff has the whole screen (tiles after MAPPED_TILESETS).
++			// custom_renderer () (custom.h) gets each tile in _t, in order,
++			// with rdi its index (0-149, rdx / rdy its char coordinates in
++			// the viewport); it may change _t, and map_buff: the tiles
++			// before rdi are final, the ones after are still the decoded
++			// ones. The tile drawn (and its behaviour) is _t.
++			rdx = rdy = rdi = 0;
++			while (rdi < 150) {
++				_t = map_buff [rdi];
++				custom_renderer ();
++				_n = _t;
++				draw_and_advance ();
++			}
++		#endif
+ 	#else
+ 		// PACKED map, every byte packs two tiles.
+ 
+@@ -2683,15 +2722,22 @@ void draw_scr_background (void) {
+ 				; Clear bolt
+ 				push bc
+ 
++			#ifdef CUSTOM_CLEAR_TILE
++				push de
++				call _custom_clear_tile 	;; sets _t, _n
++				pop de
++			#else
++				xor a
++				ld  (__t), a
++				ld  a, (_comportamiento_tiles)	;; beh [0]
++				ld  (__n), a
++			#endif
++
+ 				ld  a, d
+ 				ld  c, d 				;; Call directly needs C
+ 				ld  (__x), a
+ 				ld  a, e
+ 				ld  (__y), a
+-				xor a
+-				ld  (__t), a
+-				ld  a, (_comportamiento_tiles)	;; beh [0]
+-				ld  (__n), a
+ 
+ 				call set_map_tile_do
+ 
+@@ -2904,6 +2950,12 @@ void draw_scr (void) {
+ 			script (SC_ENTERING_SCREEN + (n_pant << 1));
+ 		#endif
+ 	#endif
++
++	#ifdef ENABLE_CUSTOM_SCREEN_ENTER
++		// New screen fully set up (tiles, enemies, scripts). on_pant still holds
++		// the previous screen: 0xff on the first screen of a game.
++		custom_screen_enter ();
++	#endif
+ }
+ 
+ #ifdef PLAYER_CAN_FIRE
+diff --git a/src/dev/mainloop.h b/src/dev/mainloop.h
+index 818d0a1..91cc7b6 100644
+--- a/src/dev/mainloop.h
++++ b/src/dev/mainloop.h
+@@ -14,6 +14,10 @@ void main (void) {
+ 
+ 	while (1) {
+ 		// Here the title screen
++		#ifdef ENABLE_CUSTOM_LEVELS
++			// (not when custom_level_won () asked for the next level)
++			if (level_continue) level_continue = 0; else
++		#endif
+ 		title_screen ();
+ 	
+ 		#ifndef DIRECT_TO_PLAY
+@@ -40,6 +44,10 @@ void main (void) {
+ 			#endif
+ 		#endif
+ 
++		#ifdef ENABLE_CUSTOM_LEVELS
++			custom_level_setup ();
++		#endif
++
+ 		#ifdef ACTIVATE_SCRIPTING
+ 			#asm 
+ 					ld  hl, _flags
+@@ -79,6 +87,10 @@ void main (void) {
+ 			script (SC_ENTERING_GAME);
+ 		#endif
+ 
++		#ifdef ENABLE_CUSTOM_GAME_START
++			custom_game_start ();
++		#endif
++
+ 		#asm
+ 				xor a 
+ 				ld  (_maincounter), a 
+@@ -171,7 +183,7 @@ void main (void) {
+ 				}
+ 			#endif
+ 
+-			#if defined PLAYER_KILLS_ENEMIES && defined KILLED_X	 
++			#if (defined PLAYER_KILLS_ENEMIES || defined ENEMIES_CAN_DIE) && defined KILLED_X
+ 				if (player.killed != killed_old) {
+ 					draw_2_digits (KILLED_X, KILLED_Y, player.killed);
+ 					killed_old = player.killed;	
+@@ -434,14 +446,19 @@ void main (void) {
+ 				#endasm
+ 			}
+ 
+-			if (gpy == 0 && player.vy < 0 && n_pant >= MAP_W
++			if (gpy == 0 && player.vy < 0 && n_pant >= MAP_W_NOW
+ 				#ifdef ENABLE_CUSTOM_FLICK
+ 					&& flick_up ()
+ 				#endif
+ 			) {
+ 				#asm
+ 						ld  a, (_n_pant)
++					#ifdef VARIABLE_MAP_W
++						ld  hl, _map_w
++						sub (hl)
++					#else
+ 						sub MAP_W
++					#endif
+ 						ld  (_n_pant), a 
+ 
+ 						ld  a, 144
+@@ -465,7 +482,12 @@ void main (void) {
+ 							jr  nz, flick_down_done
+ 					#endif
+ 						ld  a, (_n_pant)
++					#ifdef VARIABLE_MAP_W
++						ld  hl, _map_w
++						add (hl)
++					#else
+ 						add MAP_W
++					#endif
+ 						ld  (_n_pant), a 
+ 
+ 						xor a 
+@@ -486,8 +508,8 @@ void main (void) {
+ 					sp_KeyPressed (0x02fd)
+ 				#endif
+ 				) {
+-					if ((pad_this_frame & sp_UP) == 0 && n_pant >= MAP_W) { n_pant -= MAP_W; }
+-					if ((pad_this_frame & sp_DOWN) == 0 && n_pant < MAP_W*MAP_H) { n_pant += MAP_W; }
++					if ((pad_this_frame & sp_UP) == 0 && n_pant >= MAP_W_NOW) { n_pant -= MAP_W_NOW; }
++					if ((pad_this_frame & sp_DOWN) == 0 && n_pant < MAP_W*MAP_H) { n_pant += MAP_W_NOW; }
+ 					if ((pad_this_frame & sp_LEFT) == 0 && n_pant > 0) { n_pant --; }
+ 					if ((pad_this_frame & sp_RIGHT) == 0 && n_pant < MAP_W*MAP_H) { n_pant ++; }
+ 					if ((pad_this_frame & sp_FIRE) == 0) player.objs ++;
+@@ -496,11 +518,15 @@ void main (void) {
+ 
+ 			// Win game condition
+ 			
+-			#if defined ACTIVATE_SCRIPTING || defined PLAYER_NUM_OBJETOS || defined SCR_FIN
++			#if defined ACTIVATE_SCRIPTING || defined PLAYER_NUM_OBJETOS || defined SCR_FIN || defined WIN_ON_KILLS
+ 				if (
+ 					#ifdef ACTIVATE_SCRIPTING
+ 						script_result == 1
++						#ifdef WIN_ON_KILLS
++							|| player.killed >= WIN_ON_KILLS
++						#endif
+ 					#else
++						// Every condition defined must hold
+ 						#ifdef PLAYER_NUM_OBJETOS
+ 							player.objs == PLAYER_NUM_OBJETOS
+ 						#endif 
+@@ -512,11 +538,20 @@ void main (void) {
+ 							(gpx >> 4) == PLAYER_FIN_X &&
+ 							(gpy >> 4) == PLAYER_FIN_Y
+ 						#endif
++						#if (defined PLAYER_NUM_OBJETOS || defined SCR_FIN) && defined WIN_ON_KILLS
++							&&
++						#endif
++						#ifdef WIN_ON_KILLS
++							player.killed >= WIN_ON_KILLS
++						#endif
+ 					#endif
+ 				){
+ 					saca_a_todo_el_mundo_de_aqui ();
+ 					cortina ();
+ 					playing = 0;
++					#ifdef ENABLE_CUSTOM_LEVELS
++						if (custom_level_won ()) level_continue = 1; else
++					#endif
+ 					game_ending ();
+ 				}
+ 			#endif
+diff --git a/src/dev/pantallas.h b/src/dev/pantallas.h
+index 02586df..fc48920 100644
+--- a/src/dev/pantallas.h
++++ b/src/dev/pantallas.h
+@@ -7,6 +7,19 @@ extern unsigned char s_title [];
+ extern unsigned char s_marco [];
+ extern unsigned char s_ending [];
+ 
++#ifdef CPC_DIRTY
++	// CPC_DIRTY screens: zx0 of a mkts_om superbuffer (cd_unpack_screen)
++	#asm
++		._s_title
++			BINARY "cpc/titlec.bin"
++		._s_marco
++		#ifndef DIRECT_TO_PLAY
++			BINARY "cpc/marcoc.bin"
++		#endif
++		._s_ending
++			BINARY "cpc/endingc.bin"
++	#endasm
++#else
+ #asm
+ 	._s_title
+ 		BINARY "titlec.bin"
+@@ -19,6 +32,7 @@ extern unsigned char s_ending [];
+ 	._s_ending
+ 		BINARY "endingc.bin"
+ #endasm
++#endif
+ 
+ void title_screen (void) {
+ 	#if defined CPC && defined AUTO_SPLIT
+@@ -47,11 +61,13 @@ void title_screen (void) {
+ 			call _unpack_screen
+ 	#endasm
+ 	
++	#ifndef CHR_MAPPED_TILES 	// the charset may have no font
+ 	draw_text (12, 12, 
+ 		#ifndef CPC 
+ 			4,
+ 		#endif
+ 	"MK1 V3.2");
++	#endif
+ 
+ 	#ifdef CPC
+ 		cpc_UpdateNow (0);
+@@ -114,6 +130,10 @@ void game_ending (void) {
+ 	#endif
+ }
+ 
++#if !defined GAME_OVER_TEXT && !defined CHR_MAPPED_TILES
++	#define GAME_OVER_TEXT "GAME OVER!"
++#endif
++
+ void game_over (void) {
+ 	#ifdef CPC 
+ 		AY_STOP_SOUND ();
+@@ -132,11 +152,15 @@ void game_over (void) {
+ 			ld  (__t), a
+ 	#endasm
+ 	draw_rectangle ();	
++	// With CHR_MAPPED_TILES the charset may have no font: give GAME_OVER_TEXT
++	// in your own characters (draw_text prints c - 32) or nothing is printed.
++	#if !defined CHR_MAPPED_TILES || defined GAME_OVER_TEXT
+ 	draw_text (11, 12, 
+ 		#ifndef CPC
+ 			64+1*8+7, 
+ 		#endif
+-		"GAME OVER!");
++		GAME_OVER_TEXT);
++	#endif
+ 	
+ 
+ 	#ifdef CPC
+diff --git a/src/dev/speccy.h b/src/dev/speccy.h
+index 8a2779f..6b8dbb1 100644
+--- a/src/dev/speccy.h
++++ b/src/dev/speccy.h
+@@ -56,7 +56,9 @@
+ // Add 10 for each 16x16 sprite.
+ // Add 13 for each 16x24 sprite.
+ // Add 5 for each 8x8 sprite (such as bullets or sword)
+-#define NUMBLOCKS 			40
++#ifndef NUMBLOCKS
++	#define NUMBLOCKS 		40		// Override in config.h if you create extra sprites
++#endif
+ 
+ #define STACK_ADDR 			61936
+ #define AD_FREE				61440-(NUMBLOCKS*15)
+@@ -252,8 +254,16 @@ void system_init (void) {
+ 			sp_AddColSpr (sp_bullets [rdi], spr_bullet_b);
+ 		}
+ 	#endif
++
++	#ifdef ENABLE_CUSTOM_SPRITES
++		custom_sprites_create ();
++	#endif
+ }
+ 
++#ifndef DIGIT_BASE
++	#define DIGIT_BASE 16 	// character of '0' (16 with the ASCII-32 font)
++#endif
++
+ void draw_coloured_tile (unsigned char x, unsigned char y, unsigned char t) {
+ 	//_x = x; _y = y; _t = t;
+ 	#asm
+@@ -468,6 +478,67 @@ void draw_coloured_tile (unsigned char x, unsigned char y, unsigned char t) {
+ 				ld  a, (__y)
+ 				call SPCompDListAddr
+ 				ex de, hl
++		#endasm
++		#ifdef CHR_MAPPED_TILES
++			#asm
++				// Tile t is any 4 of the 256 chars: tile_map [t*8..t*8+7] holds
++				// (attribute, char) for top-left, top-right, bottom-left and
++				// bottom-right, as mkts_om writes tile maps (metatileset).
++				ld  a, (__t)
++				ld  l, a
++				ld  h, 0
++				add hl, hl
++				add hl, hl
++				add hl, hl
++				ld  bc, _tile_map
++				add hl, bc 			// HL = the tile's 8 bytes
++				ld  b, 2
++			.dct_chr_row
++				ld  a, (hl) 		// colour
++			#ifdef TILE_ATTR_MASK
++				call dct_attr_mask
++			#endif
++				ld  (de), a
++				inc hl
++				inc de
++				ld  a, (hl) 		// char
++				ld  (de), a
++				inc hl
++				inc de
++				inc de
++				inc de 				// next DisplayList cell
++				ld  a, (hl)
++			#ifdef TILE_ATTR_MASK
++				call dct_attr_mask
++			#endif
++				ld  (de), a
++				inc hl
++				inc de
++				ld  a, (hl)
++				ld  (de), a
++				inc hl
++				ex  de, hl
++				ld  a, b
++				ld  bc, 123 		// next DisplayList row
++				add hl, bc
++				ld  b, a
++				ex  de, hl
++				djnz dct_chr_row
++			#ifdef TILE_ATTR_MASK
++				jr  dct_attr_mask_done
++			.dct_attr_mask
++				push hl
++				ld  hl, _tile_attr_and
++				and (hl)
++				ld  hl, _tile_attr_or
++				or  (hl)
++				pop hl
++				ret
++			.dct_attr_mask_done
++			#endif
++			#endasm
++		#else
++			#asm
+ 
+ 				// Now write 4 attributes and 4 chars.
+ 
+@@ -536,6 +607,9 @@ void draw_coloured_tile (unsigned char x, unsigned char y, unsigned char t) {
+ 				ld  a, c  			// read tile
+ 				ld  (de), a			// write tile
+ 
++							#endasm
++		#endif
++		#asm
+ 				ld  a, (__x)
+ 				ld  c, a
+ 				inc a
+@@ -638,7 +712,7 @@ void draw_2_digits (unsigned char x, unsigned char y, unsigned char value) {
+ 			ld  (__n), a
+ 			ld  a, l
+ 			
+-			add 16
++			add DIGIT_BASE
+ 			ld  e, a
+ 			ld  a, (_clr2d)
+ 			ld  d, a
+@@ -648,7 +722,7 @@ void draw_2_digits (unsigned char x, unsigned char y, unsigned char value) {
+ 			call SPPrintAtInv
+ 
+ 			ld  a, (__n)
+-			add 16
++			add DIGIT_BASE
+ 			ld  e, a
+ 			ld  a, (_clr2d)
+ 			ld  d, a
+@@ -1195,6 +1269,10 @@ void render_all_sprites (void) {
+ 			}
+ 		}
+ 	#endif
++
++	#ifdef ENABLE_CUSTOM_SPRITES
++		custom_sprites_render ();
++	#endif
+ }
+ 
+ void saca_a_todo_el_mundo_de_aqui (void) {
+@@ -1243,6 +1321,10 @@ void saca_a_todo_el_mundo_de_aqui (void) {
+ 			call SPMoveSprAbs			
+ 		#endif
+ 	#endasm
++
++	#ifdef ENABLE_CUSTOM_SPRITES
++		custom_sprites_hide ();
++	#endif
+ }
+ 
+ void fix_sprites() {
+diff --git a/src/utils/ene2h.bas b/src/utils/ene2h.bas
+index a5bc1dd..cf114c9 100644
+--- a/src/utils/ene2h.bas
++++ b/src/utils/ene2h.bas
+@@ -39,6 +39,10 @@ Sub usage
+ 	Print "indexed (optional) - stores only existing enemies + an index."
+ 	Print
+ 	Print "marrullers (optional) - enems 11-14 are marrullers & will make x1=1, y1=1, x2=13, y2=8"
++	Print "bin=file.bin (optional) - also write malotes [] and hotspots [] as raw bytes,"
++	Print "    in the same order as the .h (for levels decompressed over the arrays)."
++	Print "screens=n (optional, with bin=) - pad both to n screens with empty entries, so"
++	Print "    levels of different sizes share one layout."
+ End Sub
+ 
+ Function inCommand (spec As String) As Integer
+@@ -79,6 +83,8 @@ Dim As Integer enoffsIndex(999)
+ Dim As Integer nonEmptyEnems
+ Dim As Integer first
+ Dim As Integer empty
++Dim As Integer fBin, binOut, padScreens, k2
++Dim As uByte ub
+ 
+ Print "ene2h.bas v0.8.20250311-v4 ";
+ 
+@@ -140,6 +146,15 @@ End If
+ fOut = FreeFile
+ Open Command (2) For Output As #fOut
+ 
++binOut = sclpGIsDef ("bin")
++If binOut Then
++	Kill sclpGetValue ("bin")
++	fBin = FreeFile
++	Open sclpGetValue ("bin") For Binary As #fBin
++End If
++padScreens = 0
++If sclpGIsDef ("screens") Then padScreens = Val (sclpGetValue ("screens"))
++
+ ' Header
+ If Not empty Then 
+ 	dummy = Input (256, fIn)
+@@ -267,6 +282,19 @@ For i = 1 To mapPants
+ 			
+ 			Print #fOut, "" & (outT); 								' t
+ 			Print #fOut, "}";
++			If binOut Then
++				ub = outX: Put #fBin, , ub: ub = outY: Put #fBin, , ub
++				If compacted Then
++					ub = 16*(outX1/16) + (outY1/16): Put #fBin, , ub
++					ub = 16*(outX2/16) + (outY2/16): Put #fBin, , ub
++				Else
++					ub = outX1: Put #fBin, , ub: ub = outY1: Put #fBin, , ub
++					ub = outX2: Put #fBin, , ub: ub = outY2: Put #fBin, , ub
++				End If
++				ub = outMX And 255: Put #fBin, , ub
++				ub = outMY And 255: Put #fBin, , ub
++				ub = outT And 255: Put #fBin, , ub
++			End If
+ 
+ 			If i < mapPants Or j < nEnems Then Print #fOut, "," Else Print #fOut, ""
+ 
+@@ -275,6 +303,12 @@ For i = 1 To mapPants
+ 	Next j
+ 	Print #fOut, ""
+ Next i
++If binOut And padScreens > mapPants Then
++	ub = 0
++	For k2 = 1 To (padScreens - mapPants) * nEnems * (9 + 2 * compacted)
++		Put #fBin, , ub
++	Next k2
++End If
+ If indexed Then
+ 	If nonEmptyEnems < mapPants * nEnems Then Print #fOut, "	{0xff}"
+ End If
+@@ -347,12 +381,22 @@ For i = 1 To mapPants
+ 	Print #fOut, "	{";
+ 	Print #fOut, xy; ", "; t; ", 0";
+ 	Print #fOut, "}";
++	If binOut Then
++		Put #fBin, , xy: Put #fBin, , t
++		ub = 0: Put #fBin, , ub
++	End If
+ 
+ 	If i < mapPants Then Print #fOut, ", " Else Print #fOut, ""
+ Next i
+ 
+ Print #fOut, "};"
+ Print #fOut, ""
++If binOut And padScreens > mapPants Then
++	ub = 0
++	For k2 = 1 To (padScreens - mapPants) * 3
++		Put #fBin, , ub
++	Next k2
++End If
+ 
+ For i = 0 To 255
+ 	If typeCounters (i) <> 0 Or i < 8 Then
+@@ -363,6 +407,5 @@ Next i
+ Print #fOut, ""
+ 
+ Close
+-
+-
++If binOut Then Print " ~ wrote " & sclpGetValue ("bin");
+ Print " ~ DONE"
+diff --git a/src/utils/mapcnv.bas b/src/utils/mapcnv.bas
+index 5dddf24..ee4f9a6 100644
+--- a/src/utils/mapcnv.bas
++++ b/src/utils/mapcnv.bas
+@@ -30,6 +30,13 @@ sub usage ()
+ 	Print	
+ 	Print "If `fixmappy` is on, tile t is read as `t - 1`, then ..."
+ 	Print "If `packed` is on and a tile t > 15 is found, `t mod 16` is read instead."
++	Print
++	Print "   MapCnv mapa.map mapa.bin map_w map_h scr_w scr_h t_lock [packed] [fixmappy] bin [maxlocks=n] [screens=n]"
++	Print
++	Print "With `bin`, mapa.bin gets the raw map (packed or not, as in mapa.h) followed by"
++	Print "the locks, 4 bytes each (np, x, y, 0), padded to `maxlocks` entries with np = 255."
++	Print "Good for levels that are decompressed over the engine's arrays. `screens=n` pads"
++	Print "the map to n rooms (all tile 0), so levels of different sizes share one layout."
+ 	
+ end sub
+ 
+@@ -45,8 +52,16 @@ Type MyBolt
+ End Type
+ 
+ Dim As MyBolt Bolts (100)
++Dim As Integer binOut, maxLocks, padScreens
++Dim As uByte ub
+ 
+ fixmappy = inCommand ("fixmappy")
++binOut = inCommand ("bin")
++maxLocks = -1
++For i = 1 To 16
++	If Left (lcase (Command (i)), 9) = "maxlocks=" Then maxLocks = Val (Mid (Command (i), 10))
++	If Left (lcase (Command (i)), 8) = "screens=" Then padScreens = Val (Mid (Command (i), 9))
++Next i
+ 
+ Print "Mapcnv v2.1 20210527a (fix) (2 sets native)"
+ If fixmappy Then Print "Correcting mappy offset (-1 to all bytes read)"
+@@ -87,6 +102,57 @@ Next y
+ 
+ close f
+ 
++' Binary output: raw map + locks
++If binOut Then
++	Kill Command (2)
++	Open Command (2) For Binary As #f
++	i = 0
++	For yy = 0 To map_h - 1
++		For xx = 0 To map_w - 1
++			ct = 0
++			For y = 0 To scr_h - 1
++				For x = 0 To scr_w - 1
++					d = BigOrigMap (yy * scr_h + y, xx * scr_w + x)
++					If d = bolt Then
++						Bolts (i).x = x: Bolts (i).y = y: Bolts (i).np = yy * map_w + xx
++						i = i + 1
++					End If
++					If packed = 0 Then
++						ub = d: Put #f, , ub
++					ElseIf ct = 0 Then
++						ac = d * 16
++					Else
++						ub = ac + d: Put #f, , ub
++					End If
++					If packed Then ct = 1 - ct
++				Next x
++			Next y
++		Next xx
++	Next yy
++	If padScreens > map_w * map_h Then
++		ub = 0
++		For j = 1 To (padScreens - map_w * map_h) * scr_w * scr_h / (1 + packed)
++			Put #f, , ub
++		Next j
++	End If
++	If maxLocks < 0 Then maxLocks = i
++	If i > maxLocks Then Print "ERROR: " & i & " locks found, maxlocks is " & maxLocks: Close f: End
++	For j = 0 To maxLocks - 1
++		If j < i Then
++			ub = Bolts (j).np: Put #f, , ub
++			ub = Bolts (j).x: Put #f, , ub
++			ub = Bolts (j).y: Put #f, , ub
++		Else
++			ub = 255: Put #f, , ub
++			ub = 0: Put #f, , ub: Put #f, , ub
++		End If
++		ub = 0: Put #f, , ub
++	Next j
++	Close f
++	Print "Wrote " & Command (2) & ": " & (map_h*map_w) & " rooms + " & maxLocks & " locks (" & i & " used)."
++	End
++End If
++
+ ' withstruimos el nuevo mapa mientras rellenamos el array de cerrojos
+ 
+ open Command (2) for output as #f
+diff --git a/src/utils/rle44map_sp.bas b/src/utils/rle44map_sp.bas
+index f55d723..79be0ac 100644
+--- a/src/utils/rle44map_sp.bas
++++ b/src/utils/rle44map_sp.bas
+@@ -12,7 +12,7 @@ Sub usage
+ 	Print ""
+ 	Print "rle44map_sp.exe in=map.map out=map.bin size=W,H [tlock=T] [mk1locks]"
+ 	Print "               [scrsize=w,h] [fixmappy] [nodecos] [t0=N] [verbose]"
+-	Print "               [mk1h=mapa.h]"
++	Print "               [mk1h=mapa.h] [keepempty] [maxlocks=n]"
+ 	Print "               in is the input filename."
+ 	Print "               out is the output filename."
+ 	Print "               size is the size, in screens."
+@@ -23,6 +23,8 @@ Sub usage
+ 	Print "               t0 defines # of 1st tile, default = 0"
+ 	Print "               mk1locks makes locks 4 bytes np x y st"
+ 	Print "               mk1h will generate a MTE MK1 compatible mapa.h file"
++	Print "               keepempty encodes all-0 screens too (else they get index 0)"
++	Print "               maxlocks (with mk1locks) pads locks.bin to n locks (np = 255)"
+ End Sub
+ 
+ Sub mbWrite (v As uByte)
+@@ -55,7 +57,7 @@ Dim As Integer fIn, fOut, xP, yP, x, y, i, j, tLock, locksI, n, cMapI, ctr, tota
+ Dim As uByte BigMap (127, 255)
+ Dim As uByte cMap (127, 255), scrSizes (127)
+ Dim As String*512 cMapAmalgam (127)
+-Dim As uByte locks (63)
++Dim As uByte locks (1023)		' Was (63): more than 16 locks (mk1locks) or 32 overflowed it and corrupted the lock table
+ Dim As uByte d, dp
+ Dim As uByte scrMaps (127)
+ Dim As String fileName
+@@ -197,8 +199,10 @@ For nPant = 0 To maxPants - 1
+ 
+ 	realPant = nPant
+ 
+-	' Detect empty screen
+-	If screensum = 0 Then 
++	' Detect empty screen. They used to get no data and index 0, which the
++	' MK1 decoder (RLE_MAP) reads as the index itself; with keepempty they
++	' are encoded like any other screen (and the repeated ones shared).
++	If screensum = 0 And sclpGetValue ("keepempty") = "" Then 
+ 		realPant = 255: cMapI = 0
+ 	Else
+ 		' Search for repeated screens
+@@ -317,8 +321,17 @@ If sclpGetValue ("nodecos") = "" And decosAre Then
+ 	Close #fOut
+ End If
+ 
+-' Write locks
++' Write locks. maxlocks=n (with mk1locks): always write n of them, the
++' unused ones np = 255, so levels of different maps share one layout.
+ lockssize = 0
++If sclpGetValue ("maxlocks") <> "" And mk1locks Then
++	If locksI > 4 * Val (sclpGetValue ("maxlocks")) Then Print "ERROR: more than maxlocks locks": End 1
++	While locksI < 4 * Val (sclpGetValue ("maxlocks"))
++		locks (locksI) = 255: locks (locksI + 1) = 0: locks (locksI + 2) = 0: locks (locksI + 3) = 0
++		locksI = locksI + 4
++	Wend
++	Kill makeFileName (fileName, "locks.bin")
++End If
+ If locksI Then
+ 	fOut = FreeFile
+ 	Open makeFileName (fileName, "locks.bin") For Binary As #fOut
+diff --git a/src/utils/rle53map_sp.bas b/src/utils/rle53map_sp.bas
+index 3ba1d62..f3c4af1 100644
+--- a/src/utils/rle53map_sp.bas
++++ b/src/utils/rle53map_sp.bas
+@@ -55,7 +55,7 @@ Dim As Integer fIn, fOut, xP, yP, x, y, i, j, tLock, locksI, n, cMapI, ctr, tota
+ Dim As uByte BigMap (127, 255)
+ Dim As uByte cMap (127, 255), scrSizes (127)
+ Dim As String*512 cMapAmalgam (127)
+-Dim As uByte locks (63)
++Dim As uByte locks (1023)		' Was (63): more than 16 locks (mk1locks) or 32 overflowed it and corrupted the lock table
+ Dim As uByte d, dp
+ Dim As uByte scrMaps (127)
+ Dim As String fileName
+diff --git a/src/utils/rle62map_sp.bas b/src/utils/rle62map_sp.bas
+index 2e34231..decf284 100644
+--- a/src/utils/rle62map_sp.bas
++++ b/src/utils/rle62map_sp.bas
+@@ -55,7 +55,7 @@ Dim As Integer fIn, fOut, xP, yP, x, y, i, j, tLock, locksI, n, cMapI, ctr, tota
+ Dim As uByte BigMap (127, 255)
+ Dim As uByte cMap (127, 255), scrSizes (127)
+ Dim As String*512 cMapAmalgam (127)
+-Dim As uByte locks (63)
++Dim As uByte locks (1023)		' Was (63): more than 16 locks (mk1locks) or 32 overflowed it and corrupted the lock table
+ Dim As uByte d, dp
+ Dim As uByte scrMaps (127)
+ Dim As String fileName
+diff --git a/src/utils/sprcnv2.bas b/src/utils/sprcnv2.bas
+index 69544fa..b416578 100644
+--- a/src/utils/sprcnv2.bas
++++ b/src/utils/sprcnv2.bas
+@@ -26,8 +26,12 @@ End Function
+ Sub Usage () 
+ 	Print "** USO **"
+ 	Print "   sprcnv2 archivo.png archivo.h n [nomask]"
++	Print "   sprcnv2 archivo.png archivo.bin n nomask bin"
+ 	Print
+ 	Print "Convierte un Spriteset de n sprites"
++	Print "Con `bin`, archivo.bin recibe los bloques tal cual (sin las 8 lineas iniciales),"
++	Print "para sets que se descomprimen en tiempo de ejecucion. Cada pareja de sprites ocupa"
++	Print "144 bytes: el sprite 2k empieza en 144k, el 2k+1 en 144k+1; columnas a +48, +96."
+ End Sub
+ 
+ Function ReadBinValue (x As Integer, y As Integer) As Integer
+@@ -63,6 +67,36 @@ End If
+ If inCommand ("nomask") Then nomask = -1 else nomask = 0
+ If inCommand ("extra") Then extra = -1 else extra = 0
+ 
++If inCommand ("bin") Then
++	If Not nomask Then Print "bin needs nomask": End
++	screenres 640, 480, 32, , -1
++	img = png_load (Command (1))
++	If img = 0 Then Print "Failed to load": End
++	Dim As uByte ub
++	Kill Command (2)
++	f = FreeFile
++	Open Command (2) For Binary As #f
++	n = Val (Command (3))
++	x = 0: y = 0
++	For sprite = 1 To n Step 2
++		' 3 columns: pixels x..x+7, x+8..x+15, empty; sprite and sprite+1 interleaved
++		For j = 0 To 2
++			For yy = 0 To 15
++				If j < 2 Then ub = ReadBinValue (x + 8 * j, y + yy) Else ub = 0
++				Put #f, , ub
++				If j < 2 Then ub = ReadBinValue (x + 16 + 8 * j, y + yy) Else ub = 0
++				Put #f, , ub
++			Next yy
++			ub = 0
++			For yy = 0 To 15: Put #f, , ub: Next yy
++		Next j
++		x = x + 32: If x >= 256 Then x = 0: y = y + 16
++	Next sprite
++	Close f
++	Print "sprcnv2: " & n & " sprites (" & (n \ 2 * 144) & " bytes) to " & Command (2)
++	End
++End If
++
+ ' Primero cargo el archivo de imagen
+ screenres 640, 480, 32, , -1
+ 
