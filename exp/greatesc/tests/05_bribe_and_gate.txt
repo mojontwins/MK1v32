@@ -1,0 +1,30 @@
+run 100
+key 1 5
+run 60
+key SPACE 3
+run 30
+# --- bribe: alarm on, bribe carried, wait in the guard's path in screen 14 (row 8)
+flag 15 1
+flag 0 41
+flag 3 1
+tp 14 7 8
+run 500
+state bribe
+shot shots/z01_bribe.png
+key SPACE 3
+run 40
+state bribe_after
+# --- gate: uniform + papers, talk to the sentry
+flag 11 1
+flag 12 1
+flag 0 37
+flag 1 38
+tp 17 13 4
+run 60
+key SPACE 3
+run 40
+shot shots/z02_gate.png
+key SPACE 3
+run 150
+state gate_win
+shot shots/z03_end.png

@@ -1,0 +1,13 @@
+splib2a.lib: la splib2 de MK1 (FLASHASFG = 0) con un interruptor de atributos.
+
+SPAttrWrite es la etiqueta del unico "ld (de),a" con el que SPUpdateNow escribe
+atributos en pantalla. Poniendo ahi $00 (nop), Sprite Pack no toca los atributos;
+con $12 (ld (de),a), funciona como siempre (es el valor por defecto). No cuesta
+nada: el codigo es identico byte a byte al de splib2.lib, solo se exporta la
+etiqueta.
+
+Fuentes: SPUpdateNow.asm y SPconfig.def (DEFC ATTRSWITCH = 1, FLASHASFG = 0),
+para copiar en lib/splib2 y lib/splib2/updater de MK1 y reconstruir con
+Makefile.bat (sale splib2.lib: renombrar a splib2a.lib).
+
+comp.sh y comp.bat enlazan con -llib/splib2a: no hace falta copiarla a z88dk.

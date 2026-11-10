@@ -10,9 +10,9 @@
 #   gfx/cpc/palN.png      the 4 inks of level N (from the mockups)
 #   gfx/cpc/font.png      64 chars (NES font, 4 pens)
 #   gfx/cpc/work.png      the 48 tiles (CPC tileset as drawn, near-black fixed)
-#   gfx/cpc/marco.png     the frame
-#   gfx/cpc/title.png     a placeholder title (the frame)
-#   gfx/cpc/sprites.png   fixed cells: player (8, drawn) + explosion, coco, punch, empty
+#   (gfx/cpc/title.png, with the frame: DIRECT_TO_PLAY, and gfx/cpc/ending.png are
+#   hand-drawn, not made here)
+#   gfx/cpc/sprites.png   fixed cells: player (8, drawn) + explosion, coco, punch right, punch left (hand-drawn: kept)
 #   gfx/cpc/spritesN.png  level cells: 8 enemy cells + 6 swim frames + drop + spare
 #   dev/nn_levels.h       per level tables (tile maps, start, palettes, map sizes...)
 #
@@ -148,30 +148,11 @@ for i, k in enumerate(LPAL): pal_png(os.path.join(G, 'pal%d.png' % i), P[k])
 font = Image.open(os.path.join(NES, 'fiddle/font.png')).convert('RGB')
 repen(font, [(0, 67, 88), BLACK, (127, 127, 127), (191, 191, 191)]).save(os.path.join(G, 'font.png'))
 repen(Image.open(os.path.join(G, 'src_tiles.png'))).save(os.path.join(G, 'work.png'))
-marco = repen(Image.open(os.path.join(G, 'src_marco.png')))
-marco.save(os.path.join(G, 'marco.png'))
-fontp = Image.open(os.path.join(G, 'font.png'))
-
-def text(im, cx, cy, s):
-	for i, ch in enumerate(s):
-		c = ord(ch) - 32
-		im.paste(fontp.crop(((c % 32) * 8, (c // 32) * 8, (c % 32) * 8 + 8, (c // 32) * 8 + 8)), ((cx + i) * 8, cy * 8))
-
-def centred(im, cy, s): text(im, 16 - len(s) // 2, cy, s)
-
-title = marco.copy()
-for cy, s in [(6, 'A NINJAJAR! ADVENTURE'), (10, '1  KEYBOARD'), (12, '2  JOYSTICK'),
-              (16, 'O P  WALK   Q  JUMP'), (18, 'A  DIVE   SPACE  PUNCH')]:
-	centred(title, cy, s)
-title.save(os.path.join(G, 'title.png'))
-for n, lines in [(1, ['WELL DONE!', '', 'NOW LOAD PART 2']), (2, ['WELL DONE!', '', 'NOW LOAD PART 3']),
-                 (3, ['YOU DID IT!', '', 'NIN NIN IS HOME', 'WITH ALL THE ONIGIRI'])]:
-	end = marco.copy()
-	for k, s in enumerate(lines): centred(end, 9 + k * 2, s)
-	end.save(os.path.join(G, 'ending%d.png' % n))
-
 player = [usr_cell(i, 0) for i in range(8)]
-sheet(player + [nes_cell(47), COCO, PUNCH, blank()], os.path.join(G, 'sprites.png'))
+# sprites.png is hand-drawn now (coco, punch right in 10, punch left in 11):
+# only made if it isn't there
+if not os.path.exists(os.path.join(G, 'sprites.png')):
+	sheet(player + [nes_cell(47), COCO, PUNCH, PUNCH.transpose(Image.FLIP_LEFT_RIGHT), blank()], os.path.join(G, 'sprites.png'))
 
 SWIM = [8, 9, 10, 12, 13, 14]	# player_frames + 8: frames 4 5 6 / 0 1 2
 for i, (nl, nm, name) in enumerate(LEVELS):

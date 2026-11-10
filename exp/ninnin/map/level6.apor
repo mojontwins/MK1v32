@@ -1,0 +1,193 @@
+{
+	"aportador": 1,
+	"tile": {"w": 16, "h": 16},
+	"screen": {"w": 15, "h": 10},
+	"map": {
+		"w": 4,
+		"h": 4,
+		"rows": [
+			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 0, 0, 0, 0, 0, 7, 7, 7, 0, 0, 0, 7, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[7, 7, 7, 0, 0, 0, 0, 7, 7, 0, 0, 0, 0, 0, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 11, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 11, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[7, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 14, 14, 0, 0, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 0, 13, 13, 2, 0, 0, 0, 14, 13, 13, 0, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[7, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 12, 12, 7, 7, 7, 7, 13, 0, 4, 5, 5, 5, 2, 0, 13, 13, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[7, 2, 2, 12, 0, 0, 0, 0, 0, 0, 12, 2, 2, 2, 2, 2, 2, 2, 11, 2, 4, 0, 0, 0, 4, 2, 11, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[7, 1, 1, 2, 2, 0, 0, 0, 0, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[7, 7, 7, 7, 7, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7],
+			[7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 10, 7, 7, 7, 7, 7, 7, 7],
+			[7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 10, 10, 10, 7, 7, 7, 7],
+			[7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 14, 14, 14, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7],
+			[7, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 14, 14, 14, 14, 7, 7, 7, 7, 3, 3, 3, 3, 0, 0, 0, 3, 3, 7, 7, 7],
+			[7, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 4, 4, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 14, 14, 14, 14, 7, 7, 7, 7, 10, 0, 0, 0, 0, 3, 5, 3, 0, 10, 10, 7, 7],
+			[7, 0, 0, 3, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4, 4, 4, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 14, 14, 14, 14, 14, 7, 7, 7, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7],
+			[7, 0, 0, 15, 14, 14, 9, 9, 9, 9, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4, 1, 1, 0, 0, 0, 0, 0, 0, 0, 9, 0, 9, 7, 9, 14, 14, 14, 14, 14, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7],
+			[7, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 2, 2, 2, 7, 3, 11, 3, 0, 0, 0, 0, 0, 0, 0, 3, 11, 3, 7],
+			[7, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 2, 0, 4, 4, 4, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7],
+			[7, 0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7],
+			[7, 7, 0, 0, 14, 14, 3, 0, 0, 7, 7, 0, 0, 0, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 7, 7, 7, 7],
+			[7, 7, 0, 0, 14, 14, 3, 0, 0, 0, 0, 0, 0, 0, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 7, 7, 7],
+			[7, 0, 0, 0, 14, 14, 15, 0, 0, 0, 0, 0, 0, 0, 7, 7, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 13, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 0, 0, 0, 0, 15, 0, 0, 0, 0, 0, 7, 7],
+			[7, 0, 0, 0, 14, 2, 2, 2, 0, 0, 0, 0, 0, 0, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 12, 0, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 7],
+			[7, 0, 0, 0, 2, 4, 4, 4, 2, 0, 0, 0, 0, 0, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 2, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7],
+			[7, 0, 0, 0, 4, 4, 4, 4, 4, 2, 0, 0, 0, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 0, 4, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7],
+			[2, 2, 0, 0, 4, 4, 4, 4, 4, 4, 0, 0, 0, 4, 4, 4, 4, 2, 9, 9, 9, 9, 9, 9, 9, 0, 1, 1, 0, 4, 7, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7],
+			[4, 4, 2, 2, 4, 4, 4, 4, 4, 4, 0, 0, 0, 4, 4, 4, 4, 4, 2, 2, 2, 2, 2, 2, 2, 9, 9, 9, 9, 4, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7],
+			[4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7],
+			[4, 4, 4, 4, 4, 4, 4, 4, 4, 1, 0, 0, 0, 1, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7],
+			[4, 4, 4, 4, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 14, 0, 0, 0, 0, 0, 0, 3, 3, 0, 0, 0, 0, 0, 0, 0, 2, 7, 7, 7, 4],
+			[4, 4, 1, 0, 0, 0, 0, 14, 0, 0, 0, 0, 0, 0, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 13, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 4, 7, 4, 7, 4],
+			[1, 1, 0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 13, 0, 0, 3, 0, 0, 3, 0, 0, 0, 0, 0, 0, 13, 0, 0, 0, 0, 0, 0, 4, 4, 4, 4, 4],
+			[7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 14, 0, 0, 0, 3, 0, 0, 3, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 2, 4, 4, 4, 4, 4],
+			[7, 0, 0, 12, 0, 0, 0, 0, 0, 0, 0, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 3, 0, 0, 0, 0, 0, 3, 14, 0, 0, 0, 0, 2, 4, 4, 4, 4, 4, 4],
+			[7, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13, 0, 0, 0, 0, 3, 14, 14, 0, 0, 2, 2, 4, 4, 4, 4, 4, 4, 4],
+			[7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+			[7, 7, 12, 0, 0, 14, 14, 14, 14, 14, 14, 0, 0, 0, 0, 0, 0, 3, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+			[2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
+		]
+	},
+	"enemies_per_screen": 3,
+	"behaviours": [0, 8, 8, 8, 8, 8, 0, 8, 8, 0, 1, 8, 1, 24, 24, 10, 0, 0, 0, 41, 2, 72, 8, 8, 8, 8, 1, 8, 1, 24, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	"screens": [
+		{
+			"hotspot": [13, 3, 2],
+			"enemies": [
+				[83, 4, 1, 4, 2, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0]
+			]
+		},
+		{
+			"hotspot": [0, 0, 0],
+			"enemies": [
+				[1, 6, 1, 8, 1, 1, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0]
+			]
+		},
+		{
+			"hotspot": [0, 0, 0],
+			"enemies": [
+				[0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0]
+			]
+		},
+		{
+			"hotspot": [0, 0, 0],
+			"enemies": [
+				[0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0]
+			]
+		},
+		{
+			"hotspot": [0, 0, 0],
+			"enemies": [
+				[2, 4, 0, 10, 1, 1, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0]
+			]
+		},
+		{
+			"hotspot": [0, 0, 0],
+			"enemies": [
+				[65, 9, 5, 10, 5, 96, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0]
+			]
+		},
+		{
+			"hotspot": [0, 0, 0],
+			"enemies": [
+				[116, 5, 2, 5, 3, 64, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0]
+			]
+		},
+		{
+			"hotspot": [5, 2, 1],
+			"enemies": [
+				[1, 13, 7, 11, 7, 1, 0, 0],
+				[2, 1, 7, 3, 7, 1, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0]
+			]
+		},
+		{
+			"hotspot": [0, 0, 0],
+			"enemies": [
+				[3, 7, 2, 13, 3, 2, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0]
+			]
+		},
+		{
+			"hotspot": [2, 6, 2],
+			"enemies": [
+				[0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0]
+			]
+		},
+		{
+			"hotspot": [2, 7, 2],
+			"enemies": [
+				[17, 1, 3, 2, 3, 0, 0, 0],
+				[17, 13, 4, 12, 4, 0, 0, 0],
+				[17, 1, 5, 2, 5, 0, 0, 0]
+			]
+		},
+		{
+			"hotspot": [0, 0, 0],
+			"enemies": [
+				[1, 3, 3, 6, 3, 1, 0, 0],
+				[2, 8, 3, 10, 3, 1, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0]
+			]
+		},
+		{
+			"hotspot": [0, 0, 0],
+			"enemies": [
+				[1, 8, 2, 13, 2, 1, 0, 0],
+				[2, 10, 5, 4, 5, 2, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0]
+			]
+		},
+		{
+			"hotspot": [0, 0, 0],
+			"enemies": [
+				[18, 8, 2, 8, 4, 1, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0]
+			]
+		},
+		{
+			"hotspot": [7, 3, 3],
+			"enemies": [
+				[6, 6, 3, 7, 4, 1, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0]
+			]
+		},
+		{
+			"hotspot": [0, 0, 0],
+			"enemies": [
+				[20, 9, 3, 4, 3, 96, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0]
+			]
+		}
+	],
+	"tilesets": [
+		{
+			"name": "CPC",
+			"double_width": false,
+			"source": "../gfx/cpc/apor/level6.png",
+			"png": "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"
+		}
+	],
+	"current_tileset": 0,
+	"exports": {"map": "level6.map", "ene": "../enems/level6.ene", "behs": "level6_behs.txt", "hotspot_bytes": 3}
+}

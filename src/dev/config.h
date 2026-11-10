@@ -113,6 +113,7 @@
 //#define PLAYER_CUSTOM_VENG 				// Replace Vertical axis for your own 
 //#define PLAYER_CUSTOM_HENG 				// Replace Horizontal axis for your own
 //#define PLAYER_CUSTOM_FRAME 				// Replace frame number selection for your own
+//#define PLAYER_CUSTOM_MOVE 				// Replace physics + collision (addons/ramiro.h)
 //#define PLAYER_CUSTOM_BG_HIT 				// Implement your own bounce.
 //#define ENABLE_CUSTOM_HOTSPOTS 			// Add your own hotspots!
 //#define ENABLE_CUSTOM_FLICK 				// define flick_* in custom_flicks.h, return 0 to override flick

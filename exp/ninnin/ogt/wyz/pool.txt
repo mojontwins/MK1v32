@@ -1,0 +1,61 @@
+/tmp/mz/ninnin_music_wyz/music_00_Menu_cpc.wyz: 4 patterns, order 4, 10 instruments, 12 drum effects, fx channel A, loop to 0
+   note: song 0: 3.333 ticks/row is not an integer: tempo is approximated with +/-1 tempo modifiers
+   note: song 0: FX (drum) channel = A; rows where a melodic note is cut by drums: {'A': 0, 'B': 0, 'C': 0}
+/tmp/mz/ninnin_music_wyz/music_01_New_Level_cpc.wyz: 2 patterns, order 2, 10 instruments, 12 drum effects, fx channel A, loop to 1
+   note: song 1: FX (drum) channel = A; rows where a melodic note is cut by drums: {'A': 0, 'B': 0, 'C': 0}
+/tmp/mz/ninnin_music_wyz/music_02_Action_cpc.wyz: 13 patterns, order 23, 10 instruments, 12 drum effects, fx channel C, loop to 0
+   note: song 2: 3.125 ticks/row is not an integer: tempo is approximated with +/-1 tempo modifiers
+   note: song 2: F (speed/tempo change) is not converted
+   note: song 2, Triangle: moved up 1 octave(s) (lowest note was below C2)
+   note: song 2: FX (drum) channel = C; rows where a melodic note is cut by drums: {'A': 55, 'B': 55, 'C': 47}
+/tmp/mz/ninnin_music_wyz/music_03_Chungo_Level_cpc.wyz: 12 patterns, order 20, 10 instruments, 12 drum effects, fx channel C, loop to 0
+   note: song 3: 3.125 ticks/row is not an integer: tempo is approximated with +/-1 tempo modifiers
+   note: song 3: FX (drum) channel = C; rows where a melodic note is cut by drums: {'A': 31, 'B': 34, 'C': 0}
+/tmp/mz/ninnin_music_wyz/music_04_Doing_Things_cpc.wyz: 9 patterns, order 16, 10 instruments, 12 drum effects, fx channel C, loop to 0
+   note: song 4: 3.125 ticks/row is not an integer: tempo is approximated with +/-1 tempo modifiers
+   note: song 4, Pulse 1: moved up 1 octave(s) (lowest note was below C2)
+   note: song 4, Triangle: moved up 1 octave(s) (lowest note was below C2)
+   note: song 4: FX (drum) channel = C; rows where a melodic note is cut by drums: {'A': 45, 'B': 45, 'C': 39}
+/tmp/mz/ninnin_music_wyz/music_05_Nadar_s_Song_cpc.wyz: 11 patterns, order 17, 10 instruments, 12 drum effects, fx channel C, loop to 0
+   note: song 5: 4.167 ticks/row is not an integer: tempo is approximated with +/-1 tempo modifiers
+   note: song 5: FX (drum) channel = C; rows where a melodic note is cut by drums: {'A': 29, 'B': 33, 'C': 27}
+/tmp/mz/ninnin_music_wyz/music_06_Lava_cpc.wyz: 4 patterns, order 7, 10 instruments, 12 drum effects, fx channel A, loop to 0
+   note: song 6, Triangle: moved up 1 octave(s) (lowest note was below C2)
+   note: song 6: FX (drum) channel = A; rows where a melodic note is cut by drums: {'A': 64, 'B': 64, 'C': 64}
+/tmp/mz/ninnin_music_wyz/music_07_Castle_cpc.wyz: 13 patterns, order 14, 10 instruments, 12 drum effects, fx channel A, loop to 0
+   note: song 7: 4.167 ticks/row is not an integer: tempo is approximated with +/-1 tempo modifiers
+   note: song 7, Triangle: moved up 1 octave(s) (lowest note was below C2)
+   note: song 7: FX (drum) channel = A; rows where a melodic note is cut by drums: {'A': 50, 'B': 52, 'C': 52}
+/tmp/mz/ninnin_music_wyz/music_08_Game_Over_cpc.wyz: 2 patterns, order 2, 10 instruments, 12 drum effects, fx channel A, loop to 1
+   note: song 8: 5.833 ticks/row is not an integer: tempo is approximated with +/-1 tempo modifiers
+   note: song 8, Triangle: moved up 1 octave(s) (lowest note was below C2)
+   note: song 8: FX (drum) channel = A; rows where a melodic note is cut by drums: {'A': 0, 'B': 0, 'C': 0}
+/tmp/mz/ninnin_music_wyz/music_09_Ending_cpc.wyz: 10 patterns, order 14, 10 instruments, 12 drum effects, fx channel C, loop to 11
+   note: song 9: 3.125 ticks/row is not an integer: tempo is approximated with +/-1 tempo modifiers
+   note: song 9: F (speed/tempo change) is not converted
+   note: song 9: FX (drum) channel = C; rows where a melodic note is cut by drums: {'A': 41, 'B': 44, 'C': 30}
+/tmp/mz/ninnin_music_wyz/music_10_Silence_cpc.wyz: 1 patterns, order 1, 10 instruments, 12 drum effects, fx channel A, loop to 0
+   note: song 10: FX (drum) channel = A; rows where a melodic note is cut by drums: {'A': 0, 'B': 0, 'C': 0}
+shared pool: 10 instruments (+ R Sawtooth), 12 effects
+   instrument 0: 08 S - Solo01_Hi
+   instrument 1: 00 T - Bass (tri)
+   instrument 2: 09 S - Solo01_Lo
+   instrument 3: 02 S - Lead
+   instrument 4: 08 S - Solo01_Hi (tri)
+   instrument 5: 01 S - Strings
+   instrument 6: 02 S - Lead (tri)
+   instrument 7: 07 T - Bass D (tri)
+   instrument 8: 03 S - Lead Helmet
+   instrument 9: 09 S - Solo01_Lo (tri)
+   effect 0: 05 Kick n0
+   effect 1: 06 Hat nD
+   effect 2: 04 Snare n0
+   effect 3: 0E Noise nF
+   effect 4: 0E Noise nB
+   effect 5: 0E Noise nA
+   effect 6: 0E Noise n9
+   effect 7: 0E Noise n8
+   effect 8: 0E Noise n7
+   effect 9: 0E Noise n6
+   effect 10: 0E Noise n5
+   effect 11: 0E Noise n4

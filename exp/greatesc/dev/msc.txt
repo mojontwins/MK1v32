@@ -1,0 +1,2139 @@
+msc v4.6.20260729 (Python port) ~ Processing script.spt
+==========================================
+LINEA ROOMS = 30
+T0=[rooms]
+T1=[=]
+T2=[30]
+==========================================
+LINEA TEXT WIDTH = 22
+T0=[text]
+T1=[width]
+T2=[=]
+T3=[22]
+==========================================
+LINEA ALIAS %SLOT1 = 0            # tile of the 1st carried item (0 = empty)
+T0=[alias]
+T1=[%slot1]
+T2=[=]
+T3=[0]
+Set alias %slot1 for flag $0
+==========================================
+LINEA ALIAS %SLOT2 = 1            # tile of the 2nd carried item (0 = empty)
+T0=[alias]
+T1=[%slot2]
+T2=[=]
+T3=[1]
+Set alias %slot2 for flag $1
+==========================================
+LINEA ALIAS %CLOCK = 2            # camp hour 0-23 (C). Shown as TIME (OBJECT_COUNT)
+T0=[alias]
+T1=[%clock]
+T2=[=]
+T3=[2]
+Set alias %clock for flag $2
+==========================================
+LINEA ALIAS %ALARM = 3            # 1 = the bell is ringing (C sets it, we clear it)
+T0=[alias]
+T1=[%alarm]
+T2=[=]
+T3=[3]
+Set alias %alarm for flag $3
+==========================================
+LINEA ALIAS %RESTRICT = 4         # 1 = this screen is a restricted area
+T0=[alias]
+T1=[%restrict]
+T2=[=]
+T3=[4]
+Set alias %restrict for flag $4
+==========================================
+LINEA ALIAS %EVENT = 5            # screen where you must be now, 255 = free (C only)
+T0=[alias]
+T1=[%event]
+T2=[=]
+T3=[5]
+Set alias %event for flag $5
+==========================================
+LINEA ALIAS %SKEY = 6             # 32 KEY
+T0=[alias]
+T1=[%skey]
+T2=[=]
+T3=[6]
+Set alias %skey for flag $6
+==========================================
+LINEA ALIAS %SPICK = 7            # 33 LOCKPICK
+T0=[alias]
+T1=[%spick]
+T2=[=]
+T3=[7]
+Set alias %spick for flag $7
+==========================================
+LINEA ALIAS %SSNIPS = 8           # 34 WIRE CUTTERS
+T0=[alias]
+T1=[%ssnips]
+T2=[=]
+T3=[8]
+Set alias %ssnips for flag $8
+==========================================
+LINEA ALIAS %SSHOVEL = 9          # 35 SHOVEL
+T0=[alias]
+T1=[%sshovel]
+T2=[=]
+T3=[9]
+Set alias %sshovel for flag $9
+==========================================
+LINEA ALIAS %STORCH = 10          # 36 TORCH
+T0=[alias]
+T1=[%storch]
+T2=[=]
+T3=[10]
+Set alias %storch for flag $10
+==========================================
+LINEA ALIAS %SUNIFORM = 11        # 37 UNIFORM
+T0=[alias]
+T1=[%suniform]
+T2=[=]
+T3=[11]
+Set alias %suniform for flag $11
+==========================================
+LINEA ALIAS %SPAPERS = 12         # 38 PAPERS
+T0=[alias]
+T1=[%spapers]
+T2=[=]
+T3=[12]
+Set alias %spapers for flag $12
+==========================================
+LINEA ALIAS %SCOMPASS = 13        # 39 COMPASS
+T0=[alias]
+T1=[%scompass]
+T2=[=]
+T3=[13]
+Set alias %scompass for flag $13
+==========================================
+LINEA ALIAS %SFOOD = 14           # 40 FOOD
+T0=[alias]
+T1=[%sfood]
+T2=[=]
+T3=[14]
+Set alias %sfood for flag $14
+==========================================
+LINEA ALIAS %SBRIBE = 15          # 41 BRIBE
+T0=[alias]
+T1=[%sbribe]
+T2=[=]
+T3=[15]
+Set alias %sbribe for flag $15
+==========================================
+LINEA ALIAS %SPARCEL = 16         # 42 PARCEL
+T0=[alias]
+T1=[%sparcel]
+T2=[=]
+T3=[16]
+Set alias %sparcel for flag $16
+==========================================
+LINEA ALIAS %HATCH = 17           # 1 = stove shifted, trapdoor open
+T0=[alias]
+T1=[%hatch]
+T2=[=]
+T3=[17]
+Set alias %hatch for flag $17
+==========================================
+LINEA ALIAS %RUBBLE = 18          # 1 = tunnel roof fall dug out
+T0=[alias]
+T1=[%rubble]
+T2=[=]
+T3=[18]
+Set alias %rubble for flag $18
+==========================================
+LINEA ALIAS %TUNNELLIT = 19       # 1 = the torch hangs in the tunnel
+T0=[alias]
+T1=[%tunnellit]
+T2=[=]
+T3=[19]
+Set alias %tunnellit for flag $19
+==========================================
+LINEA ALIAS %SAFEOPEN = 20        # 1 = the office safe is open
+T0=[alias]
+T1=[%safeopen]
+T2=[=]
+T3=[20]
+Set alias %safeopen for flag $20
+==========================================
+LINEA ALIAS %STOREOPEN = 21       # 1 = Red Cross store unlocked
+T0=[alias]
+T1=[%storeopen]
+T2=[=]
+T3=[21]
+Set alias %storeopen for flag $21
+==========================================
+LINEA ALIAS %HOLESCR = 22         # screen with the hole in the wire (99 = none)
+T0=[alias]
+T1=[%holescr]
+T2=[=]
+T3=[22]
+Set alias %holescr for flag $22
+==========================================
+LINEA ALIAS %HOLEX = 23           # x of the hole (it is always at y = 0)
+T0=[alias]
+T1=[%holex]
+T2=[=]
+T3=[23]
+Set alias %holex for flag $23
+==========================================
+LINEA ALIAS %ITEM = 24            # parameter for the subs: an item tile
+T0=[alias]
+T1=[%item]
+T2=[=]
+T3=[24]
+Set alias %item for flag $24
+==========================================
+LINEA ALIAS %FLOOR = 25           # floor tile of this screen (to erase items)
+T0=[alias]
+T1=[%floor]
+T2=[=]
+T3=[25]
+Set alias %floor for flag $25
+==========================================
+LINEA ALIAS %DONE = 26            # 1 = this key press already did something
+T0=[alias]
+T1=[%done]
+T2=[=]
+T3=[26]
+Set alias %done for flag $26
+==========================================
+LINEA ALIAS %TMP = 27             # scratch: holds a FLAG NUMBER for $%TMP
+T0=[alias]
+T1=[%tmp]
+T2=[=]
+T3=[27]
+Set alias %tmp for flag $27
+==========================================
+LINEA ALIAS %INTRO = 28           # 1 = intro text shown
+T0=[alias]
+T1=[%intro]
+T2=[=]
+T3=[28]
+Set alias %intro for flag $28
+==========================================
+LINEA ALIAS %CUTDONE = 29         # 1 = morale bonus for the first cut given
+T0=[alias]
+T1=[%cutdone]
+T2=[=]
+T3=[29]
+Set alias %cutdone for flag $29
+==========================================
+LINEA SUB DRAWINV
+T0=[sub]
+T1=[drawinv]
+Adding Sub drawinv @ 0
+Parsing: IF %SLOT1 = 0
+T0=[IF]
+T1=[$0]
+T2=[=]
+T3=[0]
+Parsing: PRINT TILE (26, 22) = 44
+T0=[PRINT]
+T1=[TILE]
+T2=[26]
+T3=[22]
+T4=[=]
+T5=[44]
+Parsing: IF %SLOT1 <> 0
+T0=[IF]
+T1=[$0]
+T2=[<>]
+T3=[0]
+Parsing: PRINT TILE (26, 22) = %SLOT1
+T0=[PRINT]
+T1=[TILE]
+T2=[26]
+T3=[22]
+T4=[=]
+T5=[$0]
+Parsing: IF %SLOT2 = 0
+T0=[IF]
+T1=[$1]
+T2=[=]
+T3=[0]
+Parsing: PRINT TILE (29, 22) = 44
+T0=[PRINT]
+T1=[TILE]
+T2=[29]
+T3=[22]
+T4=[=]
+T5=[44]
+Parsing: IF %SLOT2 <> 0
+T0=[IF]
+T1=[$1]
+T2=[<>]
+T3=[0]
+Parsing: PRINT TILE (29, 22) = %SLOT2
+T0=[PRINT]
+T1=[TILE]
+T2=[29]
+T3=[22]
+T4=[=]
+T5=[$1]
+Sub Bytecode: 0B 01 FF 00 00 FF 50 1A 16 2C FF 0C 04 FF 00 00 FF 50 1A 16 FF 00 FF 0B 01 FF 01 00 FF 50 1D 16 2C FF 0C 04 FF 01 00 FF 50 1D 16 FF 01 FF FF
+==========================================
+LINEA SUB MORALEUP
+T0=[sub]
+T1=[moraleup]
+Adding Sub moraleup @ 47
+Parsing: IF TRUE
+T0=[IF]
+T1=[TRUE]
+Parsing: INC LIFE, 5
+T0=[INC]
+T1=[$249]
+T2=[5]
+Parsing: SOUND 7
+T0=[SOUND]
+T1=[7]
+Parsing: IF LIFE > 99
+T0=[IF]
+T1=[$249]
+T2=[>]
+T3=[99]
+Parsing: LIFE = 99
+T0=[$249]
+T1=[=]
+T2=[99]
+Sub Bytecode: 09 F0 FF 01 F9 05 E0 07 FF 0A 02 63 FF F9 FF 00 F9 63 FF FF
+==========================================
+LINEA SUB USEITEM
+T0=[sub]
+T1=[useitem]
+Adding Sub useitem @ 67
+Parsing: IF %SLOT1 = %ITEM
+T0=[IF]
+T1=[$0]
+T2=[=]
+T3=[$24]
+Parsing: %SLOT1 = %SLOT2
+T0=[$0]
+T1=[=]
+T2=[$1]
+Parsing: %SLOT2 = 0
+T0=[$1]
+T1=[=]
+T2=[0]
+Parsing: IF %SLOT2 = %ITEM
+T0=[IF]
+T1=[$1]
+T2=[=]
+T3=[$24]
+Parsing: %SLOT2 = 0
+T0=[$1]
+T1=[=]
+T2=[0]
+Parsing: IF TRUE
+T0=[IF]
+T1=[TRUE]
+Parsing: # %TMP = number of the state flag of %ITEM, then flags [%TMP] = 2
+Parsing: %TMP = %ITEM
+T0=[$27]
+T1=[=]
+T2=[$24]
+Parsing: DEC %TMP, 26
+T0=[DEC]
+T1=[$27]
+T2=[26]
+Parsing: $%TMP = 2
+T0=[$$27]
+T1=[=]
+T2=[2]
+Parsing: CALL DRAWINV
+T0=[CALL]
+T1=[DRAWINV]
+Sub Bytecode: 0F 01 FF 00 FF 18 FF 00 00 FF 01 00 01 00 FF 0B 01 FF 01 FF 18 FF 00 01 00 FF 12 F0 FF 00 1B FF 18 02 1B 1A 00 FF 1B 02 F4 98 00 FF FF
+==========================================
+LINEA SUB PICKUP
+T0=[sub]
+T1=[pickup]
+Adding Sub pickup @ 112
+Parsing: IF TRUE
+T0=[IF]
+T1=[TRUE]
+Parsing: # state of the new item: carried
+Parsing: %TMP = %ITEM
+T0=[$27]
+T1=[=]
+T2=[$24]
+Parsing: DEC %TMP, 26
+T0=[DEC]
+T1=[$27]
+T2=[26]
+Parsing: $%TMP = 1
+T0=[$$27]
+T1=[=]
+T2=[1]
+Parsing: # erase it from the screen
+Parsing: SET TILE (TX, TY) = %FLOOR
+T0=[SET]
+T1=[TILE]
+T2=[$248]
+T3=[$247]
+T4=[=]
+T5=[$25]
+Parsing: SOUND 2
+T0=[SOUND]
+T1=[2]
+Parsing: IF %SLOT1 <> 0
+T0=[IF]
+T1=[$0]
+T2=[<>]
+T3=[0]
+Parsing: IF %SLOT2 <> 0
+T0=[IF]
+T1=[$1]
+T2=[<>]
+T3=[0]
+Parsing: # Hands full: the first item is put down here. Its state goes back
+Parsing: # to 0 (at home), so next time it will be found where it was.
+Parsing: SET TILE (TX, TY) = %SLOT1
+T0=[SET]
+T1=[TILE]
+T2=[$248]
+T3=[$247]
+T4=[=]
+T5=[$0]
+Parsing: %TMP = %SLOT1
+T0=[$27]
+T1=[=]
+T2=[$0]
+Parsing: DEC %TMP, 26
+T0=[DEC]
+T1=[$27]
+T2=[26]
+Parsing: $%TMP = 0
+T0=[$$27]
+T1=[=]
+T2=[0]
+Parsing: %SLOT1 = %SLOT2
+T0=[$0]
+T1=[=]
+T2=[$1]
+Parsing: %SLOT2 = %ITEM
+T0=[$1]
+T1=[=]
+T2=[$24]
+Parsing: %ITEM = 0
+T0=[$24]
+T1=[=]
+T2=[0]
+Parsing: IF %SLOT1 = 0
+T0=[IF]
+T1=[$0]
+T2=[=]
+T3=[0]
+Parsing: %SLOT1 = %ITEM
+T0=[$0]
+T1=[=]
+T2=[$24]
+Parsing: %ITEM = 0
+T0=[$24]
+T1=[=]
+T2=[0]
+Parsing: IF %ITEM <> 0
+T0=[IF]
+T1=[$24]
+T2=[<>]
+T3=[0]
+Parsing: %SLOT2 = %ITEM
+T0=[$1]
+T1=[=]
+T2=[$24]
+Parsing: IF %SPARCEL = 1
+T0=[IF]
+T1=[$16]
+T2=[=]
+T3=[1]
+Parsing: %SPARCEL = 2
+T0=[$16]
+T1=[=]
+T2=[2]
+Parsing: %SCOMPASS = 1
+T0=[$13]
+T1=[=]
+T2=[1]
+Parsing: TEXT BOX "YOU OPEN THE RED CROSS PARCEL. HIDDEN INSIDE A BAR OF CHOCOLATE THERE IS A COMPASS!"
+T0=[TEXT]
+T1=[BOX]
+T2=[YOU OPEN THE RED CROSS PARCEL. HIDDEN INSIDE A BAR OF CHOCOLATE THERE IS A COMPASS!]
+Parsing: CALL MORALEUP
+T0=[CALL]
+T1=[MORALEUP]
+Parsing: IF %SLOT1 = 42
+T0=[IF]
+T1=[$0]
+T2=[=]
+T3=[42]
+Parsing: %SLOT1 = 39
+T0=[$0]
+T1=[=]
+T2=[39]
+Parsing: IF %SLOT2 = 42
+T0=[IF]
+T1=[$1]
+T2=[=]
+T3=[42]
+Parsing: %SLOT2 = 39
+T0=[$1]
+T1=[=]
+T2=[39]
+Parsing: IF TRUE
+T0=[IF]
+T1=[TRUE]
+Parsing: CALL DRAWINV
+T0=[CALL]
+T1=[DRAWINV]
+Sub Bytecode: 18 F0 FF 00 1B FF 18 02 1B 1A 00 FF 1B 01 20 FF F8 FF F7 FF 19 E0 02 FF 28 04 FF 00 00 04 FF 01 00 FF 20 FF F8 FF F7 FF 00 00 1B FF 00 02 1B 1A 00 FF 1B 00 00 00 FF 01 00 01 FF 18 00 18 00 FF 0E 01 FF 00 00 FF 00 00 FF 18 00 18 00 FF 0B 04 FF 18 00 FF 00 01 FF 18 FF 13 01 FF 10 01 FF 00 10 02 00 0D 01 E6 00 00 F4 C7 00 FF 0A 01 FF 00 2A FF 00 00 27 FF 0A 01 FF 01 2A FF 00 01 27 FF 07 F0 FF F4 98 00 FF FF
+==========================================
+LINEA SUB CONFISCATE
+T0=[sub]
+T1=[confiscate]
+Adding Sub confiscate @ 248
+Parsing: IF %SLOT1 <> 0
+T0=[IF]
+T1=[$0]
+T2=[<>]
+T3=[0]
+Parsing: %TMP = %SLOT1
+T0=[$27]
+T1=[=]
+T2=[$0]
+Parsing: DEC %TMP, 26
+T0=[DEC]
+T1=[$27]
+T2=[26]
+Parsing: $%TMP = 0
+T0=[$$27]
+T1=[=]
+T2=[0]
+Parsing: %SLOT1 = 0
+T0=[$0]
+T1=[=]
+T2=[0]
+Parsing: IF %SLOT2 <> 0
+T0=[IF]
+T1=[$1]
+T2=[<>]
+T3=[0]
+Parsing: %TMP = %SLOT2
+T0=[$27]
+T1=[=]
+T2=[$1]
+Parsing: DEC %TMP, 26
+T0=[DEC]
+T1=[$27]
+T2=[26]
+Parsing: $%TMP = 0
+T0=[$$27]
+T1=[=]
+T2=[0]
+Parsing: %SLOT2 = 0
+T0=[$1]
+T1=[=]
+T2=[0]
+Parsing: IF TRUE
+T0=[IF]
+T1=[TRUE]
+Parsing: CALL DRAWINV
+T0=[CALL]
+T1=[DRAWINV]
+Sub Bytecode: 15 04 FF 00 00 FF 00 1B FF 00 02 1B 1A 00 FF 1B 00 00 00 00 FF 15 04 FF 01 00 FF 00 1B FF 01 02 1B 1A 00 FF 1B 00 00 01 00 FF 07 F0 FF F4 98 00 FF FF
+==========================================
+LINEA SUB CAUGHT
+T0=[sub]
+T1=[caught]
+Adding Sub caught @ 298
+Parsing: IF TRUE
+T0=[IF]
+T1=[TRUE]
+Parsing: SOUND 4
+T0=[SOUND]
+T1=[4]
+Parsing: TEXT BOX "HALT! YOU ARE UNDER ARREST. EVERYTHING YOU CARRY IS CONFISCATED. TO THE COOLER!"
+T0=[TEXT]
+T1=[BOX]
+T2=[HALT! YOU ARE UNDER ARREST. EVERYTHING YOU CARRY IS CONFISCATED. TO THE COOLER!]
+Parsing: CALL CONFISCATE
+T0=[CALL]
+T1=[CONFISCATE]
+Parsing: %ALARM = 0
+T0=[$3]
+T1=[=]
+T2=[0]
+Parsing: DEC LIFE, 10
+T0=[DEC]
+T1=[$249]
+T2=[10]
+Parsing: IF LIFE > 99
+T0=[IF]
+T1=[$249]
+T2=[>]
+T3=[99]
+Parsing: GAME OVER
+T0=[GAME]
+T1=[OVER]
+Parsing: IF LIFE = 0
+T0=[IF]
+T1=[$249]
+T2=[=]
+T3=[0]
+Parsing: GAME OVER
+T0=[GAME]
+T1=[OVER]
+Parsing: IF TRUE
+T0=[IF]
+T1=[TRUE]
+Parsing: WARP TO 29, 7, 5
+T0=[WARP]
+T1=[TO]
+T2=[29]
+T3=[7]
+T4=[5]
+Sub Bytecode: 12 F0 FF E0 04 E6 37 00 F4 90 01 00 03 00 02 F9 0A FF 07 02 63 FF F9 FF F1 07 01 FF F9 00 FF F1 08 F0 FF 6D 1D 07 05 FF FF
+==========================================
+LINEA SUB DIGOUT
+T0=[sub]
+T1=[digout]
+Adding Sub digout @ 339
+Parsing: IF %SSHOVEL <> 1
+T0=[IF]
+T1=[$9]
+T2=[<>]
+T3=[1]
+Parsing: TEXT BOX "A ROOF FALL BLOCKS THE TUNNEL. YOU WOULD NEED A SHOVEL TO DIG THROUGH."
+T0=[TEXT]
+T1=[BOX]
+T2=[A ROOF FALL BLOCKS THE TUNNEL. YOU WOULD NEED A SHOVEL TO DIG THROUGH.]
+Parsing: %DONE = 1
+T0=[$26]
+T1=[=]
+T2=[1]
+Parsing: IF %SSHOVEL = 1
+T0=[IF]
+T1=[$9]
+T2=[=]
+T3=[1]
+Began parsing decos
+Parsed deco 7 3 16
+Parsed deco 7 4 16
+Parsed deco 7 5 16
+Stopped parsing decos
+Parsing: %RUBBLE = 1
+T0=[$18]
+T1=[=]
+T2=[1]
+Parsing: %ITEM = 35
+T0=[$24]
+T1=[=]
+T2=[35]
+Parsing: CALL USEITEM
+T0=[CALL]
+T1=[USEITEM]
+Parsing: %DONE = 1
+T0=[$26]
+T1=[=]
+T2=[1]
+Parsing: TEXT BOX "YOU DIG UNTIL YOUR HANDS BLEED. THE WAY IS CLEAR, BUT THE SHOVEL BREAKS."
+T0=[TEXT]
+T1=[BOX]
+T2=[YOU DIG UNTIL YOUR HANDS BLEED. THE WAY IS CLEAR, BUT THE SHOVEL BREAKS.]
+Parsing: CALL MORALEUP
+T0=[CALL]
+T1=[MORALEUP]
+Sub Bytecode: 0D 04 FF 09 01 FF E6 6C 00 00 1A 01 FF 21 01 FF 09 01 FF 22 10 37 10 47 10 57 FF 00 12 01 00 18 23 F4 DB 00 00 1A 01 E6 9B 00 F4 C7 00 FF FF
+==========================================
+LINEA SUB ROOMNAME
+T0=[sub]
+T1=[roomname]
+Adding Sub roomname @ 386
+Parsing: IF TRUE
+T0=[IF]
+T1=[TRUE]
+Parsing: TEXT "                  "
+T0=[TEXT]
+T1=[                  ]
+Parsing: IF NPANT <= 5
+T0=[IF]
+T1=[$254]
+T2=[<=]
+T3=[5]
+Parsing: TEXT "    THE WOODS     "
+T0=[TEXT]
+T1=[    THE WOODS     ]
+Parsing: IF NPANT = 6
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[6]
+Parsing: TEXT "     THE SHED     "
+T0=[TEXT]
+T1=[     THE SHED     ]
+Parsing: IF NPANT = 7
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[7]
+Parsing: TEXT "      HUT 1       "
+T0=[TEXT]
+T1=[      HUT 1       ]
+Parsing: IF NPANT = 18
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[18]
+Parsing: TEXT "      HUT 1       "
+T0=[TEXT]
+T1=[      HUT 1       ]
+Parsing: IF NPANT = 8
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[8]
+Parsing: TEXT "      HUT 2       "
+T0=[TEXT]
+T1=[      HUT 2       ]
+Parsing: IF NPANT = 19
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[19]
+Parsing: TEXT "      HUT 2       "
+T0=[TEXT]
+T1=[      HUT 2       ]
+Parsing: IF NPANT = 9
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[9]
+Parsing: TEXT "    MESS HALL     "
+T0=[TEXT]
+T1=[    MESS HALL     ]
+Parsing: IF NPANT = 20
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[20]
+Parsing: TEXT "    MESS HALL     "
+T0=[TEXT]
+T1=[    MESS HALL     ]
+Parsing: IF NPANT = 10
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[10]
+Parsing: TEXT " RED CROSS STORE  "
+T0=[TEXT]
+T1=[ RED CROSS STORE  ]
+Parsing: IF NPANT = 21
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[21]
+Parsing: TEXT " RED CROSS STORE  "
+T0=[TEXT]
+T1=[ RED CROSS STORE  ]
+Parsing: IF NPANT = 12
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[12]
+Parsing: TEXT "  STOREROOM YARD  "
+T0=[TEXT]
+T1=[  STOREROOM YARD  ]
+Parsing: IF NPANT >= 13
+T0=[IF]
+T1=[$254]
+T2=[>=]
+T3=[13]
+Parsing: IF NPANT <= 14
+T0=[IF]
+T1=[$254]
+T2=[<=]
+T3=[14]
+Parsing: TEXT "  PARADE GROUND   "
+T0=[TEXT]
+T1=[  PARADE GROUND   ]
+Parsing: IF NPANT = 15
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[15]
+Parsing: TEXT " GUARDS BARRACKS  "
+T0=[TEXT]
+T1=[ GUARDS BARRACKS  ]
+Parsing: IF NPANT = 22
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[22]
+Parsing: TEXT " GUARDS BARRACKS  "
+T0=[TEXT]
+T1=[ GUARDS BARRACKS  ]
+Parsing: IF NPANT = 16
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[16]
+Parsing: TEXT "COMMANDANTS OFFICE"
+T0=[TEXT]
+T1=[COMMANDANTS OFFICE]
+Parsing: IF NPANT = 23
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[23]
+Parsing: TEXT "COMMANDANTS OFFICE"
+T0=[TEXT]
+T1=[COMMANDANTS OFFICE]
+Parsing: IF NPANT = 17
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[17]
+Parsing: TEXT "    MAIN GATE     "
+T0=[TEXT]
+T1=[    MAIN GATE     ]
+Parsing: IF NPANT >= 24
+T0=[IF]
+T1=[$254]
+T2=[>=]
+T3=[24]
+Parsing: IF NPANT <= 28
+T0=[IF]
+T1=[$254]
+T2=[<=]
+T3=[28]
+Parsing: TEXT "    THE TUNNEL    "
+T0=[TEXT]
+T1=[    THE TUNNEL    ]
+Parsing: IF NPANT = 29
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[29]
+Parsing: TEXT "    THE COOLER    "
+T0=[TEXT]
+T1=[    THE COOLER    ]
+Sub Bytecode: 19 F0 FF E3 13 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 00 FF 1C 03 05 FF FE FF E3 13 20 20 20 20 54 48 45 20 57 4F 4F 44 53 20 20 20 20 20 00 FF 1C 01 FF FE 06 FF E3 13 20 20 20 20 20 54 48 45 20 53 48 45 44 20 20 20 20 20 00 FF 1C 01 FF FE 07 FF E3 13 20 20 20 20 20 20 48 55 54 20 31 20 20 20 20 20 20 20 00 FF 1C 01 FF FE 12 FF E3 13 20 20 20 20 20 20 48 55 54 20 31 20 20 20 20 20 20 20 00 FF 1C 01 FF FE 08 FF E3 13 20 20 20 20 20 20 48 55 54 20 32 20 20 20 20 20 20 20 00 FF 1C 01 FF FE 13 FF E3 13 20 20 20 20 20 20 48 55 54 20 32 20 20 20 20 20 20 20 00 FF 1C 01 FF FE 09 FF E3 13 20 20 20 20 4D 45 53 53 20 48 41 4C 4C 20 20 20 20 20 00 FF 1C 01 FF FE 14 FF E3 13 20 20 20 20 4D 45 53 53 20 48 41 4C 4C 20 20 20 20 20 00 FF 1C 01 FF FE 0A FF E3 13 20 52 45 44 20 43 52 4F 53 53 20 53 54 4F 52 45 20 20 00 FF 1C 01 FF FE 15 FF E3 13 20 52 45 44 20 43 52 4F 53 53 20 53 54 4F 52 45 20 20 00 FF 1C 01 FF FE 0C FF E3 13 20 20 53 54 4F 52 45 52 4F 4F 4D 20 59 41 52 44 20 20 00 FF 20 03 FF FE 0D 03 0E FF FE FF E3 13 20 20 50 41 52 41 44 45 20 47 52 4F 55 4E 44 20 20 20 00 FF 1C 01 FF FE 0F FF E3 13 20 47 55 41 52 44 53 20 42 41 52 52 41 43 4B 53 20 20 00 FF 1C 01 FF FE 16 FF E3 13 20 47 55 41 52 44 53 20 42 41 52 52 41 43 4B 53 20 20 00 FF 1C 01 FF FE 10 FF E3 13 43 4F 4D 4D 41 4E 44 41 4E 54 53 20 4F 46 46 49 43 45 00 FF 1C 01 FF FE 17 FF E3 13 43 4F 4D 4D 41 4E 44 41 4E 54 53 20 4F 46 46 49 43 45 00 FF 1C 01 FF FE 11 FF E3 13 20 20 20 20 4D 41 49 4E 20 47 41 54 45 20 20 20 20 20 00 FF 20 03 FF FE 18 03 1C FF FE FF E3 13 20 20 20 20 54 48 45 20 54 55 4E 4E 45 4C 20 20 20 20 00 FF 1C 01 FF FE 1D FF E3 13 20 20 20 20 54 48 45 20 43 4F 4F 4C 45 52 20 20 20 20 00 FF FF
+==========================================
+LINEA ENTERING GAME
+T0=[entering]
+T1=[game]
+Adding 952 @ sect 0
+Parsing: IF TRUE
+T0=[IF]
+T1=[TRUE]
+Parsing: %CLOCK = 7
+T0=[$2]
+T1=[=]
+T2=[7]
+Parsing: %HOLESCR = 99
+T0=[$22]
+T1=[=]
+T2=[99]
+Parsing: LIFE = 50
+T0=[$249]
+T1=[=]
+T2=[50]
+Parsing: EXTERN 0, 0
+T0=[EXTERN]
+T1=[0]
+T2=[0]
+Bytecode: 10 F0 FF 00 02 07 00 16 63 00 F9 32 E4 00 00 FF FF
+==========================================
+LINEA ENTERING ANY
+T0=[entering]
+T1=[any]
+Adding 969 @ sect 1
+Parsing: IF TRUE
+T0=[IF]
+T1=[TRUE]
+Parsing: %RESTRICT = 0
+T0=[$4]
+T1=[=]
+T2=[0]
+Parsing: %FLOOR = 0
+T0=[$25]
+T1=[=]
+T2=[0]
+Parsing: IF NPANT >= 15
+T0=[IF]
+T1=[$254]
+T2=[>=]
+T3=[15]
+Parsing: IF NPANT <= 17
+T0=[IF]
+T1=[$254]
+T2=[<=]
+T3=[17]
+Parsing: %RESTRICT = 1
+T0=[$4]
+T1=[=]
+T2=[1]
+Parsing: IF NPANT >= 22
+T0=[IF]
+T1=[$254]
+T2=[>=]
+T3=[22]
+Parsing: IF NPANT <= 23
+T0=[IF]
+T1=[$254]
+T2=[<=]
+T3=[23]
+Parsing: %RESTRICT = 1
+T0=[$4]
+T1=[=]
+T2=[1]
+Parsing: IF NPANT >= 18
+T0=[IF]
+T1=[$254]
+T2=[>=]
+T3=[18]
+Parsing: IF NPANT <= 22
+T0=[IF]
+T1=[$254]
+T2=[<=]
+T3=[22]
+Parsing: %FLOOR = 8
+T0=[$25]
+T1=[=]
+T2=[8]
+Parsing: IF NPANT = 23
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[23]
+Parsing: %FLOOR = 30
+T0=[$25]
+T1=[=]
+T2=[30]
+Parsing: IF NPANT = %HOLESCR
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[$22]
+Parsing: SET TILE (%HOLEX, 0) = 26
+T0=[SET]
+T1=[TILE]
+T2=[$23]
+T3=[0]
+T4=[=]
+T5=[26]
+Parsing: IF TRUE
+T0=[IF]
+T1=[TRUE]
+Parsing: CALL DRAWINV
+T0=[CALL]
+T1=[DRAWINV]
+Parsing: CALL ROOMNAME
+T0=[CALL]
+T1=[ROOMNAME]
+Bytecode: 0A F0 FF 00 04 00 00 19 00 FF 0E 03 FF FE 0F 03 11 FF FE FF 00 04 01 FF 0E 03 FF FE 16 03 17 FF FE FF 00 04 01 FF 0E 03 FF FE 12 03 16 FF FE FF 00 19 08 FF 0A 01 FF FE 17 FF 00 19 1E FF 0D 01 FF FE FF 16 FF 20 FF 17 00 1A FF 0A F0 FF F4 98 00 F4 1A 02 FF FF
+==========================================
+LINEA ENTERING SCREEN 0, 1, 2, 3, 4, 5
+T0=[entering]
+T1=[screen]
+T2=[0]
+T3=[1]
+T4=[2]
+T5=[3]
+T6=[4]
+T7=[5]
+Adding 1055 @ sect 16
+Adding 1055 @ sect 18
+Adding 1055 @ sect 20
+Adding 1055 @ sect 22
+Adding 1055 @ sect 24
+Adding 1055 @ sect 26
+Parsing: IF %SCOMPASS = 1
+T0=[IF]
+T1=[$13]
+T2=[=]
+T3=[1]
+Parsing: IF %SPAPERS = 1
+T0=[IF]
+T1=[$12]
+T2=[=]
+T3=[1]
+Parsing: WIN GAME
+T0=[WIN]
+T1=[GAME]
+Parsing: IF TRUE
+T0=[IF]
+T1=[TRUE]
+Parsing: TEXT BOX "WITHOUT A COMPASS AND PAPERS YOU WANDER IN CIRCLES. THE DOGS FIND YOU AT DAWN."
+T0=[TEXT]
+T1=[BOX]
+T2=[WITHOUT A COMPASS AND PAPERS YOU WANDER IN CIRCLES. THE DOGS FIND YOU AT DAWN.]
+Parsing: CALL CAUGHT
+T0=[CALL]
+T1=[CAUGHT]
+Bytecode: 0B 01 FF 0D 01 01 FF 0C 01 FF F0 0A F0 FF E6 CC 00 F4 C2 01 FF FF
+==========================================
+LINEA ENTERING SCREEN 6
+T0=[entering]
+T1=[screen]
+T2=[6]
+Adding 1077 @ sect 28
+Parsing: IF %SSHOVEL = 0
+T0=[IF]
+T1=[$9]
+T2=[=]
+T3=[0]
+Parsing: SET TILE (3, 3) = 35
+T0=[SET]
+T1=[TILE]
+T2=[3]
+T3=[3]
+T4=[=]
+T5=[35]
+Bytecode: 0B 01 FF 09 00 FF 20 03 03 23 FF FF
+==========================================
+LINEA ENTERING SCREEN 12
+T0=[entering]
+T1=[screen]
+T2=[12]
+Adding 1089 @ sect 40
+Parsing: IF %SSNIPS = 0
+T0=[IF]
+T1=[$8]
+T2=[=]
+T3=[0]
+Parsing: SET TILE (3, 2) = 34
+T0=[SET]
+T1=[TILE]
+T2=[3]
+T3=[2]
+T4=[=]
+T5=[34]
+Bytecode: 0B 01 FF 08 00 FF 20 03 02 22 FF FF
+==========================================
+LINEA ENTERING SCREEN 18
+T0=[entering]
+T1=[screen]
+T2=[18]
+Adding 1101 @ sect 52
+Parsing: IF %HATCH = 1
+T0=[IF]
+T1=[$17]
+T2=[=]
+T3=[1]
+Parsing: SET TILE (12, 2) = 19
+T0=[SET]
+T1=[TILE]
+T2=[12]
+T3=[2]
+T4=[=]
+T5=[19]
+Parsing: SET TILE (13, 2) = 31
+T0=[SET]
+T1=[TILE]
+T2=[13]
+T3=[2]
+T4=[=]
+T5=[31]
+Parsing: IF %INTRO = 0
+T0=[IF]
+T1=[$28]
+T2=[=]
+T3=[0]
+Parsing: %INTRO = 1
+T0=[$28]
+T1=[=]
+T2=[1]
+Parsing: TEXT BOX "STALAG, 1942. FIND A COMPASS AND FORGED PAPERS AND GET OUT. NEVER MISS A ROLL CALL. SPACE: PICK UP AND USE."
+T0=[TEXT]
+T1=[BOX]
+T2=[STALAG, 1942. FIND A COMPASS AND FORGED PAPERS AND GET OUT. NEVER MISS A ROLL CALL. SPACE: PICK UP AND USE.]
+Bytecode: 0F 01 FF 11 01 FF 20 0C 02 13 20 0D 02 1F FF 0D 01 FF 1C 00 FF 00 1C 01 E6 00 01 FF FF
+==========================================
+LINEA ENTERING SCREEN 19
+T0=[entering]
+T1=[screen]
+T2=[19]
+Adding 1130 @ sect 54
+Parsing: IF %SPICK = 0
+T0=[IF]
+T1=[$7]
+T2=[=]
+T3=[0]
+Parsing: SET TILE (12, 2) = 33
+T0=[SET]
+T1=[TILE]
+T2=[12]
+T3=[2]
+T4=[=]
+T5=[33]
+Bytecode: 0B 01 FF 07 00 FF 20 0C 02 21 FF FF
+==========================================
+LINEA ENTERING SCREEN 20
+T0=[entering]
+T1=[screen]
+T2=[20]
+Adding 1142 @ sect 56
+Parsing: IF %STORCH = 0
+T0=[IF]
+T1=[$10]
+T2=[=]
+T3=[0]
+Parsing: SET TILE (2, 2) = 36
+T0=[SET]
+T1=[TILE]
+T2=[2]
+T3=[2]
+T4=[=]
+T5=[36]
+Parsing: IF %SFOOD = 0
+T0=[IF]
+T1=[$14]
+T2=[=]
+T3=[0]
+Parsing: SET TILE (12, 2) = 40
+T0=[SET]
+T1=[TILE]
+T2=[12]
+T3=[2]
+T4=[=]
+T5=[40]
+Bytecode: 0B 01 FF 0A 00 FF 20 02 02 24 FF 0B 01 FF 0E 00 FF 20 0C 02 28 FF FF
+==========================================
+LINEA ENTERING SCREEN 21
+T0=[entering]
+T1=[screen]
+T2=[21]
+Adding 1165 @ sect 58
+Parsing: IF %SPARCEL = 0
+T0=[IF]
+T1=[$16]
+T2=[=]
+T3=[0]
+Parsing: SET TILE (7, 3) = 42
+T0=[SET]
+T1=[TILE]
+T2=[7]
+T3=[3]
+T4=[=]
+T5=[42]
+Parsing: IF %SPARCEL = 2
+T0=[IF]
+T1=[$16]
+T2=[=]
+T3=[2]
+Parsing: IF %SCOMPASS = 0
+T0=[IF]
+T1=[$13]
+T2=[=]
+T3=[0]
+Parsing: SET TILE (7, 3) = 39
+T0=[SET]
+T1=[TILE]
+T2=[7]
+T3=[3]
+T4=[=]
+T5=[39]
+Parsing: IF %SBRIBE = 0
+T0=[IF]
+T1=[$15]
+T2=[=]
+T3=[0]
+Parsing: SET TILE (3, 6) = 41
+T0=[SET]
+T1=[TILE]
+T2=[3]
+T3=[6]
+T4=[=]
+T5=[41]
+Bytecode: 0B 01 FF 10 00 FF 20 07 03 2A FF 0F 01 FF 10 02 01 FF 0D 00 FF 20 07 03 27 FF 0B 01 FF 0F 00 FF 20 03 06 29 FF FF
+==========================================
+LINEA ENTERING SCREEN 22
+T0=[entering]
+T1=[screen]
+T2=[22]
+Adding 1203 @ sect 60
+Parsing: IF %SUNIFORM = 0
+T0=[IF]
+T1=[$11]
+T2=[=]
+T3=[0]
+Parsing: SET TILE (6, 2) = 37
+T0=[SET]
+T1=[TILE]
+T2=[6]
+T3=[2]
+T4=[=]
+T5=[37]
+Bytecode: 0B 01 FF 0B 00 FF 20 06 02 25 FF FF
+==========================================
+LINEA ENTERING SCREEN 23
+T0=[entering]
+T1=[screen]
+T2=[23]
+Adding 1215 @ sect 62
+Parsing: IF %SKEY = 0
+T0=[IF]
+T1=[$6]
+T2=[=]
+T3=[0]
+Parsing: SET TILE (4, 3) = 32
+T0=[SET]
+T1=[TILE]
+T2=[4]
+T3=[3]
+T4=[=]
+T5=[32]
+Parsing: IF %SAFEOPEN = 1
+T0=[IF]
+T1=[$20]
+T2=[=]
+T3=[1]
+Parsing: SET TILE (12, 1) = 45
+T0=[SET]
+T1=[TILE]
+T2=[12]
+T3=[1]
+T4=[=]
+T5=[45]
+Parsing: IF %SAFEOPEN = 1
+T0=[IF]
+T1=[$20]
+T2=[=]
+T3=[1]
+Parsing: IF %SPAPERS = 0
+T0=[IF]
+T1=[$12]
+T2=[=]
+T3=[0]
+Parsing: SET TILE (11, 1) = 38
+T0=[SET]
+T1=[TILE]
+T2=[11]
+T3=[1]
+T4=[=]
+T5=[38]
+Bytecode: 0B 01 FF 06 00 FF 20 04 03 20 FF 0B 01 FF 14 01 FF 20 0C 01 2D FF 0F 01 FF 14 01 01 FF 0C 00 FF 20 0B 01 26 FF FF
+==========================================
+LINEA ENTERING SCREEN 26
+T0=[entering]
+T1=[screen]
+T2=[26]
+Adding 1253 @ sect 68
+Parsing: IF %RUBBLE = 1
+T0=[IF]
+T1=[$18]
+T2=[=]
+T3=[1]
+Began parsing decos
+Parsed deco 7 3 16
+Parsed deco 7 4 16
+Parsed deco 7 5 16
+Stopped parsing decos
+Bytecode: 0F 01 FF 12 01 FF 22 10 37 10 47 10 57 FF FF FF
+==========================================
+LINEA PRESS FIRE AT ANY
+T0=[press]
+T1=[fire]
+T2=[at]
+T3=[any]
+Adding 1269 @ sect 2
+Parsing: IF TRUE
+T0=[IF]
+T1=[TRUE]
+Parsing: %DONE = 0
+T0=[$26]
+T1=[=]
+T2=[0]
+Parsing: IF TN >= 32
+T0=[IF]
+T1=[$246]
+T2=[>=]
+T3=[32]
+Parsing: IF TN <= 42
+T0=[IF]
+T1=[$246]
+T2=[<=]
+T3=[42]
+Parsing: %ITEM = TN
+T0=[$24]
+T1=[=]
+T2=[$246]
+Parsing: CALL PICKUP
+T0=[CALL]
+T1=[PICKUP]
+Parsing: %DONE = 1
+T0=[$26]
+T1=[=]
+T2=[1]
+Parsing: IF %DONE = 0
+T0=[IF]
+T1=[$26]
+T2=[=]
+T3=[0]
+Parsing: IF %SSNIPS = 1
+T0=[IF]
+T1=[$8]
+T2=[=]
+T3=[1]
+Parsing: IF TY = 1
+T0=[IF]
+T1=[$247]
+T2=[=]
+T3=[1]
+Parsing: IF NPANT >= 6
+T0=[IF]
+T1=[$254]
+T2=[>=]
+T3=[6]
+Parsing: IF NPANT <= 11
+T0=[IF]
+T1=[$254]
+T2=[<=]
+T3=[11]
+Parsing: IF TILE AT (TX, 0) = 3
+T0=[IF]
+T1=[=TILE=$248=0]
+T2=[=]
+T3=[3]
+Parsing expresion =TILE=$248=0
+Result bytecode = FF E8 FF F8 00
+Parsing: SET TILE (TX, 0) = 26
+T0=[SET]
+T1=[TILE]
+T2=[$248]
+T3=[0]
+T4=[=]
+T5=[26]
+Parsing: %HOLESCR = NPANT
+T0=[$22]
+T1=[=]
+T2=[$254]
+Parsing: %HOLEX = TX
+T0=[$23]
+T1=[=]
+T2=[$248]
+Parsing: SOUND 3
+T0=[SOUND]
+T1=[3]
+Parsing: %DONE = 1
+T0=[$26]
+T1=[=]
+T2=[1]
+Parsing: TEXT BOX "SNIP. SNIP. SNIP. THERE IS A HOLE IN THE WIRE NOW. FREEDOM IS TO THE NORTH."
+T0=[TEXT]
+T1=[BOX]
+T2=[SNIP. SNIP. SNIP. THERE IS A HOLE IN THE WIRE NOW. FREEDOM IS TO THE NORTH.]
+Parsing: IF %CUTDONE = 0
+T0=[IF]
+T1=[$29]
+T2=[=]
+T3=[0]
+Parsing: IF %HOLESCR <> 99
+T0=[IF]
+T1=[$22]
+T2=[<>]
+T3=[99]
+Parsing: %CUTDONE = 1
+T0=[$29]
+T1=[=]
+T2=[1]
+Parsing: CALL MORALEUP
+T0=[CALL]
+T1=[MORALEUP]
+Bytecode: 07 F0 FF 00 1A 00 FF 15 03 FF F6 20 03 2A FF F6 FF 00 18 FF F6 F4 08 01 00 1A 01 FF 33 01 FF 1A 00 01 FF 08 01 01 FF F7 01 03 FF FE 06 03 0B FF FE 01 FF E8 FF F8 00 03 FF 20 FF F8 00 1A 00 16 FF FE 00 17 FF F8 E0 03 00 1A 01 E6 4B 01 FF 11 01 FF 1D 00 04 FF 16 63 FF 00 1D 01 F4 C7 00 FF FF
+==========================================
+LINEA PRESS FIRE AT SCREEN 18
+T0=[press]
+T1=[fire]
+T2=[at]
+T3=[screen]
+T4=[18]
+Adding 1366 @ sect 53
+Parsing: IF %DONE = 0
+T0=[IF]
+T1=[$26]
+T2=[=]
+T3=[0]
+Parsing: IF %HATCH = 0
+T0=[IF]
+T1=[$17]
+T2=[=]
+T3=[0]
+Parsing: IF PLAYER AT (12, 3)
+T0=[IF]
+T1=[PLAYER]
+T2=[AT]
+T3=[12]
+T4=[3]
+Parsing: %HATCH = 1
+T0=[$17]
+T1=[=]
+T2=[1]
+Parsing: SET TILE (12, 2) = 19
+T0=[SET]
+T1=[TILE]
+T2=[12]
+T3=[2]
+T4=[=]
+T5=[19]
+Parsing: SET TILE (13, 2) = 31
+T0=[SET]
+T1=[TILE]
+T2=[13]
+T3=[2]
+T4=[=]
+T5=[31]
+Parsing: SOUND 5
+T0=[SOUND]
+T1=[5]
+Parsing: TEXT BOX "YOU HEAVE THE STOVE ASIDE. UNDERNEATH THERE IS A TRAPDOOR: THE ESCAPE COMMITTEE TUNNEL!"
+T0=[TEXT]
+T1=[BOX]
+T2=[YOU HEAVE THE STOVE ASIDE. UNDERNEATH THERE IS A TRAPDOOR: THE ESCAPE COMMITTEE TUNNEL!]
+Bytecode: 1E 01 FF 1A 00 01 FF 11 00 23 0C 03 FF 00 11 01 20 0C 02 13 20 0D 02 1F E0 05 E6 7D 01 FF FF
+==========================================
+LINEA PRESS FIRE AT SCREEN 23
+T0=[press]
+T1=[fire]
+T2=[at]
+T3=[screen]
+T4=[23]
+Adding 1397 @ sect 63
+Parsing: IF %DONE = 0
+T0=[IF]
+T1=[$26]
+T2=[=]
+T3=[0]
+Parsing: IF %SAFEOPEN = 0
+T0=[IF]
+T1=[$20]
+T2=[=]
+T3=[0]
+Parsing: IF %SPICK <> 1
+T0=[IF]
+T1=[$7]
+T2=[<>]
+T3=[1]
+Parsing: IF PLAYER AT (12, 2)
+T0=[IF]
+T1=[PLAYER]
+T2=[AT]
+T3=[12]
+T4=[2]
+Parsing: TEXT BOX "THE SAFE IS LOCKED. YOU WOULD NEED SOMETHING TO PICK THE LOCK."
+T0=[TEXT]
+T1=[BOX]
+T2=[THE SAFE IS LOCKED. YOU WOULD NEED SOMETHING TO PICK THE LOCK.]
+Parsing: IF %DONE = 0
+T0=[IF]
+T1=[$26]
+T2=[=]
+T3=[0]
+Parsing: IF %SAFEOPEN = 0
+T0=[IF]
+T1=[$20]
+T2=[=]
+T3=[0]
+Parsing: IF %SPICK = 1
+T0=[IF]
+T1=[$7]
+T2=[=]
+T3=[1]
+Parsing: IF PLAYER AT (12, 2)
+T0=[IF]
+T1=[PLAYER]
+T2=[AT]
+T3=[12]
+T4=[2]
+Parsing: %SAFEOPEN = 1
+T0=[$20]
+T1=[=]
+T2=[1]
+Parsing: %ITEM = 33
+T0=[$24]
+T1=[=]
+T2=[33]
+Parsing: CALL USEITEM
+T0=[CALL]
+T1=[USEITEM]
+Parsing: SET TILE (12, 1) = 45
+T0=[SET]
+T1=[TILE]
+T2=[12]
+T3=[1]
+T4=[=]
+T5=[45]
+Parsing: SET TILE (11, 1) = 38
+T0=[SET]
+T1=[TILE]
+T2=[11]
+T3=[1]
+T4=[=]
+T5=[38]
+Parsing: TEXT BOX "CLICK. THE SAFE SWINGS OPEN AND THE LOCKPICK SNAPS. INSIDE: BLANK TRAVEL PAPERS!"
+T0=[TEXT]
+T1=[BOX]
+T2=[CLICK. THE SAFE SWINGS OPEN AND THE LOCKPICK SNAPS. INSIDE: BLANK TRAVEL PAPERS!]
+Parsing: CALL MORALEUP
+T0=[CALL]
+T1=[MORALEUP]
+Bytecode: 15 01 FF 1A 00 01 FF 14 00 04 FF 07 01 23 0C 02 FF E6 B8 01 FF 29 01 FF 1A 00 01 FF 14 00 01 FF 07 01 23 0C 02 FF 00 14 01 00 18 21 F4 DB 00 20 0C 01 2D 20 0B 01 26 E6 E2 01 F4 C7 00 FF FF
+==========================================
+LINEA PRESS FIRE AT SCREEN 26
+T0=[press]
+T1=[fire]
+T2=[at]
+T3=[screen]
+T4=[26]
+Adding 1460 @ sect 69
+Parsing: IF %DONE = 0
+T0=[IF]
+T1=[$26]
+T2=[=]
+T3=[0]
+Parsing: IF %RUBBLE = 0
+T0=[IF]
+T1=[$18]
+T2=[=]
+T3=[0]
+Parsing: IF TX = 6
+T0=[IF]
+T1=[$248]
+T2=[=]
+T3=[6]
+Parsing: CALL DIGOUT
+T0=[CALL]
+T1=[DIGOUT]
+Parsing: IF %DONE = 0
+T0=[IF]
+T1=[$26]
+T2=[=]
+T3=[0]
+Parsing: IF %RUBBLE = 0
+T0=[IF]
+T1=[$18]
+T2=[=]
+T3=[0]
+Parsing: IF TX = 8
+T0=[IF]
+T1=[$248]
+T2=[=]
+T3=[8]
+Parsing: CALL DIGOUT
+T0=[CALL]
+T1=[DIGOUT]
+Bytecode: 12 01 FF 1A 00 01 FF 12 00 01 FF F8 06 FF F4 EB 01 FF 12 01 FF 1A 00 01 FF 12 00 01 FF F8 08 FF F4 EB 01 FF FF
+==========================================
+LINEA PRESS FIRE AT SCREEN 17
+T0=[press]
+T1=[fire]
+T2=[at]
+T3=[screen]
+T4=[17]
+Adding 1497 @ sect 51
+Parsing: IF %DONE = 0
+T0=[IF]
+T1=[$26]
+T2=[=]
+T3=[0]
+Parsing: IF TX >= 12
+T0=[IF]
+T1=[$248]
+T2=[>=]
+T3=[12]
+Parsing: IF TY >= 3
+T0=[IF]
+T1=[$247]
+T2=[>=]
+T3=[3]
+Parsing: IF TY <= 6
+T0=[IF]
+T1=[$247]
+T2=[<=]
+T3=[6]
+Parsing: IF %SUNIFORM = 1
+T0=[IF]
+T1=[$11]
+T2=[=]
+T3=[1]
+Parsing: IF %SPAPERS = 1
+T0=[IF]
+T1=[$12]
+T2=[=]
+T3=[1]
+Parsing: TEXT BOX "THE SENTRY CHECKS YOUR PAPERS, SALUTES THE UNIFORM AND OPENS THE GATE."
+T0=[TEXT]
+T1=[BOX]
+T2=[THE SENTRY CHECKS YOUR PAPERS, SALUTES THE UNIFORM AND OPENS THE GATE.]
+Parsing: WIN GAME
+T0=[WIN]
+T1=[GAME]
+Parsing: IF %DONE = 0
+T0=[IF]
+T1=[$26]
+T2=[=]
+T3=[0]
+Parsing: IF TX >= 12
+T0=[IF]
+T1=[$248]
+T2=[>=]
+T3=[12]
+Parsing: IF TY >= 3
+T0=[IF]
+T1=[$247]
+T2=[>=]
+T3=[3]
+Parsing: IF TY <= 6
+T0=[IF]
+T1=[$247]
+T2=[<=]
+T3=[6]
+Parsing: TEXT BOX "THE SENTRY GLARES AT YOU. ONLY A GUARD WITH PROPER PAPERS GOES THROUGH THIS GATE."
+T0=[TEXT]
+T1=[BOX]
+T2=[THE SENTRY GLARES AT YOU. ONLY A GUARD WITH PROPER PAPERS GOES THROUGH THIS GATE.]
+Bytecode: 1E 01 FF 1A 00 03 FF F8 0C 03 FF F7 03 03 06 FF F7 01 FF 0B 01 01 FF 0C 01 FF E6 18 02 F0 16 01 FF 1A 00 03 FF F8 0C 03 FF F7 03 03 06 FF F7 FF E6 47 02 FF FF
+==========================================
+LINEA SPECIAL TILE TOUCHED
+T0=[special]
+T1=[tile]
+T2=[touched]
+Adding 1550 @ sect 5
+Parsing: IF TN = 7
+T0=[IF]
+T1=[$246]
+T2=[=]
+T3=[7]
+Parsing: IF NPANT = 10
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[10]
+Parsing: IF %STOREOPEN = 0
+T0=[IF]
+T1=[$21]
+T2=[=]
+T3=[0]
+Parsing: IF %SKEY = 1
+T0=[IF]
+T1=[$6]
+T2=[=]
+T3=[1]
+Parsing: %STOREOPEN = 1
+T0=[$21]
+T1=[=]
+T2=[1]
+Parsing: %ITEM = 32
+T0=[$24]
+T1=[=]
+T2=[32]
+Parsing: CALL USEITEM
+T0=[CALL]
+T1=[USEITEM]
+Parsing: SOUND 5
+T0=[SOUND]
+T1=[5]
+Parsing: TEXT BOX "THE KEY TURNS. THE RED CROSS STORE IS OPEN."
+T0=[TEXT]
+T1=[BOX]
+T2=[THE KEY TURNS. THE RED CROSS STORE IS OPEN.]
+Parsing: CALL MORALEUP
+T0=[CALL]
+T1=[MORALEUP]
+Parsing: IF TN = 7
+T0=[IF]
+T1=[$246]
+T2=[=]
+T3=[7]
+Parsing: IF NPANT = 10
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[10]
+Parsing: IF %STOREOPEN = 0
+T0=[IF]
+T1=[$21]
+T2=[=]
+T3=[0]
+Parsing: INC PY, 16
+T0=[INC]
+T1=[$252]
+T2=[16]
+Parsing: TEXT BOX "THE RED CROSS STORE IS LOCKED. THE KEY IS KEPT IN THE OFFICE."
+T0=[TEXT]
+T1=[BOX]
+T2=[THE RED CROSS STORE IS LOCKED. THE KEY IS KEPT IN THE OFFICE.]
+Parsing: BREAK
+T0=[BREAK]
+Parsing: IF TN = 7
+T0=[IF]
+T1=[$246]
+T2=[=]
+T3=[7]
+Parsing: IF NPANT = 7
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[7]
+Parsing: WARP TO 18, 7, 7
+T0=[WARP]
+T1=[TO]
+T2=[18]
+T3=[7]
+T4=[7]
+Parsing: BREAK
+T0=[BREAK]
+Parsing: IF TN = 7
+T0=[IF]
+T1=[$246]
+T2=[=]
+T3=[7]
+Parsing: IF NPANT = 8
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[8]
+Parsing: WARP TO 19, 7, 7
+T0=[WARP]
+T1=[TO]
+T2=[19]
+T3=[7]
+T4=[7]
+Parsing: BREAK
+T0=[BREAK]
+Parsing: IF TN = 7
+T0=[IF]
+T1=[$246]
+T2=[=]
+T3=[7]
+Parsing: IF NPANT = 9
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[9]
+Parsing: WARP TO 20, 7, 7
+T0=[WARP]
+T1=[TO]
+T2=[20]
+T3=[7]
+T4=[7]
+Parsing: BREAK
+T0=[BREAK]
+Parsing: IF TN = 7
+T0=[IF]
+T1=[$246]
+T2=[=]
+T3=[7]
+Parsing: IF NPANT = 10
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[10]
+Parsing: WARP TO 21, 7, 7
+T0=[WARP]
+T1=[TO]
+T2=[21]
+T3=[7]
+T4=[7]
+Parsing: BREAK
+T0=[BREAK]
+Parsing: IF TN = 7
+T0=[IF]
+T1=[$246]
+T2=[=]
+T3=[7]
+Parsing: IF NPANT = 15
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[15]
+Parsing: WARP TO 22, 7, 7
+T0=[WARP]
+T1=[TO]
+T2=[22]
+T3=[7]
+T4=[7]
+Parsing: BREAK
+T0=[BREAK]
+Parsing: IF TN = 7
+T0=[IF]
+T1=[$246]
+T2=[=]
+T3=[7]
+Parsing: IF NPANT = 16
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[16]
+Parsing: WARP TO 23, 7, 7
+T0=[WARP]
+T1=[TO]
+T2=[23]
+T3=[7]
+T4=[7]
+Parsing: BREAK
+T0=[BREAK]
+Parsing: IF TN = 7
+T0=[IF]
+T1=[$246]
+T2=[=]
+T3=[7]
+Parsing: IF NPANT = 18
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[18]
+Parsing: WARP TO 7, 7, 6
+T0=[WARP]
+T1=[TO]
+T2=[7]
+T3=[7]
+T4=[6]
+Parsing: BREAK
+T0=[BREAK]
+Parsing: IF TN = 7
+T0=[IF]
+T1=[$246]
+T2=[=]
+T3=[7]
+Parsing: IF NPANT = 19
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[19]
+Parsing: WARP TO 8, 7, 6
+T0=[WARP]
+T1=[TO]
+T2=[8]
+T3=[7]
+T4=[6]
+Parsing: BREAK
+T0=[BREAK]
+Parsing: IF TN = 7
+T0=[IF]
+T1=[$246]
+T2=[=]
+T3=[7]
+Parsing: IF NPANT = 20
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[20]
+Parsing: WARP TO 9, 7, 6
+T0=[WARP]
+T1=[TO]
+T2=[9]
+T3=[7]
+T4=[6]
+Parsing: BREAK
+T0=[BREAK]
+Parsing: IF TN = 7
+T0=[IF]
+T1=[$246]
+T2=[=]
+T3=[7]
+Parsing: IF NPANT = 21
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[21]
+Parsing: WARP TO 10, 7, 6
+T0=[WARP]
+T1=[TO]
+T2=[10]
+T3=[7]
+T4=[6]
+Parsing: BREAK
+T0=[BREAK]
+Parsing: IF TN = 7
+T0=[IF]
+T1=[$246]
+T2=[=]
+T3=[7]
+Parsing: IF NPANT = 22
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[22]
+Parsing: WARP TO 15, 7, 6
+T0=[WARP]
+T1=[TO]
+T2=[15]
+T3=[7]
+T4=[6]
+Parsing: BREAK
+T0=[BREAK]
+Parsing: IF TN = 7
+T0=[IF]
+T1=[$246]
+T2=[=]
+T3=[7]
+Parsing: IF NPANT = 23
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[23]
+Parsing: WARP TO 16, 7, 6
+T0=[WARP]
+T1=[TO]
+T2=[16]
+T3=[7]
+T4=[6]
+Parsing: BREAK
+T0=[BREAK]
+Parsing: IF TN = 19
+T0=[IF]
+T1=[$246]
+T2=[=]
+T3=[19]
+Parsing: IF %TUNNELLIT = 0
+T0=[IF]
+T1=[$19]
+T2=[=]
+T3=[0]
+Parsing: IF %STORCH <> 1
+T0=[IF]
+T1=[$10]
+T2=[<>]
+T3=[1]
+Parsing: INC PY, 16
+T0=[INC]
+T1=[$252]
+T2=[16]
+Parsing: TEXT BOX "IT IS PITCH DARK DOWN THERE. YOU WILL NEED A TORCH."
+T0=[TEXT]
+T1=[BOX]
+T2=[IT IS PITCH DARK DOWN THERE. YOU WILL NEED A TORCH.]
+Parsing: BREAK
+T0=[BREAK]
+Parsing: IF TN = 19
+T0=[IF]
+T1=[$246]
+T2=[=]
+T3=[19]
+Parsing: IF %TUNNELLIT = 0
+T0=[IF]
+T1=[$19]
+T2=[=]
+T3=[0]
+Parsing: %TUNNELLIT = 1
+T0=[$19]
+T1=[=]
+T2=[1]
+Parsing: %ITEM = 36
+T0=[$24]
+T1=[=]
+T2=[36]
+Parsing: CALL USEITEM
+T0=[CALL]
+T1=[USEITEM]
+Parsing: TEXT BOX "YOU CLIMB DOWN AND HANG THE TORCH FROM A PROP. THE TUNNEL WILL STAY LIT."
+T0=[TEXT]
+T1=[BOX]
+T2=[YOU CLIMB DOWN AND HANG THE TORCH FROM A PROP. THE TUNNEL WILL STAY LIT.]
+Parsing: IF TN = 19
+T0=[IF]
+T1=[$246]
+T2=[=]
+T3=[19]
+Parsing: WARP TO 24, 3, 4
+T0=[WARP]
+T1=[TO]
+T2=[24]
+T3=[3]
+T4=[4]
+Parsing: BREAK
+T0=[BREAK]
+Parsing: IF TN = 20
+T0=[IF]
+T1=[$246]
+T2=[=]
+T3=[20]
+Parsing: IF NPANT = 24
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[24]
+Parsing: WARP TO 18, 12, 3
+T0=[WARP]
+T1=[TO]
+T2=[18]
+T3=[12]
+T4=[3]
+Parsing: BREAK
+T0=[BREAK]
+Parsing: IF TN = 20
+T0=[IF]
+T1=[$246]
+T2=[=]
+T3=[20]
+Parsing: IF NPANT = 28
+T0=[IF]
+T1=[$254]
+T2=[=]
+T3=[28]
+Parsing: TEXT BOX "YOU PUSH UP THROUGH THE TURF. COLD AIR, TREES, AND THE WIRE BEHIND YOU..."
+T0=[TEXT]
+T1=[BOX]
+T2=[YOU PUSH UP THROUGH THE TURF. COLD AIR, TREES, AND THE WIRE BEHIND YOU...]
+Parsing: WARP TO 2, 7, 8
+T0=[WARP]
+T1=[TO]
+T2=[2]
+T3=[7]
+T4=[8]
+Parsing: BREAK
+T0=[BREAK]
+Parsing: IF TN = 27
+T0=[IF]
+T1=[$246]
+T2=[=]
+T3=[27]
+Parsing: TEXT BOX "AFTER DAYS IN THE COOLER YOU ARE RELEASED AT DAWN. THE GUARDS WILL BE WATCHING."
+T0=[TEXT]
+T1=[BOX]
+T2=[AFTER DAYS IN THE COOLER YOU ARE RELEASED AT DAWN. THE GUARDS WILL BE WATCHING.]
+Parsing: EXTERN 2, 7
+T0=[EXTERN]
+T1=[2]
+T2=[7]
+Parsing: WARP TO 14, 7, 6
+T0=[WARP]
+T1=[TO]
+T2=[14]
+T3=[7]
+T4=[6]
+Parsing: BREAK
+T0=[BREAK]
+Bytecode: 24 01 FF F6 07 01 FF FE 0A 01 FF 15 00 01 FF 06 01 FF 00 15 01 00 18 20 F4 DB 00 E0 05 E6 7D 02 F4 C7 00 FF 15 01 FF F6 07 01 FF FE 0A 01 FF 15 00 FF 01 FC 10 E6 9A 02 F2 0F 01 FF F6 07 01 FF FE 07 FF 6D 12 07 07 F2 0F 01 FF F6 07 01 FF FE 08 FF 6D 13 07 07 F2 0F 01 FF F6 07 01 FF FE 09 FF 6D 14 07 07 F2 0F 01 FF F6 07 01 FF FE 0A FF 6D 15 07 07 F2 0F 01 FF F6 07 01 FF FE 0F FF 6D 16 07 07 F2 0F 01 FF F6 07 01 FF FE 10 FF 6D 17 07 07 F2 0F 01 FF F6 07 01 FF FE 12 FF 6D 07 07 06 F2 0F 01 FF F6 07 01 FF FE 13 FF 6D 08 07 06 F2 0F 01 FF F6 07 01 FF FE 14 FF 6D 09 07 06 F2 0F 01 FF F6 07 01 FF FE 15 FF 6D 0A 07 06 F2 0F 01 FF F6 07 01 FF FE 16 FF 6D 0F 07 06 F2 0F 01 FF F6 07 01 FF FE 17 FF 6D 10 07 06 F2 15 01 FF F6 13 01 FF 13 00 04 FF 0A 01 FF 01 FC 10 E6 C3 02 F2 17 01 FF F6 13 01 FF 13 00 FF 00 13 01 00 18 24 F4 DB 00 E6 E6 02 FF 0B 01 FF F6 13 FF 6D 18 03 04 F2 0F 01 FF F6 14 01 FF FE 18 FF 6D 12 0C 03 F2 12 01 FF F6 14 01 FF FE 1C FF E6 17 03 6D 02 07 08 F2 11 01 FF F6 1B FF E6 48 03 E4 02 07 6D 0E 07 06 F2 FF
+==========================================
+LINEA ENEMY TOUCHED
+T0=[enemy]
+T1=[touched]
+Adding 1893 @ sect 8
+Parsing: IF EN_T >= 128
+T0=[IF]
+T1=[$238]
+T2=[>=]
+T3=[128]
+Parsing: BREAK
+T0=[BREAK]
+Parsing: IF EN_T = 2
+T0=[IF]
+T1=[$238]
+T2=[=]
+T3=[2]
+Parsing: IF %SFOOD = 1
+T0=[IF]
+T1=[$14]
+T2=[=]
+T3=[1]
+Parsing: EXTERN 1, 0
+T0=[EXTERN]
+T1=[1]
+T2=[0]
+Parsing: %ITEM = 40
+T0=[$24]
+T1=[=]
+T2=[40]
+Parsing: CALL USEITEM
+T0=[CALL]
+T1=[USEITEM]
+Parsing: TEXT BOX "THE DOG WOLFS DOWN THE FOOD, YAWNS AND CURLS UP TO SLEEP."
+T0=[TEXT]
+T1=[BOX]
+T2=[THE DOG WOLFS DOWN THE FOOD, YAWNS AND CURLS UP TO SLEEP.]
+Parsing: BREAK
+T0=[BREAK]
+Parsing: IF %ALARM = 0
+T0=[IF]
+T1=[$3]
+T2=[=]
+T3=[0]
+Parsing: IF %RESTRICT = 0
+T0=[IF]
+T1=[$4]
+T2=[=]
+T3=[0]
+Parsing: BREAK
+T0=[BREAK]
+Parsing: IF %ALARM = 0
+T0=[IF]
+T1=[$3]
+T2=[=]
+T3=[0]
+Parsing: IF %SUNIFORM = 1
+T0=[IF]
+T1=[$11]
+T2=[=]
+T3=[1]
+Parsing: BREAK
+T0=[BREAK]
+Parsing: IF %SBRIBE = 1
+T0=[IF]
+T1=[$15]
+T2=[=]
+T3=[1]
+Parsing: %ITEM = 41
+T0=[$24]
+T1=[=]
+T2=[41]
+Parsing: CALL USEITEM
+T0=[CALL]
+T1=[USEITEM]
+Parsing: %ALARM = 0
+T0=[$3]
+T1=[=]
+T2=[0]
+Parsing: TEXT BOX "THE GUARD POCKETS YOUR CIGARETTES AND LOOKS THE OTHER WAY. GO, QUICKLY."
+T0=[TEXT]
+T1=[BOX]
+T2=[THE GUARD POCKETS YOUR CIGARETTES AND LOOKS THE OTHER WAY. GO, QUICKLY.]
+Parsing: BREAK
+T0=[BREAK]
+Parsing: IF TRUE
+T0=[IF]
+T1=[TRUE]
+Parsing: CALL CAUGHT
+T0=[CALL]
+T1=[CAUGHT]
+Bytecode: 07 03 FF EE 80 FF F2 17 01 FF EE 02 01 FF 0E 01 FF E4 01 00 00 18 28 F4 DB 00 E6 7E 03 F2 0B 01 FF 03 00 01 FF 04 00 FF F2 0B 01 FF 03 00 01 FF 0B 01 FF F2 13 01 FF 0F 01 FF 00 18 29 F4 DB 00 00 03 00 E6 A5 03 F2 07 F0 FF F4 C2 01 FF FF
+Index section: 152 bytes
+Bytecode section: 1972 bytes
+Wrote 2124 bytes to script.spt.bin
+%slot1 -> $0
+%slot2 -> $1
+%clock -> $2
+%alarm -> $3
+%restrict -> $4
+%event -> $5
+%skey -> $6
+%spick -> $7
+%ssnips -> $8
+%sshovel -> $9
+%storch -> $10
+%suniform -> $11
+%spapers -> $12
+%scompass -> $13
+%sfood -> $14
+%sbribe -> $15
+%sparcel -> $16
+%hatch -> $17
+%rubble -> $18
+%tunnellit -> $19
+%safeopen -> $20
+%storeopen -> $21
+%holescr -> $22
+%holex -> $23
+%item -> $24
+%floor -> $25
+%done -> $26
+%tmp -> $27
+%intro -> $28
+%cutdone -> $29
+Exporting encoded text
+Wrote 981 bytes to text.bin
+Writing interpreter
+DONE!

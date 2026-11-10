@@ -5,7 +5,7 @@
 //          4-6 walk left, 7 jump left (the NES order)
 //   8-15   enemies, types 1-4, 2 frames each (level cells 0-7)
 //   16-21  swimming: 16-18 right, 19-21 left (level cells 8-13)
-//   22     explosion (fixed 8), 23 coco (fixed 9), 24 punch (fixed 10),
+//   22     explosion (fixed 8), 23 coco (fixed 9), 24 punch (fixed 10; 11 facing left),
 //   25     drop (level cell 14)
 
 extern unsigned char *sprite_cells [0];

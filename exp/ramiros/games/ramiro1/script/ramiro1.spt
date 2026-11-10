@@ -1,0 +1,945 @@
+# =============================================================================
+# RAMIRO EL VAMPIRO EN "NO TIENE UN RESPIRO" - MSC4 script for MK1 v3.2
+# Port of script/ramiro1r.spt (msc3, MK2 v0.90b, 2016).
+# Compiled by dev/comp.sh with:
+#   msc4 in=ramiro1.spt v=3 target=zx interpreter=msc4i.asm text=text.bin
+# =============================================================================
+#
+# THE STORY
+# ---------
+# Ramiro forgot the deathday of his daughter, la Hija Canija. She won't let
+# him rest in his coffin until he brings her a present: el Tesoro del Moro.
+# The treasure chamber (15) is sealed with the Encantamiento Suculento; only
+# la Bruja Maruja (8) can open it, with the Encantamiento del Pimiento, and
+# for that she needs the four pieces of el Talisman Aleman (15, 22, 23, 27).
+# Outside the crypts the sun burns: Maruja's Hechizo Postizo (flag 30) lets
+# Ramiro stand the sunlight for a while (the countdown in the HUD).
+#
+# Picking up a talisman piece shuts the room's exit and fills it with 20
+# crosses (tile 13). Bats come to life (flag 31). Get the 20 crosses and the
+# exit opens again.
+#
+# MAP (screen numbers)
+# --------------------
+#    0  1  2  3  4  5  6 [7] 8  9 10 11 12 13 14     7 = Ramiro's crypt
+#   15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
+#
+# WHAT THE C CODE DOES (addons/ramiro.h, configured in dev/config.h)
+# ------------------------------------------------------------------
+#  * Crosses (tile 13) are collected by the engine (Ramiro 4 coins): +1 to
+#    flag 1, +1 life, and then the PLAYER GOT SOMETHING section runs.
+#  * Sunlight (behaviour 3) drains life at once while flag 30 = 0, and only
+#    after a countdown while flag 30 = 1.
+#  * Bats (enemy type 6) only move while flag 31 = 1.
+#
+# EXTERNs (addons/ramiro.h)
+# -------------------------
+#   EXTERN 9, n     sound n: 2 hit, 5 coin, 6 object, 8 key
+#   EXTERN 10, x1   fire zone, pixels: the PRESS FIRE AT SCREEN section of
+#   EXTERN 11, y1   the current screen runs every frame while Ramiro is
+#   EXTERN 12, x2   inside the box (msc3's SET_FIRE_ZONE). 13 switches it
+#   EXTERN 13, y2   on. ENTERING ANY switches it off (EXTERN 14).
+#   EXTERN 14, 0    fire zone off
+#   EXTERN 15, 0    REENTER (draw the screen again, run its ENTERING section)
+#   EXTERN 16, 0    REDRAW (repaint the play area)
+#
+# TEXT BOX strings (addons/ramiro.h): the first character says what it is.
+#   "0..."   room name, centered in the HUD
+#   "1..."   RAMIRO says...          "5..."   VOZ DE ULTRATUMBA
+#   "2..."   HIJA CANIJA             "6..."   GIGANTE ELEGANTE
+#   "3..."   BRUJA MARUJA            "7..."   ENANO MARRANO
+#   "4..."   JUANILLO EL COLMILLO    "8..."   SIRVIENTE VICENTE
+#   (the names are in dev/extern.h). In the texts < is ¡, > is ¿, = is Ñ.
+#
+# TRANSLATION NOTES (msc3 -> msc4)
+# --------------------------------
+#  * msc3's PLAYER_TOUCHES x, y fires when Ramiro's 16x16 box overlaps the
+#    tile; msc4's PLAYER TOUCHES wants his centre inside it. To keep the
+#    2016 behaviour, each one is written as IN_X / IN_Y pixel ranges:
+#    x*16-15 .. x*16+15. Same for PLAYER_IN_X_TILES / _Y_TILES and for
+#    SET_FIRE_ZONE_TILES (the ranges msc3 computed are written here).
+#  * Tiles: the tileset has rows 2 and 3 swapped (so the map fits RLE53).
+#    2016 tile n (16-31) is now n+16: gate 16 -> 32, pieces 17-20 -> 33-36,
+#    la Hija Canija 27 -> 43, the treasure 28 -> 44. Crosses are still 13.
+#  * The one-off decoration tiles (old map.bin.spt, generated again by
+#    tools/ramiro_import.py into map/decos.spt) are in the ENTERING SCREEN
+#    sections below.
+#  * The trap of screen 29 used an undefined alias ($TRAMPA). It has its
+#    own flag now (18), so it only springs once, as intended.
+#  * INC LIFE 1 in PLAYER_GETS_COIN is done by the engine (RAMIRO_COINS_REFILL).
+#
+# MSC4 NOTES FOR WHOEVER EDITS THIS
+# ---------------------------------
+#  * THEN and END must be alone on their line (no trailing comments).
+#  * One section per screen: room names, decorations and logic share it.
+#  * Literal values: 0-254.
+#  * A clause compiles to at most 255 bytes.
+# =============================================================================
+
+ROOMS = 30
+TEXT WIDTH = 22
+
+# -----------------------------------------------------------------------------
+# Flags. 1, 30 and 31 are used by the C code (dev/config.h).
+# -----------------------------------------------------------------------------
+
+ALIAS %ALLPURP = 0          # all purpose (one-shot warnings per visit)
+ALIAS %CROSSES = 1          # crosses got (RAMIRO_COIN_FLAG). Shown in the HUD
+ALIAS %FIRSTTIME = 2        # 1 = intro seen
+ALIAS %WARNED = 9           # 1 = "got everything" said
+ALIAS %PIMIENTO = 10        # 1 = Encantamiento del Pimiento done
+ALIAS %PIECES = 11          # talisman pieces got (0-4)
+ALIAS %TALISMAN1 = 12       # 1 = piece in screen 23 got
+ALIAS %TALISMAN2 = 13       # 1 = piece in screen 27 got
+ALIAS %TALISMAN3 = 14       # 1 = piece in screen 22 got
+ALIAS %TALISMAN4 = 15       # 1 = piece in screen 15 got
+ALIAS %TESORO = 16          # 1 = el Tesoro del Moro got
+ALIAS %CANIJAGONE = 17      # 1 = la Hija Canija got her present
+ALIAS %TRAMPA = 18          # 1 = trap of screen 29 sprung
+ALIAS %GATEX = 20           # gate closed by the last piece / trap
+ALIAS %GATEY = 21
+ALIAS %HECHIZO = 30         # Hechizo Postizo: sunlight kills slowly (C)
+ALIAS %MURCIELAGO = 31      # bats move (C)
+
+# =============================================================================
+# GENERAL SECTIONS
+# =============================================================================
+
+ENTERING GAME
+	IF TRUE
+	THEN
+		# The engine has already cleared all flags.
+		# Debug:
+		# %PIECES = 4
+		# %HECHIZO = 1
+		# WARP TO 8, 4, 4
+	END
+END
+
+ENTERING ANY
+	IF TRUE
+	THEN
+		# Every screen sets its own fire zone, if it needs one.
+		EXTERN 14, 0
+	END
+END
+
+# Crosses. The engine has already added 1 to %CROSSES and 1 to life.
+PLAYER GOT SOMETHING
+	# Got all 20 crosses? Open the gate.
+	IF %CROSSES = 20
+	THEN
+		EXTERN 9, 8
+		%MURCIELAGO = 0
+		SET TILE (%GATEX, %GATEY) = 0
+		TEXT BOX "5<TRAMPA DESACTIVADA!"
+	END
+
+	IF %CROSSES = 20
+	IF %PIECES = 4
+	IF %WARNED = 0
+	THEN
+		%WARNED = 1
+		TEXT BOX "1<LOS CUATRO TROZOS DEL TALISMAN SON MIOS!"
+		TEXT BOX "1VOY A LLEVARSELOS A LA BRUJA MARUJA PARA QUE HAGA EL ENCATAMIENTO DEL PIMIENTO"
+	END
+
+	IF %CROSSES = 20
+	THEN
+		%CROSSES = 0
+	END
+END
+
+# =============================================================================
+# SCREENS
+# =============================================================================
+
+ENTERING SCREEN 0
+	IF TRUE
+	THEN
+		TEXT BOX "0EL FINAL DE LOS DOMINIOS"
+	END
+END
+
+ENTERING SCREEN 1
+	IF TRUE
+	THEN
+		TEXT BOX "0EL ARMARIO DE MACARIO"
+	END
+END
+
+# Cripta del Sirviente Vicente
+
+ENTERING SCREEN 2
+	IF TRUE
+	THEN
+		TEXT BOX "0CRIPTA DEL SIRVIENTE VICENTE"
+		DECOS
+			9, 7, 41
+		END
+	END
+END
+
+PRESS FIRE AT SCREEN 2
+	# PLAYER_TOUCHES 9, 7
+	IF PLAYER IN_X 129, 159
+	IF PLAYER IN_Y 97, 127
+	THEN
+		TEXT BOX "8<HEY, VIEJO! <NO ME PISES LO MOJAO!"
+	END
+END
+
+ENTERING SCREEN 3
+	IF TRUE
+	THEN
+		TEXT BOX "0<VAYA SOLARIUM!"
+	END
+END
+
+# Cripta del Enano Marrano
+
+ENTERING SCREEN 4
+	IF TRUE
+	THEN
+		TEXT BOX "0CRIPTA DEL ENANO MARRANO"
+		DECOS
+			10, 4, 40
+		END
+	END
+END
+
+PRESS FIRE AT SCREEN 4
+	# PLAYER_TOUCHES 10, 4
+	IF PLAYER IN_X 145, 175
+	IF PLAYER IN_Y 49, 79
+	THEN
+		TEXT BOX "7BREUUUUGH BURP, REGUEELD..."
+		TEXT BOX "7AHM, VAYA ERUCTO, CASI TENGO QUE MASTICARLO"
+		TEXT BOX "7CASI ME DA PARA LA MERIENDA... PERO ESPERA, QUE VIENE OTRO"
+		TEXT BOX "1PUAJ..."
+	END
+END
+
+ENTERING SCREEN 5
+	IF TRUE
+	THEN
+		TEXT BOX "0TERRENO BALDIO CON POMIO"
+	END
+END
+
+# Screen 6. Warns Ramiro about going out in the sun.
+
+ENTERING SCREEN 6
+	IF TRUE
+	THEN
+		TEXT BOX "0TERRENO BALDADO CON PESCADO"
+		%ALLPURP = 0
+	END
+
+	# Fire zone (208, 128) - (212, 143)
+	IF %HECHIZO = 0
+	THEN
+		EXTERN 10, 208
+		EXTERN 11, 128
+		EXTERN 12, 212
+		EXTERN 13, 143
+	END
+END
+
+PRESS FIRE AT SCREEN 6
+	# PLAYER_TOUCHES 13, 8
+	IF %HECHIZO = 0
+	IF %ALLPURP = 0
+	IF PLAYER IN_X 193, 223
+	IF PLAYER IN_Y 113, 143
+	THEN
+		%ALLPURP = 1
+		TEXT BOX "1UF, QUITA, QUITA, LOCO DE AMOR QUE ESTOY POR MI RETO=A, PERO YO AHI FUERA NO SALGO, QUE ME CHAMUSCO."
+	END
+END
+
+# Screen 7: Ramiro's crypt. The game starts here.
+
+ENTERING SCREEN 7
+	IF TRUE
+	THEN
+		TEXT BOX "0CRIPTA, DULCE CRIPTA"
+		DECOS
+			2, 3, 46
+			2, 4, 47
+		END
+		%ALLPURP = 0
+	END
+
+	# First time: the whole screen is a fire zone -> the intro runs at once.
+	# SET_FIRE_ZONE_TILES 0, 0, 15, 9
+	IF %FIRSTTIME = 0
+	THEN
+		EXTERN 10, 0
+		EXTERN 11, 0
+		EXTERN 12, 254
+		EXTERN 13, 159
+		BREAK
+	END
+
+	# La Hija Canija, waiting. SET_FIRE_ZONE_TILES 5, 4, 5, 4
+	IF %CANIJAGONE = 0
+	THEN
+		SET TILE (4, 4) = 43
+		EXTERN 10, 65
+		EXTERN 11, 49
+		EXTERN 12, 95
+		EXTERN 13, 79
+	END
+
+	# Present delivered: the coffin. SET_FIRE_ZONE_TILES 2, 3, 2, 4
+	IF %CANIJAGONE = 1
+	THEN
+		EXTERN 10, 17
+		EXTERN 11, 33
+		EXTERN 12, 47
+		EXTERN 13, 79
+	END
+END
+
+PRESS FIRE AT SCREEN 7
+	# Intro
+	IF %FIRSTTIME = 0
+	THEN
+		%FIRSTTIME = 1
+		EXTERN 14, 0
+		TEXT BOX "1RAYAS Y CENTOLLAS, CALAMIDAD DE MI... CABEZA DE AJO, <MALDICION! OLVIDE EL CUMPLE MUERTES DE MI HIJA CANIJA..."
+		TEXT BOX "1AHORA ESTA HECHA UNA FURIA, LA MACABRA. SALE A SU MADRE, LA VAMPIRESA DE FRAMBUESA, ESTA CLARO."
+		TEXT BOX "1NO PERMITIRA QUE ESTOS VIEJOS HUESOS DESCANSEN EN SU SEPULCRO HASTA QUE LE LLEVE UNA BUENA COMPENSACION."
+		EXTERN 15, 0
+		BREAK
+	END
+
+	# PLAYER_TOUCHES 5, 4: la Hija Canija, no present.
+	IF PLAYER IN_X 65, 95
+	IF PLAYER IN_Y 49, 79
+	IF %CANIJAGONE = 0
+	IF %TESORO = 0
+	IF %ALLPURP = 0
+	THEN
+		%ALLPURP = 1
+		TEXT BOX "2<MARMOLILLO APOLILLADO! <TRAEME MI REGALO! Y SI NO, <FELICES SUE=OS EN EL SUELO, PELANDRUSCO!"
+		BREAK
+	END
+
+	# PLAYER_TOUCHES 5, 4: la Hija Canija gets her present.
+	IF PLAYER IN_X 65, 95
+	IF PLAYER IN_Y 49, 79
+	IF %CANIJAGONE = 0
+	IF %TESORO = 1
+	THEN
+		TEXT BOX "2OOOH... <ES EL TESORO DEL MORO! GRACIAS PAPI, ERES EL MEJOR PAPI DE TODOS LOS PAPISES DEL MUNDO"
+		TEXT BOX "2VOY A ENSE=ARSELO A MIS AMIGAS. HASTA LUEGO, CARA HUEVO."
+		SET TILE (4, 4) = 0
+		SHOW
+		EXTERN 9, 6
+		EXTERN 9, 5
+		TEXT BOX "1OHHH... MI ATAUD. POR FIN... POR FIN PODRE DORMIR."
+		# SET_FIRE_ZONE_TILES 2, 3, 2, 4
+		EXTERN 10, 17
+		EXTERN 11, 33
+		EXTERN 12, 47
+		EXTERN 13, 79
+		%CANIJAGONE = 1
+		BREAK
+	END
+
+	# PLAYER_TOUCHES 2, 4: back to the coffin. The end.
+	IF PLAYER IN_X 17, 47
+	IF PLAYER IN_Y 49, 79
+	THEN
+		EXTERN 9, 8
+		WIN GAME
+	END
+END
+
+# Screen 8: Chalecico de la Bruja Maruja. Also warns about the sun.
+
+ENTERING SCREEN 8
+	IF TRUE
+	THEN
+		TEXT BOX "0CHALECICO DE LA BRUJA MARUJA"
+		DECOS
+			7, 5, 45
+			8, 5, 42
+		END
+		%ALLPURP = 0
+	END
+
+	# SET_FIRE_ZONE_TILES 9, 8, 9, 8
+	IF %HECHIZO = 0
+	THEN
+		EXTERN 10, 129
+		EXTERN 11, 113
+		EXTERN 12, 159
+		EXTERN 13, 143
+	END
+
+	IF %PIMIENTO = 1
+	THEN
+		DECOS
+			5, 4, 33
+			6, 4, 34
+			5, 5, 35
+			6, 5, 36
+		END
+	END
+END
+
+PRESS FIRE AT SCREEN 8
+	# Warn about the perils of going out. PLAYER_TOUCHES 9, 8
+	IF %HECHIZO = 0
+	IF %ALLPURP = 0
+	IF PLAYER IN_X 129, 159
+	IF PLAYER IN_Y 113, 143
+	THEN
+		%ALLPURP = 1
+		TEXT BOX "1UF, QUITA, QUITA, LOCO DE AMOR QUE ESTOY POR MI RETO=A, PERO YO AHI FUERA NO SALGO, QUE ME CHAMUSCO."
+	END
+
+	# Hechizo Postizo. PLAYER_IN_Y_TILES 5, 5 / PLAYER_IN_X_TILES 6, 7
+	IF PLAYER IN_Y 65, 95
+	IF PLAYER IN_X 81, 127
+	IF %HECHIZO = 0
+	THEN
+		TEXT BOX "3<HOLA, QUERIDO RAMIRO! >COMO TE TRATA LA VIDA?"
+		TEXT BOX "1ME OLVIDE DEL CUMPLE DE MI RETO=A. NO ME PERDONARA HASTA QUE LE LLEVE EL TESORO DEL MORO..."
+		TEXT BOX "3YA TE VALE, PICHURLI."
+		TEXT BOX "3EL TESORO DEL MORO ESTA EN LA CAMARA CERRADA. NADIE TIENE LA LLAVE."
+		TEXT BOX "3<PERO YO PUEDO HACER EL ENCANTAMIENTO DEL PIMIENTO Y ABRIRLA!"
+		TEXT BOX "3TRAEME LAS CUATRO PARTES DEL TALISMAN ALEMAN, LO NECESITO PARA LA MAGIA."
+		TEXT BOX "1PERO CUALQUIERA SALE CON ESTE SOLANO, CACHIRULILLA. YA SABES COMO PEGA EN BADAJOZ."
+		TEXT BOX "3NO TE PREOCUPES. CON ESTE HECHIZO POSTIZO QUE TE LANZO, PODRAS AGUANTAR AL SOL UN MINUTO."
+		TEXT BOX "3LUEGO TENDRAS QUE RECUPERARTE UN RATITO, CLARO. TEN CUIDADO, FETUCHINO."
+		%HECHIZO = 1
+		BREAK
+	END
+
+	# Encantamiento del Pimiento
+	IF PLAYER IN_Y 65, 95
+	IF PLAYER IN_X 81, 127
+	IF %PIMIENTO = 0
+	IF %PIECES = 4
+	THEN
+		TEXT BOX "3HOLA DE NUEVO, RAMIRO. VEO QUE HAS HECHO LA TAREA"
+		TEXT BOX "3LA CAMARA DEL TESORO DEL MORO FUE ENCANTADA POR PAQUITO EL MORO CON EL ENCANTAMIENTO SUCULENTO."
+		TEXT BOX "3SOLO PUEDE CONTRARRESTARSE CON EL ENCANTAMIENTO DEL PIMIENTO. TRAE LAS PIEZAS."
+		PAUSE 50
+		SET TILE (5, 4) = 33
+		SHOW
+		EXTERN 9, 2
+		PAUSE 10
+		SET TILE (6, 4) = 34
+		SHOW
+		EXTERN 9, 2
+		PAUSE 10
+		SET TILE (5, 5) = 35
+		SHOW
+		EXTERN 9, 2
+		PAUSE 10
+		SET TILE (6, 5) = 36
+		SHOW
+		EXTERN 9, 2
+		PAUSE 10
+		EXTERN 9, 5
+		EXTERN 9, 5
+		PAUSE 50
+		TEXT BOX "3<LISTO! HA SIDO FACIL... SOY LA LECHE. LA CAMARA ESTA ABIERTA. <VE A POR EL TESORO, FRAN!"
+		TEXT BOX "1<TE DEBO UNA, CHAPARRA CHAPATINA!"
+		%PIMIENTO = 1
+		BREAK
+	END
+END
+
+ENTERING SCREEN 9
+	IF TRUE
+	THEN
+		TEXT BOX "0LA TORRE DEL ESPANTO"
+	END
+END
+
+ENTERING SCREEN 10
+	IF TRUE
+	THEN
+		TEXT BOX "0EL OLEODUCTO DEL ERUCTO"
+	END
+END
+
+# Cripta de Juanillo el Colmillo
+
+ENTERING SCREEN 11
+	IF TRUE
+	THEN
+		TEXT BOX "0CRIPTA DE JUANILLO EL COLMILLO"
+		DECOS
+			10, 8, 37
+		END
+	END
+END
+
+PRESS FIRE AT SCREEN 11
+	# PLAYER_TOUCHES 10, 8
+	IF PLAYER IN_X 145, 175
+	IF PLAYER IN_Y 113, 143
+	THEN
+		TEXT BOX "4OLA K ASE. >KIERE PELEA?"
+		TEXT BOX "1TE HUELE EL ALIENTO, JUANILLO."
+		TEXT BOX "4ES QUE ME PIRRA LA SANGRE ENCEBOLLADA."
+	END
+END
+
+ENTERING SCREEN 12
+	IF TRUE
+	THEN
+		TEXT BOX "0LA CAPILLA DE LA CHINCHILLA"
+	END
+END
+
+# Cripta del Gigante Elegante
+
+ENTERING SCREEN 13
+	IF TRUE
+	THEN
+		TEXT BOX "0CRIPTA DEL GIGANTE ELEGANTE"
+		DECOS
+			12, 7, 38
+			12, 8, 39
+		END
+	END
+END
+
+PRESS FIRE AT SCREEN 13
+	# PLAYER_TOUCHES 12, 8
+	IF PLAYER IN_X 177, 207
+	IF PLAYER IN_Y 113, 143
+	THEN
+		TEXT BOX "6VENDO MOTO SEMINUEVA."
+		TEXT BOX "6MERECE LA PENA. <PERTENECIO AL MISMISIMO JOHNNY LIMITE!"
+	END
+END
+
+# La camara del Tesoro del Moro
+
+ENTERING SCREEN 14
+	IF TRUE
+	THEN
+		TEXT BOX "0<LA CAMARA DEL TESORO!"
+	END
+
+	# The treasure. SET_FIRE_ZONE_TILES 11, 2, 11, 2
+	IF %TESORO = 0
+	THEN
+		SET TILE (11, 2) = 44
+		EXTERN 10, 161
+		EXTERN 11, 17
+		EXTERN 12, 191
+		EXTERN 13, 47
+	END
+
+	# Gate closed until the Encantamiento del Pimiento is done
+	IF %PIMIENTO = 0
+	THEN
+		SET TILE (10, 8) = 32
+		BREAK
+	END
+END
+
+PRESS FIRE AT SCREEN 14
+	# PLAYER_TOUCHES 11, 2
+	IF PLAYER IN_X 161, 191
+	IF PLAYER IN_Y 17, 47
+	IF %TESORO = 0
+	THEN
+		EXTERN 14, 0
+		%TESORO = 1
+		SET TILE (11, 2) = 0
+		TEXT BOX "1<<POR FIN!! <<ES EL TESORO DEL MORO!!"
+		EXTERN 9, 6
+		EXTERN 9, 6
+		EXTERN 9, 6
+		EXTERN 9, 6
+		EXTERN 9, 6
+		TEXT BOX "1HE DE DARME PRISA Y LLEVARSELO A MI HIJA CANIJA. <MEJUNJES Y ESCARLATINAS, QUE BIEN!"
+	END
+END
+
+# Talisman piece 4
+
+ENTERING SCREEN 15
+	IF TRUE
+	THEN
+		TEXT BOX "0EL BICHARRACO BERRACO"
+	END
+
+	# SET_FIRE_ZONE_TILES 8, 8, 8, 8
+	IF %TALISMAN4 = 0
+	THEN
+		SET TILE (8, 8) = 33
+		EXTERN 10, 113
+		EXTERN 11, 113
+		EXTERN 12, 143
+		EXTERN 13, 143
+		TEXT BOX "1<<ES UNA DE LAS PIEZAS DEL TALISMAN ALEMAN!!"
+	END
+END
+
+PRESS FIRE AT SCREEN 15
+	# PLAYER_TOUCHES 8, 8
+	IF %TALISMAN4 = 0
+	IF PLAYER IN_X 113, 143
+	IF PLAYER IN_Y 113, 143
+	THEN
+		%CROSSES = 0
+		%TALISMAN4 = 1
+		INC %PIECES, 1
+		# 20 crosses
+		DECOS
+			1, 2, 13
+			2, 2, 13
+			3, 2, 13
+			4, 2, 13
+			8, 3, 13
+			9, 3, 13
+			10, 3, 13
+			11, 3, 13
+			12, 3, 13
+			13, 3, 13
+			1, 5, 13
+			2, 5, 13
+			3, 5, 13
+			8, 6, 13
+			9, 6, 13
+			10, 6, 13
+			2, 7, 13
+			4, 7, 13
+			6, 7, 13
+			12, 7, 13
+		END
+		# Close the gate, remove the piece
+		SET TILE (14, 7) = 32
+		%GATEX = 14
+		%GATEY = 7
+		SET TILE (8, 8) = 0
+		SHOW
+		# Bats on
+		%MURCIELAGO = 1
+		EXTERN 9, 6
+		# The rest happens in PLAYER GOT SOMETHING
+	END
+END
+
+ENTERING SCREEN 16
+	IF TRUE
+	THEN
+		TEXT BOX "0EL CUARTO DE INVITADOS"
+	END
+END
+
+ENTERING SCREEN 17
+	IF TRUE
+	THEN
+		TEXT BOX "0SALA DE LECTURAS A OSCURAS"
+	END
+END
+
+ENTERING SCREEN 18
+	IF TRUE
+	THEN
+		TEXT BOX "0VESTIBULO CON PATIBULO"
+	END
+END
+
+ENTERING SCREEN 19
+	IF TRUE
+	THEN
+		TEXT BOX "0MOJONES CALIENTES"
+	END
+END
+
+ENTERING SCREEN 20
+	IF TRUE
+	THEN
+		TEXT BOX "0CACOTA HIRVIENDO"
+	END
+END
+
+ENTERING SCREEN 21
+	IF TRUE
+	THEN
+		TEXT BOX "0MIERDA BURBUJEANTE"
+	END
+END
+
+# Talisman piece 3
+
+ENTERING SCREEN 22
+	IF TRUE
+	THEN
+		TEXT BOX "0EL ESPANTO DE LEPANTO"
+	END
+
+	# SET_FIRE_ZONE_TILES 7, 8, 7, 8
+	IF %TALISMAN3 = 0
+	THEN
+		SET TILE (7, 8) = 33
+		EXTERN 10, 97
+		EXTERN 11, 113
+		EXTERN 12, 127
+		EXTERN 13, 143
+		TEXT BOX "1<<ES UNA DE LAS PIEZAS DEL TALISMAN ALEMAN!!"
+	END
+END
+
+PRESS FIRE AT SCREEN 22
+	# PLAYER_TOUCHES 7, 8
+	IF %TALISMAN3 = 0
+	IF PLAYER IN_X 97, 127
+	IF PLAYER IN_Y 113, 143
+	THEN
+		%CROSSES = 0
+		%TALISMAN3 = 1
+		INC %PIECES, 1
+		DECOS
+			7, 2, 13
+			8, 2, 13
+			9, 2, 13
+			10, 2, 13
+			11, 2, 13
+			12, 2, 13
+			13, 2, 13
+			1, 4, 13
+			2, 4, 13
+			3, 4, 13
+			4, 4, 13
+			7, 6, 13
+			8, 6, 13
+			9, 6, 13
+			10, 6, 13
+			11, 6, 13
+			12, 6, 13
+			13, 6, 13
+			2, 7, 13
+			4, 7, 13
+		END
+		SET TILE (0, 2) = 32
+		%GATEX = 0
+		%GATEY = 2
+		SET TILE (7, 8) = 0
+		SHOW
+		%MURCIELAGO = 1
+		EXTERN 9, 6
+	END
+END
+
+# Talisman piece 1
+
+ENTERING SCREEN 23
+	IF TRUE
+	THEN
+		TEXT BOX "0LA ABOMINACION EN ACCION"
+	END
+
+	# SET_FIRE_ZONE_TILES 12, 4, 12, 4
+	IF %TALISMAN1 = 0
+	THEN
+		SET TILE (12, 4) = 33
+		EXTERN 10, 177
+		EXTERN 11, 49
+		EXTERN 12, 207
+		EXTERN 13, 79
+		TEXT BOX "1<<ES UNA DE LAS PIEZAS DEL TALISMAN ALEMAN!!"
+	END
+END
+
+PRESS FIRE AT SCREEN 23
+	# PLAYER_TOUCHES 12, 4
+	IF %TALISMAN1 = 0
+	IF PLAYER IN_X 177, 207
+	IF PLAYER IN_Y 49, 79
+	THEN
+		%CROSSES = 0
+		%TALISMAN1 = 1
+		INC %PIECES, 1
+		DECOS
+			1, 2, 13
+			2, 2, 13
+			3, 2, 13
+			1, 3, 13
+			2, 3, 13
+			3, 3, 13
+			1, 4, 13
+			2, 4, 13
+			3, 4, 13
+			1, 5, 13
+			2, 5, 13
+			3, 5, 13
+			1, 6, 13
+			2, 6, 13
+			3, 6, 13
+			9, 8, 13
+			10, 8, 13
+			11, 8, 13
+			12, 8, 13
+			13, 8, 13
+		END
+		SET TILE (14, 2) = 32
+		%GATEX = 14
+		%GATEY = 2
+		SET TILE (12, 4) = 0
+		SHOW
+		%MURCIELAGO = 1
+		EXTERN 9, 6
+	END
+END
+
+ENTERING SCREEN 24
+	IF TRUE
+	THEN
+		TEXT BOX "0MISTERIOSA ARQUITECTURA"
+	END
+END
+
+ENTERING SCREEN 25
+	IF TRUE
+	THEN
+		TEXT BOX "0<SE ME CAE LA LAVA!"
+	END
+END
+
+ENTERING SCREEN 26
+	IF TRUE
+	THEN
+		TEXT BOX "0MI CUEVA ESTA COMO NUEVA"
+	END
+END
+
+# Talisman piece 2
+
+ENTERING SCREEN 27
+	IF TRUE
+	THEN
+		TEXT BOX "0EL FANTASMA QUE TE PASMA"
+	END
+
+	# SET_FIRE_ZONE_TILES 3, 2, 3, 2
+	IF %TALISMAN2 = 0
+	THEN
+		SET TILE (3, 2) = 33
+		EXTERN 10, 33
+		EXTERN 11, 17
+		EXTERN 12, 63
+		EXTERN 13, 47
+		TEXT BOX "1<<ES UNA DE LAS PIEZAS DEL TALISMAN ALEMAN!!"
+	END
+END
+
+PRESS FIRE AT SCREEN 27
+	# PLAYER_TOUCHES 3, 2
+	IF %TALISMAN2 = 0
+	IF PLAYER IN_X 33, 63
+	IF PLAYER IN_Y 17, 47
+	THEN
+		%CROSSES = 0
+		%TALISMAN2 = 1
+		INC %PIECES, 1
+		DECOS
+			9, 2, 13
+			10, 2, 13
+			11, 2, 13
+			12, 2, 13
+			13, 2, 13
+			1, 3, 13
+			2, 3, 13
+			1, 4, 13
+			2, 4, 13
+			4, 4, 13
+			5, 4, 13
+			6, 4, 13
+			7, 4, 13
+			1, 5, 13
+			2, 5, 13
+			9, 6, 13
+			10, 6, 13
+			11, 6, 13
+			12, 6, 13
+			13, 6, 13
+		END
+		SET TILE (14, 8) = 32
+		%GATEX = 14
+		%GATEY = 8
+		SET TILE (3, 2) = 0
+		SHOW
+		%MURCIELAGO = 1
+		EXTERN 9, 6
+	END
+END
+
+ENTERING SCREEN 28
+	IF TRUE
+	THEN
+		TEXT BOX "0MENUDO DESORDEN"
+	END
+END
+
+# It's a trap!
+
+ENTERING SCREEN 29
+	IF TRUE
+	THEN
+		TEXT BOX "0EL CONDENADO ENCABRONADO"
+	END
+
+	# SET_FIRE_ZONE_TILES 2, 0, 2, 9
+	IF %TRAMPA = 0
+	THEN
+		EXTERN 10, 17
+		EXTERN 11, 0
+		EXTERN 12, 47
+		EXTERN 13, 159
+	END
+END
+
+PRESS FIRE AT SCREEN 29
+	IF PLAYER IN_X 17, 47
+	IF %TRAMPA = 0
+	THEN
+		TEXT BOX "1<OH, NO! <<ES UNA TDUAMPA!!"
+		EXTERN 16, 0
+		%TRAMPA = 1
+		%CROSSES = 0
+		EXTERN 14, 0
+		DECOS
+			1, 2, 13
+			2, 2, 13
+			3, 2, 13
+			4, 2, 13
+			5, 2, 13
+			10, 2, 13
+			11, 2, 13
+			12, 2, 13
+			13, 2, 13
+			7, 3, 13
+			9, 5, 13
+			10, 5, 13
+			11, 5, 13
+			12, 5, 13
+			13, 5, 13
+			1, 8, 13
+			3, 8, 13
+			11, 8, 13
+			12, 8, 13
+			13, 8, 13
+		END
+		SET TILE (0, 6) = 32
+		%GATEX = 0
+		%GATEY = 6
+		SHOW
+		%MURCIELAGO = 1
+		EXTERN 9, 6
+	END
+END

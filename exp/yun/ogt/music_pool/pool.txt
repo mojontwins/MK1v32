@@ -1,0 +1,75 @@
+/tmp/mz/yun_music_wyz/yun_00_Title_cpc.wyz: 2 patterns, order 2, 25 instruments, 23 drum effects, fx channel B, loop to 1
+   note: song 0: FX (drum) channel = B; rows where a melodic note is cut by drums: {'A': 34, 'B': 18, 'C': 34}
+/tmp/mz/yun_music_wyz/yun_01_Cutscene_cpc.wyz: 2 patterns, order 2, 25 instruments, 23 drum effects, fx channel C, loop to 1
+   note: song 1: FX (drum) channel = C; rows where a melodic note is cut by drums: {'A': 21, 'B': 21, 'C': 14}
+/tmp/mz/yun_music_wyz/yun_02_Ingame_1_cpc.wyz: 5 patterns, order 5, 25 instruments, 23 drum effects, fx channel B, loop to 0
+   note: song 2: 10.833 ticks/row is not an integer: tempo is approximated with +/-1 tempo modifiers
+   note: song 2: FX (drum) channel = B; rows where a melodic note is cut by drums: {'A': 60, 'B': 12, 'C': 58}
+/tmp/mz/yun_music_wyz/yun_03_Ingame_2_cpc.wyz: 5 patterns, order 12, 25 instruments, 23 drum effects, fx channel A, loop to 1
+   note: song 3: 8.333 ticks/row is not an integer: tempo is approximated with +/-1 tempo modifiers
+   note: song 3, Triangle: moved up 1 octave(s) (lowest note was below C2)
+   note: song 3: FX (drum) channel = A; rows where a melodic note is cut by drums: {'A': 0, 'B': 0, 'C': 56}
+/tmp/mz/yun_music_wyz/yun_04_Ingame_3_cpc.wyz: 4 patterns, order 9, 25 instruments, 23 drum effects, fx channel C, loop to 1
+   note: song 4: 9.167 ticks/row is not an integer: tempo is approximated with +/-1 tempo modifiers
+   note: song 4: FX (drum) channel = C; rows where a melodic note is cut by drums: {'A': 54, 'B': 54, 'C': 40}
+/tmp/mz/yun_music_wyz/yun_05_cuts_cpc.wyz: 1 patterns, order 1, 25 instruments, 23 drum effects, fx channel A, loop to 0
+   note: song 5: FX (drum) channel = A; rows where a melodic note is cut by drums: {'A': 0, 'B': 0, 'C': 12}
+/tmp/mz/yun_music_wyz/yun_06_Ingame_4_cpc.wyz: 5 patterns, order 10, 25 instruments, 23 drum effects, fx channel B, loop to 0
+   note: song 6: 13.333 ticks/row is not an integer: tempo is approximated with +/-1 tempo modifiers
+   note: song 6: FX (drum) channel = B; rows where a melodic note is cut by drums: {'A': 35, 'B': 0, 'C': 35}
+/tmp/mz/yun_music_wyz/yun_07_Ingame_5_cpc.wyz: 6 patterns, order 11, 25 instruments, 23 drum effects, fx channel A, loop to 0
+   note: song 7: 8.333 ticks/row is not an integer: tempo is approximated with +/-1 tempo modifiers
+   note: song 7: FX (drum) channel = A; rows where a melodic note is cut by drums: {'A': 0, 'B': 0, 'C': 22}
+/tmp/mz/yun_music_wyz/yun_08_Ingame_6_cpc.wyz: 10 patterns, order 19, 25 instruments, 23 drum effects, fx channel C, loop to 1
+   note: song 8: 11.667 ticks/row is not an integer: tempo is approximated with +/-1 tempo modifiers
+   note: song 8, Triangle: moved up 1 octave(s) (lowest note was below C2)
+   note: song 8: FX (drum) channel = C; rows where a melodic note is cut by drums: {'A': 33, 'B': 3, 'C': 1}
+shared pool: 25 instruments (+ R Sawtooth), 23 effects
+   instrument 0: 07 pianow
+   instrument 1: 00 T - Bass (tri)
+   instrument 2: 00 T - Bass
+   instrument 3: 07 pianow (tri)
+   instrument 4: 01 S - Strings
+   instrument 5: 0C S - Strings
+   instrument 6: 0A pianow
+   instrument 7: 0B pianow
+   instrument 8: 0D S - Strings 2
+   instrument 9: 09 pianow
+   instrument 10: 02 bass (tri)
+   instrument 11: 0F tin tin tin
+   instrument 12: 10 arp37
+   instrument 13: 11 arp38
+   instrument 14: 13 S - Strings
+   instrument 15: 0E arp47
+   instrument 16: 12 S - Lead Helmet
+   instrument 17: 12 S - Lead Helmet (tri)
+   instrument 18: 13 S - Strings (tri)
+   instrument 19: 21 pianow
+   instrument 20: 1D pianow
+   instrument 21: 1D pianow (tri)
+   instrument 22: 1B Kick (tri)
+   instrument 23: 22 S - Strings
+   instrument 24: 28 S - Strings 3
+   effect 0: 05 Kick n0
+   effect 1: 04 Snare n0
+   effect 2: 06 Hat nF
+   effect 3: 04 Snare n6
+   effect 4: 04 Snare n4
+   effect 5: 08 Crash nA
+   effect 6: 04 Snare nF
+   effect 7: 06 Hat n7
+   effect 8: 06 Hat n5
+   effect 9: 06 Hat n4
+   effect 10: 06 Hat n9
+   effect 11: 06 Hat nB
+   effect 12: 05 Kick n4
+   effect 13: 07 pianow n5
+   effect 14: 15 Snare n0
+   effect 15: 15 Snare nD
+   effect 16: 15 Snare n4
+   effect 17: 14 Kick nF
+   effect 18: 14 Kick n1
+   effect 19: 14 Kick n9
+   effect 20: 1B Kick n1
+   effect 21: 1E Crash nF
+   effect 22: 1B Kick n8

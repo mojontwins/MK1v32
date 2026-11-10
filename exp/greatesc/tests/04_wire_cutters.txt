@@ -1,0 +1,27 @@
+run 100
+key 1 5
+run 60
+key SPACE 3
+run 30
+tp 12 3 2
+run 60
+shot shots/y01_yard.png
+state before
+key SPACE 3
+run 30
+state snips
+tp 11 4 1
+run 60
+key SPACE 3
+run 40
+state cut
+shot shots/y02_cut.png
+key SPACE 3
+run 40
+key Q 25
+run 60
+state through_hole
+shot shots/y03_woods.png
+key SPACE 3
+run 60
+state after

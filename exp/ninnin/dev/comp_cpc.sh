@@ -7,22 +7,21 @@
 # maxlocks), ene2h (with bin). zx0 and cpctbin2sna have Python stand-ins in
 # ../tools (set ZX0 to use a native zx0 instead).
 #
-#   ./comp_cpc.sh [1|2|3]              convert resources + compile + snapshot of that load (1)
-#   ./comp_cpc.sh [1|2|3] justcompile
+#   ./comp_cpc.sh [1|2]                convert resources + compile + snapshot of that load (1)
+#   ./comp_cpc.sh [1|2] justcompile
 #   NNFLAGS=-DNN_DEBUG_LEVEL=2 ./comp_cpc.sh 1 justcompile    (start at the load's level 3)
 
 set -e
 game=ninnin
 NN_LOAD=1
-case "$1" in 1|2|3) NN_LOAD=$1; shift ;; esac
+case "$1" in 1|2) NN_LOAD=$1; shift ;; esac
 # Each load: levels of the game (map/levels.txt: number width height lock tile,
 # 99 = no locks), screens of the level area and the map limit (nn_load.h)
 SCREENS=24
 LOCKS=4
 case $NN_LOAD in
-	1) LEVELS="0 1 2 3"; MAPMAX=680 ;;
-	2) LEVELS="4 5 6"; MAPMAX=600 ;;
-	3) LEVELS="7 8 9"; MAPMAX=830 ;;
+	1) LEVELS="0 1 2 3 4"; MAPMAX=680 ;;
+	2) LEVELS="5 6 7 8 9"; MAPMAX=830 ;;
 esac
 T=${MK1_TOOLS:-../utils}
 PY=${PYTHON:-python3}
@@ -41,7 +40,7 @@ if [ "$1" != "justcompile" ]; then
 	$ZX0 cpc/patterns.bin cpc/patterns.zx0 > /dev/null
 	rm cpc/font.bin cpc/work.bin
 	# Fixed sprite cells, in the binary
-	$T/mkts_om $M mode=sprites in=$G/sprites.png out=cpc/sprites.bin max=11 silent > /dev/null
+	$T/mkts_om $M mode=sprites in=$G/sprites.png out=cpc/sprites.bin max=12 silent > /dev/null
 	# Palettes: pal.png (titles: my_inks), the inks of every level
 	$T/mkts_om platform=cpc mode=palsasassembly in=$G/pal0.png prefix=my_inks out=cpc/pal.h silent > /dev/null
 	for n in 0 1 2 3 4 5 6 7 8 9; do
@@ -65,9 +64,10 @@ if [ "$1" != "justcompile" ]; then
 		i=$((i + 1))
 	done
 	# Screens
-	for s in title marco ending$NN_LOAD; do
+	# (DIRECT_TO_PLAY: the title has the frame; one ending for every load)
+	for s in title ending; do
 		$T/mkts_om $M mode=superbuffer in=$G/$s.png out=cpc/$s.bin silent > /dev/null
-		$ZX0 cpc/$s.bin cpc/${s%[0-9]}c.bin > /dev/null
+		$ZX0 cpc/$s.bin cpc/${s}c.bin > /dev/null
 		rm cpc/$s.bin
 	done
 fi

@@ -1,0 +1,13 @@
+run 100
+shot shots/final_title.png
+key 1 5
+run 60
+key SPACE 3
+run 30
+flag 2 20
+run 520
+state roll20
+tp 18 3 3
+run 700
+state night_in_hut
+shot shots/final_hut_night.png

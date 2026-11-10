@@ -1,0 +1,899 @@
+# =============================================================================
+# CAMP ESCAPE - a top-down study of The Great Escape (1986) in MK1 v3.2
+# MSC4 script. Compiled by comp.sh with:
+#   msc4 in=script.spt v=3 target=zx interpreter=msc4i.asm text=text.bin debug
+# =============================================================================
+#
+# HOW THE GAME WORKS
+# ------------------
+# You are a prisoner. The camp lives by a routine, kept by the C code in
+# dev/custom.h (the camp clock, shown as TIME in the HUD):
+#
+#     08, 14, 20h  ROLL CALL   be on the parade ground  (screen 14)
+#     09h          BREAKFAST   be in the mess hall      (screen 20)
+#     21h - 06h    LIGHTS OUT  be in your hut           (screen 18)
+#
+# Miss your appointment and the bell rings: %ALARM goes to 1 and any guard
+# or dog that touches you arrests you. In restricted areas (barracks,
+# commandant's office, main gate) you are arrested even without an alarm,
+# unless you carry the guard's UNIFORM. Arrests cost MORALE (the LIFE
+# counter), take away everything you carry and land you in the cooler.
+# MORALE 0 = game over.
+#
+# You carry at most TWO items, shown in the HUD. Pick them up with the
+# action key (SPACE / fire) while standing on them. If your hands are full,
+# the first item you carry is put down where you stand. Items that leave
+# your hands (dropped or confiscated) turn up back where they were found.
+#
+# THREE WAYS OUT
+# --------------
+#  1. The tunnel. Shift the stove in your hut (action key below it) to find
+#     the trapdoor. The tunnel is pitch dark: the first time you need the
+#     TORCH (you leave it hanging down there). A roof fall blocks the way:
+#     dig it out with the SHOVEL. The far end comes up in the woods.
+#  2. The wire. With the WIRE CUTTERS, stand just south of the north fence
+#     and press action: you cut a hole (it stays cut). Walk north.
+#  3. The main gate. Wearing the UNIFORM and carrying the PAPERS, talk to
+#     the sentry (action key next to the gate) and walk out.
+#
+#  Out in the woods (routes 1 and 2) you need the COMPASS and the PAPERS,
+#  or you are recaptured.
+#
+# WHERE THINGS ARE (items are tiles 32-42, placed by this script)
+# ---------------------------------------------------------------
+#   32 KEY          office (23, restricted)      opens the Red Cross store
+#   33 LOCKPICK     Hut 2 (19)                   opens the office safe
+#   34 WIRE CUTTERS storeroom yard (12)          cut the north fence
+#   35 SHOVEL       shed, NW corner (6)          clear the tunnel roof fall
+#   36 TORCH        mess hall (20)               light the tunnel
+#   37 UNIFORM      guards' barracks (22)        safe in restricted areas
+#   38 PAPERS       office safe (23)             needed to escape
+#   39 COMPASS      inside the Red Cross parcel  needed in the woods
+#   40 FOOD         mess hall (20)               feed a dog and it sleeps
+#   41 BRIBE        Red Cross store (21)         buys off one arrest
+#   42 PARCEL       Red Cross store (21)         opened at once: COMPASS
+#
+# MAP (screen numbers)
+# --------------------
+#    0  1  2  3  4  5    outside the wire: entering any of them = escape
+#    6  7  8  9 10 11    shed, Hut 1, Hut 2, mess hut, Red Cross store, NE
+#   12 13 14 15 16 17    stores yard, parade W/E, barracks*, office*, gate*
+#   18 19 20 21 22 23    interiors: Hut 1, Hut 2, mess, store, barracks*, office*
+#   24 25 26 27 28 29    tunnel (24-28), the cooler (29)        * restricted
+#
+# Building doors are at (7,5) outside and (7,8) inside.
+#
+# MSC4 NOTES FOR WHOEVER EDITS THIS
+# ---------------------------------
+#  * THEN and END must be alone on their line (no trailing comments).
+#  * Subroutine names: no underscores (the section parser splits on "_").
+#  * SUBs must be written before the first CALL to them.
+#  * Text: the box frame uses the glyphs  < = > # $ ' ( )  so texts must not.
+#  * After a WARP, BREAK: TN keeps its old value, and a later clause of the
+#    same section could warp you straight back.
+#  * A clause compiles to at most 255 bytes: keep long ones short.
+# =============================================================================
+
+ROOMS = 30
+TEXT WIDTH = 22
+
+# -----------------------------------------------------------------------------
+# Flags (MAX_FLAGS = 32). 2, 3 and 5 are shared with dev/custom.h.
+# -----------------------------------------------------------------------------
+
+ALIAS %SLOT1 = 0            # tile of the 1st carried item (0 = empty)
+ALIAS %SLOT2 = 1            # tile of the 2nd carried item (0 = empty)
+ALIAS %CLOCK = 2            # camp hour 0-23 (C). Shown as TIME (OBJECT_COUNT)
+ALIAS %ALARM = 3            # 1 = the bell is ringing (C sets it, we clear it)
+ALIAS %RESTRICT = 4         # 1 = this screen is a restricted area
+ALIAS %EVENT = 5            # screen where you must be now, 255 = free (C only)
+
+# Item states: 0 = at home, 1 = carried, 2 = used up.
+# The state flag of the item with tile T is T - 26 (32 -> 6 ... 42 -> 16),
+# which lets the subroutines below work for any item using indirection:
+# %TMP holds a flag NUMBER, and $%TMP is "the flag whose number is in %TMP".
+ALIAS %SKEY = 6             # 32 KEY
+ALIAS %SPICK = 7            # 33 LOCKPICK
+ALIAS %SSNIPS = 8           # 34 WIRE CUTTERS
+ALIAS %SSHOVEL = 9          # 35 SHOVEL
+ALIAS %STORCH = 10          # 36 TORCH
+ALIAS %SUNIFORM = 11        # 37 UNIFORM
+ALIAS %SPAPERS = 12         # 38 PAPERS
+ALIAS %SCOMPASS = 13        # 39 COMPASS
+ALIAS %SFOOD = 14           # 40 FOOD
+ALIAS %SBRIBE = 15          # 41 BRIBE
+ALIAS %SPARCEL = 16         # 42 PARCEL
+
+ALIAS %HATCH = 17           # 1 = stove shifted, trapdoor open
+ALIAS %RUBBLE = 18          # 1 = tunnel roof fall dug out
+ALIAS %TUNNELLIT = 19       # 1 = the torch hangs in the tunnel
+ALIAS %SAFEOPEN = 20        # 1 = the office safe is open
+ALIAS %STOREOPEN = 21       # 1 = Red Cross store unlocked
+ALIAS %HOLESCR = 22         # screen with the hole in the wire (99 = none)
+ALIAS %HOLEX = 23           # x of the hole (it is always at y = 0)
+ALIAS %ITEM = 24            # parameter for the subs: an item tile
+ALIAS %FLOOR = 25           # floor tile of this screen (to erase items)
+ALIAS %DONE = 26            # 1 = this key press already did something
+ALIAS %TMP = 27             # scratch: holds a FLAG NUMBER for $%TMP
+ALIAS %INTRO = 28           # 1 = intro text shown
+ALIAS %CUTDONE = 29         # 1 = morale bonus for the first cut given
+
+# =============================================================================
+# SUBROUTINES (they must come before the first CALL)
+# =============================================================================
+
+# DRAWINV - paints the two inventory slots in the HUD.
+# PRINT TILE uses absolute character coordinates. Tile 44 = empty slot.
+SUB DRAWINV
+	IF %SLOT1 = 0
+	THEN
+		PRINT TILE (26, 22) = 44
+	END
+	IF %SLOT1 <> 0
+	THEN
+		PRINT TILE (26, 22) = %SLOT1
+	END
+	IF %SLOT2 = 0
+	THEN
+		PRINT TILE (29, 22) = 44
+	END
+	IF %SLOT2 <> 0
+	THEN
+		PRINT TILE (29, 22) = %SLOT2
+	END
+END
+
+# MORALEUP - +5 morale for a job well done, capped at 99.
+SUB MORALEUP
+	IF TRUE
+	THEN
+		INC LIFE, 5
+		SOUND 7
+	END
+	IF LIFE > 99
+	THEN
+		LIFE = 99
+	END
+END
+
+# USEITEM - the item %ITEM is used up: take it out of the hands, state 2.
+SUB USEITEM
+	IF %SLOT1 = %ITEM
+	THEN
+		%SLOT1 = %SLOT2
+		%SLOT2 = 0
+	END
+	IF %SLOT2 = %ITEM
+	THEN
+		%SLOT2 = 0
+	END
+	IF TRUE
+	THEN
+		# %TMP = number of the state flag of %ITEM, then flags [%TMP] = 2
+		%TMP = %ITEM
+		DEC %TMP, 26
+		$%TMP = 2
+		CALL DRAWINV
+	END
+END
+
+# PICKUP - pick the item %ITEM the player stands on.
+SUB PICKUP
+	IF TRUE
+	THEN
+		# state of the new item: carried
+		%TMP = %ITEM
+		DEC %TMP, 26
+		$%TMP = 1
+		# erase it from the screen
+		SET TILE (TX, TY) = %FLOOR
+		SOUND 2
+	END
+	IF %SLOT1 <> 0
+	IF %SLOT2 <> 0
+	THEN
+		# Hands full: the first item is put down here. Its state goes back
+		# to 0 (at home), so next time it will be found where it was.
+		SET TILE (TX, TY) = %SLOT1
+		%TMP = %SLOT1
+		DEC %TMP, 26
+		$%TMP = 0
+		%SLOT1 = %SLOT2
+		%SLOT2 = %ITEM
+		%ITEM = 0
+	END
+	IF %SLOT1 = 0
+	THEN
+		%SLOT1 = %ITEM
+		%ITEM = 0
+	END
+	IF %ITEM <> 0
+	THEN
+		%SLOT2 = %ITEM
+	END
+	# The Red Cross parcel is opened on the spot: it hides the compass.
+	IF %SPARCEL = 1
+	THEN
+		%SPARCEL = 2
+		%SCOMPASS = 1
+		TEXT BOX "YOU OPEN THE RED CROSS PARCEL. HIDDEN INSIDE A BAR OF CHOCOLATE THERE IS A COMPASS!"
+		CALL MORALEUP
+	END
+	IF %SLOT1 = 42
+	THEN
+		%SLOT1 = 39
+	END
+	IF %SLOT2 = 42
+	THEN
+		%SLOT2 = 39
+	END
+	IF TRUE
+	THEN
+		CALL DRAWINV
+	END
+END
+
+# CONFISCATE - everything carried goes back to where it was found.
+SUB CONFISCATE
+	IF %SLOT1 <> 0
+	THEN
+		%TMP = %SLOT1
+		DEC %TMP, 26
+		$%TMP = 0
+		%SLOT1 = 0
+	END
+	IF %SLOT2 <> 0
+	THEN
+		%TMP = %SLOT2
+		DEC %TMP, 26
+		$%TMP = 0
+		%SLOT2 = 0
+	END
+	IF TRUE
+	THEN
+		CALL DRAWINV
+	END
+END
+
+# CAUGHT - arrest: confiscation, -10 morale, the cooler.
+SUB CAUGHT
+	IF TRUE
+	THEN
+		SOUND 4
+		TEXT BOX "HALT! YOU ARE UNDER ARREST. EVERYTHING YOU CARRY IS CONFISCATED. TO THE COOLER!"
+		CALL CONFISCATE
+		%ALARM = 0
+		DEC LIFE, 10
+	END
+	# LIFE is read as a byte: below 0 it wraps round to 246-255.
+	IF LIFE > 99
+	THEN
+		GAME OVER
+	END
+	IF LIFE = 0
+	THEN
+		GAME OVER
+	END
+	IF TRUE
+	THEN
+		WARP TO 29, 7, 5
+	END
+END
+
+# DIGOUT - clear the tunnel roof fall (screen 26, column 7) with the shovel.
+SUB DIGOUT
+	IF %SSHOVEL <> 1
+	THEN
+		TEXT BOX "A ROOF FALL BLOCKS THE TUNNEL. YOU WOULD NEED A SHOVEL TO DIG THROUGH."
+		%DONE = 1
+	END
+	IF %SSHOVEL = 1
+	THEN
+		DECOS
+			7, 3, 16
+			7, 4, 16
+			7, 5, 16
+		END
+		%RUBBLE = 1
+		%ITEM = 35
+		CALL USEITEM
+		%DONE = 1
+		TEXT BOX "YOU DIG UNTIL YOUR HANDS BLEED. THE WAY IS CLEAR, BUT THE SHOVEL BREAKS."
+		CALL MORALEUP
+	END
+END
+
+# ROOMNAME - prints the name of the key rooms in the red bar of the HUD
+# (TEXT_X, TEXT_Y, TEXT_A in config.h: 18 characters at (7, 21)). Names are
+# centred with spaces; other screens get a blank bar. Mind the font: no
+# apostrophes or < = > # $ ( ) (box glyphs), and no percent sign (new line).
+SUB ROOMNAME
+	IF TRUE
+	THEN
+		TEXT "                  "
+	END
+	IF NPANT <= 5
+	THEN
+		TEXT "    THE WOODS     "
+	END
+	IF NPANT = 6
+	THEN
+		TEXT "     THE SHED     "
+	END
+	IF NPANT = 7
+	THEN
+		TEXT "      HUT 1       "
+	END
+	IF NPANT = 18
+	THEN
+		TEXT "      HUT 1       "
+	END
+	IF NPANT = 8
+	THEN
+		TEXT "      HUT 2       "
+	END
+	IF NPANT = 19
+	THEN
+		TEXT "      HUT 2       "
+	END
+	IF NPANT = 9
+	THEN
+		TEXT "    MESS HALL     "
+	END
+	IF NPANT = 20
+	THEN
+		TEXT "    MESS HALL     "
+	END
+	IF NPANT = 10
+	THEN
+		TEXT " RED CROSS STORE  "
+	END
+	IF NPANT = 21
+	THEN
+		TEXT " RED CROSS STORE  "
+	END
+	IF NPANT = 12
+	THEN
+		TEXT "  STOREROOM YARD  "
+	END
+	IF NPANT >= 13
+	IF NPANT <= 14
+	THEN
+		TEXT "  PARADE GROUND   "
+	END
+	IF NPANT = 15
+	THEN
+		TEXT " GUARDS BARRACKS  "
+	END
+	IF NPANT = 22
+	THEN
+		TEXT " GUARDS BARRACKS  "
+	END
+	IF NPANT = 16
+	THEN
+		TEXT "COMMANDANTS OFFICE"
+	END
+	IF NPANT = 23
+	THEN
+		TEXT "COMMANDANTS OFFICE"
+	END
+	IF NPANT = 17
+	THEN
+		TEXT "    MAIN GATE     "
+	END
+	IF NPANT >= 24
+	IF NPANT <= 28
+	THEN
+		TEXT "    THE TUNNEL    "
+	END
+	IF NPANT = 29
+	THEN
+		TEXT "    THE COOLER    "
+	END
+END
+
+# =============================================================================
+# ENTERING GAME - a new game. The engine has already cleared all flags.
+# =============================================================================
+
+ENTERING GAME
+	IF TRUE
+	THEN
+		%CLOCK = 7
+		%HOLESCR = 99
+		LIFE = 50
+		EXTERN 0, 0
+	END
+END
+
+# =============================================================================
+# ENTERING ANY - every screen, before its own ENTERING SCREEN section.
+# =============================================================================
+
+ENTERING ANY
+	# Defaults: not restricted, items lie on dirt.
+	IF TRUE
+	THEN
+		%RESTRICT = 0
+		%FLOOR = 0
+	END
+	# Restricted areas: barracks, office and main gate, inside and out.
+	IF NPANT >= 15
+	IF NPANT <= 17
+	THEN
+		%RESTRICT = 1
+	END
+	IF NPANT >= 22
+	IF NPANT <= 23
+	THEN
+		%RESTRICT = 1
+	END
+	# Floors: wooden in the huts, stone in the office.
+	IF NPANT >= 18
+	IF NPANT <= 22
+	THEN
+		%FLOOR = 8
+	END
+	IF NPANT = 23
+	THEN
+		%FLOOR = 30
+	END
+	# The hole in the wire stays cut.
+	IF NPANT = %HOLESCR
+	THEN
+		SET TILE (%HOLEX, 0) = 26
+	END
+	# Refresh the inventory and the room name in the HUD.
+	IF TRUE
+	THEN
+		CALL DRAWINV
+		CALL ROOMNAME
+	END
+END
+
+# =============================================================================
+# ENTERING SCREEN n - put the items that are "at home", restore changes.
+# =============================================================================
+
+# Outside the wire: escape attempt. Compass and papers, or back you go.
+ENTERING SCREEN 0, 1, 2, 3, 4, 5
+	IF %SCOMPASS = 1
+	IF %SPAPERS = 1
+	THEN
+		WIN GAME
+	END
+	IF TRUE
+	THEN
+		TEXT BOX "WITHOUT A COMPASS AND PAPERS YOU WANDER IN CIRCLES. THE DOGS FIND YOU AT DAWN."
+		CALL CAUGHT
+	END
+END
+
+# Shed in the NW corner: the shovel.
+ENTERING SCREEN 6
+	IF %SSHOVEL = 0
+	THEN
+		SET TILE (3, 3) = 35
+	END
+END
+
+# Storeroom yard: wire cutters hidden among the crates.
+ENTERING SCREEN 12
+	IF %SSNIPS = 0
+	THEN
+		SET TILE (3, 2) = 34
+	END
+END
+
+# Hut 1, your hut. First time: the intro. The stove hides the trapdoor.
+ENTERING SCREEN 18
+	IF %HATCH = 1
+	THEN
+		SET TILE (12, 2) = 19
+		SET TILE (13, 2) = 31
+	END
+	IF %INTRO = 0
+	THEN
+		%INTRO = 1
+		TEXT BOX "STALAG, 1942. FIND A COMPASS AND FORGED PAPERS AND GET OUT. NEVER MISS A ROLL CALL. SPACE: PICK UP AND USE."
+	END
+END
+
+# Hut 2: the lockpick.
+ENTERING SCREEN 19
+	IF %SPICK = 0
+	THEN
+		SET TILE (12, 2) = 33
+	END
+END
+
+# Mess hall: torch and food.
+ENTERING SCREEN 20
+	IF %STORCH = 0
+	THEN
+		SET TILE (2, 2) = 36
+	END
+	IF %SFOOD = 0
+	THEN
+		SET TILE (12, 2) = 40
+	END
+END
+
+# Red Cross store: the parcel (or, once opened, a confiscated compass) and
+# the bribe.
+ENTERING SCREEN 21
+	IF %SPARCEL = 0
+	THEN
+		SET TILE (7, 3) = 42
+	END
+	IF %SPARCEL = 2
+	IF %SCOMPASS = 0
+	THEN
+		SET TILE (7, 3) = 39
+	END
+	IF %SBRIBE = 0
+	THEN
+		SET TILE (3, 6) = 41
+	END
+END
+
+# Guards' barracks: the uniform.
+ENTERING SCREEN 22
+	IF %SUNIFORM = 0
+	THEN
+		SET TILE (6, 2) = 37
+	END
+END
+
+# Commandant's office: key on the floor by the desk, papers in the safe.
+ENTERING SCREEN 23
+	IF %SKEY = 0
+	THEN
+		SET TILE (4, 3) = 32
+	END
+	IF %SAFEOPEN = 1
+	THEN
+		SET TILE (12, 1) = 45
+	END
+	IF %SAFEOPEN = 1
+	IF %SPAPERS = 0
+	THEN
+		SET TILE (11, 1) = 38
+	END
+END
+
+# Tunnel, roof fall.
+ENTERING SCREEN 26
+	IF %RUBBLE = 1
+	THEN
+		DECOS
+			7, 3, 16
+			7, 4, 16
+			7, 5, 16
+		END
+	END
+END
+
+# =============================================================================
+# PRESS FIRE AT ANY - the action key, anywhere. Runs before the per-screen
+# sections; %DONE tells them that the key press was already used.
+# =============================================================================
+
+PRESS FIRE AT ANY
+	IF TRUE
+	THEN
+		%DONE = 0
+	END
+	# Standing on an item (tiles 32 to 42): pick it up.
+	IF TN >= 32
+	IF TN <= 42
+	THEN
+		%ITEM = TN
+		CALL PICKUP
+		%DONE = 1
+	END
+	# Cut the north fence: wire cutters in hand, standing right below a
+	# fence tile (y = 1) in the north compound (screens 6 to 11).
+	IF %DONE = 0
+	IF %SSNIPS = 1
+	IF TY = 1
+	IF NPANT >= 6
+	IF NPANT <= 11
+	IF TILE AT (TX, 0) = 3
+	THEN
+		SET TILE (TX, 0) = 26
+		%HOLESCR = NPANT
+		%HOLEX = TX
+		SOUND 3
+		%DONE = 1
+		TEXT BOX "SNIP. SNIP. SNIP. THERE IS A HOLE IN THE WIRE NOW. FREEDOM IS TO THE NORTH."
+	END
+	# First hole ever cut: morale bonus.
+	IF %CUTDONE = 0
+	IF %HOLESCR <> 99
+	THEN
+		%CUTDONE = 1
+		CALL MORALEUP
+	END
+END
+
+# =============================================================================
+# PRESS FIRE AT SCREEN n
+# =============================================================================
+
+# Hut 1: shift the stove (stand right below it, at 12,3).
+PRESS FIRE AT SCREEN 18
+	IF %DONE = 0
+	IF %HATCH = 0
+	IF PLAYER AT (12, 3)
+	THEN
+		%HATCH = 1
+		SET TILE (12, 2) = 19
+		SET TILE (13, 2) = 31
+		SOUND 5
+		TEXT BOX "YOU HEAVE THE STOVE ASIDE. UNDERNEATH THERE IS A TRAPDOOR: THE ESCAPE COMMITTEE TUNNEL!"
+	END
+END
+
+# Office: the safe (stand below it, at 12,2).
+PRESS FIRE AT SCREEN 23
+	IF %DONE = 0
+	IF %SAFEOPEN = 0
+	IF %SPICK <> 1
+	IF PLAYER AT (12, 2)
+	THEN
+		TEXT BOX "THE SAFE IS LOCKED. YOU WOULD NEED SOMETHING TO PICK THE LOCK."
+	END
+	IF %DONE = 0
+	IF %SAFEOPEN = 0
+	IF %SPICK = 1
+	IF PLAYER AT (12, 2)
+	THEN
+		%SAFEOPEN = 1
+		%ITEM = 33
+		CALL USEITEM
+		SET TILE (12, 1) = 45
+		SET TILE (11, 1) = 38
+		TEXT BOX "CLICK. THE SAFE SWINGS OPEN AND THE LOCKPICK SNAPS. INSIDE: BLANK TRAVEL PAPERS!"
+		CALL MORALEUP
+	END
+END
+
+# Tunnel: the roof fall, from either side.
+PRESS FIRE AT SCREEN 26
+	IF %DONE = 0
+	IF %RUBBLE = 0
+	IF TX = 6
+	THEN
+		CALL DIGOUT
+	END
+	IF %DONE = 0
+	IF %RUBBLE = 0
+	IF TX = 8
+	THEN
+		CALL DIGOUT
+	END
+END
+
+# Main gate: the sentry. Uniform + papers walks you out.
+PRESS FIRE AT SCREEN 17
+	IF %DONE = 0
+	IF TX >= 12
+	IF TY >= 3
+	IF TY <= 6
+	IF %SUNIFORM = 1
+	IF %SPAPERS = 1
+	THEN
+		TEXT BOX "THE SENTRY CHECKS YOUR PAPERS, SALUTES THE UNIFORM AND OPENS THE GATE."
+		WIN GAME
+	END
+	IF %DONE = 0
+	IF TX >= 12
+	IF TY >= 3
+	IF TY <= 6
+	THEN
+		TEXT BOX "THE SENTRY GLARES AT YOU. ONLY A GUARD WITH PROPER PAPERS GOES THROUGH THIS GATE."
+	END
+END
+
+# =============================================================================
+# SPECIAL TILE TOUCHED - doors (7), trapdoor (19), ladders (20), cooler door
+# (27). It fires every frame while the player stands on the tile, so every
+# clause either warps or pushes the player off (INC PY, 16), then BREAKs.
+# =============================================================================
+
+SPECIAL TILE TOUCHED
+	# --- Red Cross store (10): locked until you bring the key -------------
+	IF TN = 7
+	IF NPANT = 10
+	IF %STOREOPEN = 0
+	IF %SKEY = 1
+	THEN
+		%STOREOPEN = 1
+		%ITEM = 32
+		CALL USEITEM
+		SOUND 5
+		TEXT BOX "THE KEY TURNS. THE RED CROSS STORE IS OPEN."
+		CALL MORALEUP
+	END
+	IF TN = 7
+	IF NPANT = 10
+	IF %STOREOPEN = 0
+	THEN
+		INC PY, 16
+		TEXT BOX "THE RED CROSS STORE IS LOCKED. THE KEY IS KEPT IN THE OFFICE."
+		BREAK
+	END
+
+	# --- Into the buildings: door at (7,5) -> inside door at (7,8) ---------
+	IF TN = 7
+	IF NPANT = 7
+	THEN
+		WARP TO 18, 7, 7
+		BREAK
+	END
+	IF TN = 7
+	IF NPANT = 8
+	THEN
+		WARP TO 19, 7, 7
+		BREAK
+	END
+	IF TN = 7
+	IF NPANT = 9
+	THEN
+		WARP TO 20, 7, 7
+		BREAK
+	END
+	IF TN = 7
+	IF NPANT = 10
+	THEN
+		WARP TO 21, 7, 7
+		BREAK
+	END
+	IF TN = 7
+	IF NPANT = 15
+	THEN
+		WARP TO 22, 7, 7
+		BREAK
+	END
+	IF TN = 7
+	IF NPANT = 16
+	THEN
+		WARP TO 23, 7, 7
+		BREAK
+	END
+
+	# --- Out of the buildings: back below the outside door -----------------
+	IF TN = 7
+	IF NPANT = 18
+	THEN
+		WARP TO 7, 7, 6
+		BREAK
+	END
+	IF TN = 7
+	IF NPANT = 19
+	THEN
+		WARP TO 8, 7, 6
+		BREAK
+	END
+	IF TN = 7
+	IF NPANT = 20
+	THEN
+		WARP TO 9, 7, 6
+		BREAK
+	END
+	IF TN = 7
+	IF NPANT = 21
+	THEN
+		WARP TO 10, 7, 6
+		BREAK
+	END
+	IF TN = 7
+	IF NPANT = 22
+	THEN
+		WARP TO 15, 7, 6
+		BREAK
+	END
+	IF TN = 7
+	IF NPANT = 23
+	THEN
+		WARP TO 16, 7, 6
+		BREAK
+	END
+
+	# --- The trapdoor in Hut 1 -------------------------------------------
+	IF TN = 19
+	IF %TUNNELLIT = 0
+	IF %STORCH <> 1
+	THEN
+		INC PY, 16
+		TEXT BOX "IT IS PITCH DARK DOWN THERE. YOU WILL NEED A TORCH."
+		BREAK
+	END
+	IF TN = 19
+	IF %TUNNELLIT = 0
+	THEN
+		%TUNNELLIT = 1
+		%ITEM = 36
+		CALL USEITEM
+		TEXT BOX "YOU CLIMB DOWN AND HANG THE TORCH FROM A PROP. THE TUNNEL WILL STAY LIT."
+	END
+	IF TN = 19
+	THEN
+		WARP TO 24, 3, 4
+		BREAK
+	END
+
+	# --- Ladders: back up to the hut, or up into the woods ---------------
+	IF TN = 20
+	IF NPANT = 24
+	THEN
+		WARP TO 18, 12, 3
+		BREAK
+	END
+	IF TN = 20
+	IF NPANT = 28
+	THEN
+		TEXT BOX "YOU PUSH UP THROUGH THE TURF. COLD AIR, TREES, AND THE WIRE BEHIND YOU..."
+		WARP TO 2, 7, 8
+		BREAK
+	END
+
+	# --- The cooler door: you are released at dawn -----------------------
+	IF TN = 27
+	THEN
+		TEXT BOX "AFTER DAYS IN THE COOLER YOU ARE RELEASED AT DAWN. THE GUARDS WILL BE WATCHING."
+		EXTERN 2, 7
+		WARP TO 14, 7, 6
+		BREAK
+	END
+END
+
+# =============================================================================
+# ENEMY TOUCHED - a guard (1), dog (2), officer (3) or guard with torch (4)
+# touches the prisoner. Guards never hurt (custom.h): this decides.
+# =============================================================================
+
+ENEMY TOUCHED
+	# Out of action (fed dogs).
+	IF EN_T >= 128
+	THEN
+		BREAK
+	END
+	# A dog and you carry food: it eats and falls asleep for good.
+	IF EN_T = 2
+	IF %SFOOD = 1
+	THEN
+		EXTERN 1, 0
+		%ITEM = 40
+		CALL USEITEM
+		TEXT BOX "THE DOG WOLFS DOWN THE FOOD, YAWNS AND CURLS UP TO SLEEP."
+		BREAK
+	END
+	# No alarm and not a restricted area: nobody cares about you.
+	IF %ALARM = 0
+	IF %RESTRICT = 0
+	THEN
+		BREAK
+	END
+	# Restricted area but disguised as a guard (and no alarm): fine.
+	IF %ALARM = 0
+	IF %SUNIFORM = 1
+	THEN
+		BREAK
+	END
+	# A packet of cigarettes buys one arrest off.
+	IF %SBRIBE = 1
+	THEN
+		%ITEM = 41
+		CALL USEITEM
+		%ALARM = 0
+		TEXT BOX "THE GUARD POCKETS YOUR CIGARETTES AND LOOKS THE OTHER WAY. GO, QUICKLY."
+		BREAK
+	END
+	# Otherwise: arrested.
+	IF TRUE
+	THEN
+		CALL CAUGHT
+	END
+END

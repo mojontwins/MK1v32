@@ -1,0 +1,62 @@
+run 100
+key 1 5
+run 60
+key SPACE 3
+run 30
+tp 19 12 2
+run 20
+key SPACE 3
+run 20
+state lockpick
+tp 23 4 3
+run 20
+key SPACE 3
+run 20
+state key
+tp 23 12 2
+run 20
+key SPACE 3
+run 40
+shot shots/w01_safe.png
+key SPACE 3
+run 40
+state safe
+tp 23 11 1
+run 10
+key SPACE 3
+run 20
+state papers
+shot shots/w02_office.png
+tp 10 7 6
+run 20
+key Q 12
+run 40
+state store_door
+shot shots/w03_store_text.png
+key SPACE 3
+run 40
+key SPACE 3
+run 40
+state in_store
+tp 21 7 3
+run 20
+shot shots/w04_store.png
+key SPACE 3
+run 40
+shot shots/w05_parcel_text.png
+key SPACE 3
+run 40
+state compass
+shot shots/w06_hud.png
+# --- out through the tunnel (pretend it is dug: flags) and up the ladder
+flag 18 1
+flag 19 1
+tp 28 11 4
+run 10
+key P 12
+key Q 12
+run 40
+key SPACE 3
+run 120
+state win
+shot shots/w07_ending.png

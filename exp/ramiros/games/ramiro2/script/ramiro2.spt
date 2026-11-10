@@ -1,0 +1,961 @@
+# =============================================================================
+# RAMIRO EL VAMPIRO EN "DEVUELVE EL ZAFIRO" - MSC4 script for MK1 v3.2
+# Port of script/ramiro2r.spt (msc3, MK2 v0.90b, 2016).
+# Compiled by dev/comp.sh with:
+#   msc4 in=ramiro2.spt v=3 target=zx interpreter=msc4i.asm text=text.bin
+# =============================================================================
+#
+# THE STORY
+# ---------
+# Gonzalo el Malo has kidnapped la Hija Canija. He wants el Talisman Aleman
+# back: each of its four pieces must be put on its altar, in four crypts
+# (29, 18, 13, 5). Every crypt is guarded by one of Ramiro's servants
+# (Rufino 28, Fritz 17, Roberta 12, el Deforme 6), who won't let him pass.
+# Gonzalo (2) arms the traps: touching the crystal in each servant's room
+# drops a block on him. Then the altar can be used.
+#
+# Placing a piece shuts the crypt and fills it with 20 crosses (tile 29);
+# bats come to life (flag 31). Get the 20 crosses and the exit opens. With
+# the four pieces placed, the castle "goes chungo": empty enemy slots become
+# bats everywhere (flag 29). Then go and see Gonzalo.
+#
+# MAP (screen numbers)
+# --------------------
+#    0  1  2  3  4        2 = Gonzalo
+#    5  6  7  8  9        5 = crypt 4, 6 = el Deforme de Uniforme
+#   10 11 12 13 14       12 = Roberta, 13 = crypt 3
+#   15 16 17 18 19       17 = Fritz, 18 = crypt 2
+#   20 21 22 23 24
+#   25 26 27 28 29       25 = start (la Bruja Maruja), 28 = Rufino, 29 = crypt 1
+#
+# WHAT THE C CODE DOES (addons/ramiro.h, configured in dev/config.h)
+# ------------------------------------------------------------------
+#  * Crosses (tile 29) are collected by the engine (Ramiro 4 coins): +1 to
+#    flag 1, +1 life, and then the PLAYER GOT SOMETHING section runs.
+#  * Sunlight (behaviour 3) drains life at once while flag 30 = 0, and only
+#    after a countdown while flag 30 = 1.
+#  * Bats (enemy type 6) only move while flag 31 = 1.
+#  * While flag 29 = 1, empty enemy slots become bats at a random tile.
+#
+# EXTERNs (addons/ramiro.h)
+# -------------------------
+#   EXTERN 9, n     sound n: 3 killzone, 4 countdown, 6 object, 8 key, 10 explosion
+#   EXTERN 10, x1   fire zone, pixels: the PRESS FIRE AT SCREEN section of
+#   EXTERN 11, y1   the current screen runs every frame while Ramiro is
+#   EXTERN 12, x2   inside the box (msc3's SET_FIRE_ZONE). 13 switches it
+#   EXTERN 13, y2   on. ENTERING ANY switches it off (EXTERN 14).
+#   EXTERN 14, 0    fire zone off
+#   EXTERN 15, 0    REENTER (draw the screen again, run its ENTERING section)
+#   EXTERN 16, 0    REDRAW (repaint the play area)
+#
+# TEXT BOX strings (addons/ramiro.h): the first character says what it is.
+#   "0..."   room name, centered in the HUD
+#   "1..."   RAMIRO says...          "6..."   DEFORME DE UNIFORME
+#   "2..."   BRUJA MARUJA            "7..."   GONZALO
+#   "3..."   RUFINO EL MARINO        "8..."   HIJA CANIJA
+#   "4..."   EL BANCARIO ARIO        "9..."   VOZ DE ULTRATUMBA
+#   "5..."   ROBERTA LA MUERTA
+#   (the names are in dev/extern.h). In the texts < is ¡, > is ¿, = is Ñ.
+#
+# TRANSLATION NOTES (msc3 -> msc4)
+# --------------------------------
+#  * msc3's PLAYER_TOUCHES x, y fires when Ramiro's 16x16 box overlaps the
+#    tile; msc4's PLAYER TOUCHES wants his centre inside it. To keep the
+#    2016 behaviour, each one is written as IN_X / IN_Y pixel ranges:
+#    x*16-15 .. x*16+15. Same for SET_FIRE_ZONE_TILES.
+#  * Tiles: the tileset has rows 2 and 3 swapped (so the map fits RLE53).
+#    2016 tile n (16-31) is now n+16 and n (32-47) is now n-16: gate 16 -> 32,
+#    pieces on the altars 17-20 -> 33-36, the servants 21-24 -> 37-40,
+#    falling block 27/28 -> 43/44, trap crystal 29 -> 45, crosses 45 -> 29.
+#  * The one-off decoration tiles (old map.bin.spt, generated again by
+#    tools/ramiro_import.py into map/decos.spt) are in the ENTERING SCREEN
+#    sections below.
+#  * The intro used an undefined alias ($FIRST_TIME, which msc3 read as flag
+#    0). It has its own flag now (4).
+#  * INC LIFE 1 in PLAYER_GETS_COIN is done by the engine (RAMIRO_COINS_REFILL).
+#
+# MSC4 NOTES FOR WHOEVER EDITS THIS
+# ---------------------------------
+#  * THEN and END must be alone on their line (no trailing comments).
+#  * One section per screen: room names, decorations and logic share it.
+#  * Literal values: 0-254.
+#  * A clause compiles to at most 255 bytes.
+# =============================================================================
+
+ROOMS = 30
+TEXT WIDTH = 22
+
+# -----------------------------------------------------------------------------
+# Flags. 1, 29, 30 and 31 are used by the C code (dev/config.h).
+# -----------------------------------------------------------------------------
+
+ALIAS %ALLPURP = 0          # all purpose
+ALIAS %CROSSES = 1          # crosses got (RAMIRO_COIN_FLAG). Shown in the HUD
+ALIAS %GAMESTATE = 2        # 0 start, 1 "go see Gonzalo", 2 seen him, 3 all pieces
+ALIAS %TRAPON = 3           # 1 = Gonzalo armed the traps
+ALIAS %FIRSTTIME = 4        # 1 = intro seen
+ALIAS %PIMIENTO = 10        # (unused, as in 2016)
+ALIAS %PIECES = 11          # pieces placed (0-4)
+ALIAS %TALISMAN1 = 12       # crypt 1 (29): 0 guarded, 1 guardian crushed, 2 placed
+ALIAS %TALISMAN2 = 13       # crypt 2 (18)
+ALIAS %TALISMAN3 = 14       # crypt 3 (13)
+ALIAS %TALISMAN4 = 15       # crypt 4 (5)
+ALIAS %GATEX = 20           # gate closed by the last piece
+ALIAS %GATEY = 21
+ALIAS %MAKETYPE6 = 29       # empty enemy slots become bats (C)
+ALIAS %HECHIZO = 30         # Hechizo Postizo: sunlight kills slowly (C)
+ALIAS %MURCIELAGO = 31      # bats move (C)
+
+# =============================================================================
+# GENERAL SECTIONS
+# =============================================================================
+
+ENTERING GAME
+	IF TRUE
+	THEN
+		# The engine has already cleared all flags.
+		# Debug:
+		# %PIECES = 4
+		# %HECHIZO = 1
+		# %GAMESTATE = 3
+		# %MAKETYPE6 = 1
+		# %TRAPON = 1
+		# WARP TO 6, 7, 4
+	END
+END
+
+ENTERING ANY
+	IF TRUE
+	THEN
+		# Every screen sets its own fire zone, if it needs one.
+		EXTERN 14, 0
+	END
+
+	IF %MAKETYPE6 = 1
+	THEN
+		%MURCIELAGO = 1
+	END
+END
+
+# Crosses. The engine has already added 1 to %CROSSES and 1 to life.
+PLAYER GOT SOMETHING
+	# Got all 20 crosses? Open the gate.
+	IF %CROSSES = 20
+	THEN
+		EXTERN 9, 8
+		%MURCIELAGO = 0
+		SET TILE (%GATEX, %GATEY) = 0
+		TEXT BOX "9TRAMPA DESACTIVADA."
+	END
+
+	# All four pieces placed: the castle goes chungo.
+	IF %CROSSES = 20
+	IF %PIECES = 4
+	THEN
+		%GAMESTATE = 3
+		TEXT BOX "1CREO QUE YA ESTA TODO. VOY A HABLAR CON GONZALO"
+		TEXT BOX "9<SI, PERO AHORA EL CASTILLO SE HA VUELTO CHUNGO!"
+		TEXT BOX "1PERO... >QUIEN HA DICHO ESO?"
+		TEXT BOX "9EUH... ESTE... YO, JOHNNY LIMITE. EN ALGUN SITIO TENIA QUE SALIR, >NO?"
+		%MAKETYPE6 = 1
+	END
+
+	IF %CROSSES = 20
+	THEN
+		%CROSSES = 0
+	END
+END
+
+# =============================================================================
+# SCREENS
+# =============================================================================
+ENTERING SCREEN 0
+	IF TRUE
+	THEN
+		TEXT BOX "0EL MIRADOR DE NICANOR"
+	END
+END
+
+ENTERING SCREEN 1
+	IF TRUE
+	THEN
+		TEXT BOX "0EL PORCHE DEL DESCORCHE"
+	END
+END
+
+# Gonzalo el Malo
+
+ENTERING SCREEN 2
+	IF TRUE
+	THEN
+		TEXT BOX "0LA CAMARA DE GONZALO EL MALO"
+		DECOS
+			4, 7, 46
+			4, 8, 47
+		END
+	END
+END
+
+PRESS FIRE AT SCREEN 2
+	IF PLAYER IN_X 48, 96
+	IF %GAMESTATE = 1
+	THEN
+		%GAMESTATE = 2
+		%TRAPON = 1
+		TEXT BOX "7MUAJA, CANIJO SIN ESCONDRIJO, COMO PODRAS COMPROBAR TENGO A TU HIJA Y NO LA VOY A SOLTAR."
+		TEXT BOX "7A MENOS QUE, CLARO, SEAS AMABLE CONMIGO Y ME DEVUELVAS EL TALISMAN ALEMAN. OH, SI, ERA MIO."
+		TEXT BOX "7NI IDEA DE DONDE ESTABA. PARECE QUE TUS SIRVIENTES SE LO HABIAN REPARTIDO."
+		TEXT BOX "7PUES NADA, COLOCA CADA PIEZA EN SU ALTAR CORRESPONDIENTE."
+		TEXT BOX "7PUEDES LIBRARTE DE LOS GUARDIANES DE CADA CRIPTA ACCIONANDO UNOS CRISTALES QUE HAY CERCA."
+		TEXT BOX "7UNA VEZ FUERA DEL CAMINO, PODRAS ENTRAR Y PONER CADA FRAGMENTO EN SU ALTAR."
+		BREAK
+	END
+
+	IF PLAYER IN_X 48, 96
+	IF %PIECES = 4
+	THEN
+		TEXT BOX "7BIEN HECHO, AMIGO. ME HAS COMPLACIDO. PUEDES LLEVARTE A TU HIJA CANIJA"
+		TEXT BOX "8Y DE CAMINO A CASA ME COMPRAS UNAS BRAGAS DE CORAZONES."
+		TEXT BOX "1ES QUE SIEMPRE QUE LO HAGO LA DEPENDIENTA ME MIRA RARO."
+		TEXT BOX "8PERO ESO ES LO QUE MAS RISA HACE."
+		WIN GAME
+	END
+
+	IF PLAYER IN_X 48, 96
+	THEN
+		TEXT BOX "7AUN HAY TRABAJO QUE HACER, MANGURRIAN."
+		TEXT BOX "8JO, PAPI, DATE PRISA. QUE ME VOY A PERDER EL CLUB DE LA HERRADURA."
+		BREAK
+	END
+END
+
+ENTERING SCREEN 3
+	IF TRUE
+	THEN
+		TEXT BOX "0MOLARIA SEMBRAR PETUNIAS"
+	END
+END
+
+ENTERING SCREEN 4
+	IF TRUE
+	THEN
+		TEXT BOX "0LA CORNISA QUE NO AVISA"
+	END
+END
+
+# Crypt 4
+
+ENTERING SCREEN 5
+	IF TRUE
+	THEN
+		TEXT BOX "0EL FANTASMA QUE TE PASMA"
+		DECOS
+			5, 6, 42
+		END
+	END
+
+	# Piece on its altar
+	IF %TALISMAN4 = 2
+	THEN
+		SET TILE (5, 5) = 36
+	END
+
+	# Guardian gone: Ramiro notices the altar
+	IF %TALISMAN4 = 1
+	THEN
+		TEXT BOX "1<TENGO QUE PONER EL TROZO DE TALISMAN EN ESE ALTAR!"
+	END
+END
+
+PRESS FIRE AT SCREEN 5
+	# PLAYER_TOUCHES 5, 6
+	IF PLAYER IN_X 65, 95
+	IF PLAYER IN_Y 81, 111
+	IF %TALISMAN4 = 1
+	THEN
+		# 20 crosses
+		DECOS
+			1, 2, 29
+			2, 2, 29
+			3, 2, 29
+			4, 2, 29
+			5, 2, 29
+			6, 2, 29
+			9, 4, 29
+			10, 4, 29
+			11, 4, 29
+			12, 4, 29
+			13, 4, 29
+			5, 8, 29
+			6, 8, 29
+			7, 8, 29
+			8, 8, 29
+			9, 8, 29
+			10, 8, 29
+			11, 8, 29
+			12, 8, 29
+			13, 8, 29
+		END
+		# Bats on
+		%MURCIELAGO = 1
+		# Close the gate, paint the piece
+		SET TILE (5, 5) = 36
+		SET TILE (14, 6) = 32
+		%GATEX = 14
+		%GATEY = 6
+		INC %PIECES, 1
+		%TALISMAN4 = 2
+		SHOW
+		EXTERN 9, 6
+		# The rest happens in PLAYER GOT SOMETHING
+	END
+END
+
+# El Deforme de Uniforme
+
+ENTERING SCREEN 6
+	IF TRUE
+	THEN
+		TEXT BOX "0<EL DEFORME DE UNIFORME!"
+	END
+
+	# The trap crystal
+	IF %TRAPON = 1
+	THEN
+		SET TILE (5, 8) = 45
+	END
+
+	# The guardian
+	IF %TALISMAN4 = 0
+	THEN
+		SET TILE (4, 1) = 13
+		SET TILE (4, 2) = 40
+	END
+END
+
+PRESS FIRE AT SCREEN 6
+	# Touch the crystal: a block falls on the guardian.
+	IF %TRAPON = 1
+	IF %TALISMAN4 = 0
+	# PLAYER_TOUCHES 5, 8
+	IF PLAYER IN_X 65, 95
+	IF PLAYER IN_Y 113, 143
+	THEN
+		EXTERN 9, 8
+		SET TILE (4, 1) = 44
+		SHOW
+		EXTERN 9, 3
+		EXTERN 9, 4
+		SET TILE (4, 1) = 43
+		SET TILE (4, 2) = 44
+		SHOW
+		EXTERN 9, 10
+		SET TILE (4, 1) = 44
+		SET TILE (4, 2) = 0
+		SHOW
+		EXTERN 9, 3
+		EXTERN 9, 4
+		SET TILE (4, 1) = 0
+		SHOW
+		EXTERN 9, 3
+		EXTERN 9, 4
+		%TALISMAN4 = 1
+	END
+
+	# Talk to the guardian
+	IF %TALISMAN4 = 0
+	# PLAYER_TOUCHES 4, 2
+	IF PLAYER IN_X 49, 79
+	IF PLAYER IN_Y 17, 47
+	THEN
+		TEXT BOX "6HMMM, NO GANO PARA TRAJES. ADEMAS, LOS SASTRES NUNCA QUIEREN TRABAJAR PARA MI"
+		TEXT BOX "1BUENO, LOS QUE TENEMOS UN PORTE ESPECIAL SIEMPRE SUFRIMOS ALGUN QUE OTRO ALTERCADO CON EL GREMIO"
+		TEXT BOX "6LAMES MUY BIEN EL OJAL, PERO NO CUELA, NO TE DEJO PASAR."
+	END
+END
+
+ENTERING SCREEN 7
+	IF TRUE
+	THEN
+		TEXT BOX "0>QUIEN PONE PINCHOS EN CASA?"
+	END
+END
+
+ENTERING SCREEN 8
+	IF TRUE
+	THEN
+		TEXT BOX "0ESTAS ARMADURAS ESTAN LLENAS"
+	END
+END
+
+ENTERING SCREEN 9
+	IF TRUE
+	THEN
+		TEXT BOX "0PALANCA DE SUICIDARSE MUCHO"
+	END
+END
+
+ENTERING SCREEN 10
+	IF TRUE
+	THEN
+		TEXT BOX "0UNA MISTERIOSA SALIDA"
+	END
+END
+
+ENTERING SCREEN 11
+	IF TRUE
+	THEN
+		TEXT BOX "0LA BODEGA QUE NO PEGA"
+	END
+END
+
+# Roberta, la Muerta
+
+ENTERING SCREEN 12
+	IF TRUE
+	THEN
+		TEXT BOX "0ROBERTA, LA DONCELLA MUERTA"
+	END
+
+	# The trap crystal
+	IF %TRAPON = 1
+	THEN
+		SET TILE (13, 1) = 45
+	END
+
+	# The guardian
+	IF %TALISMAN3 = 0
+	THEN
+		SET TILE (13, 3) = 13
+		SET TILE (13, 4) = 39
+	END
+END
+
+PRESS FIRE AT SCREEN 12
+	# Touch the crystal: a block falls on the guardian.
+	IF %TRAPON = 1
+	IF %TALISMAN3 = 0
+	# PLAYER_TOUCHES 13, 1
+	IF PLAYER IN_X 193, 223
+	IF PLAYER IN_Y 1, 31
+	THEN
+		EXTERN 9, 8
+		SET TILE (13, 3) = 44
+		SHOW
+		EXTERN 9, 3
+		EXTERN 9, 4
+		SET TILE (13, 3) = 43
+		SET TILE (13, 4) = 44
+		SHOW
+		EXTERN 9, 10
+		SET TILE (13, 3) = 44
+		SET TILE (13, 4) = 0
+		SHOW
+		EXTERN 9, 3
+		EXTERN 9, 4
+		SET TILE (13, 3) = 0
+		SHOW
+		EXTERN 9, 3
+		EXTERN 9, 4
+		%TALISMAN3 = 1
+	END
+
+	# Talk to the guardian
+	IF %TALISMAN3 = 0
+	# PLAYER_TOUCHES 13, 4
+	IF PLAYER IN_X 193, 223
+	IF PLAYER IN_Y 49, 79
+	THEN
+		TEXT BOX "5PARECES MUY APUESTO, PERICUETO LAMECUELLOS."
+		TEXT BOX "1SE HACE LO QUE SE PUEDE, Y PARA CUANDO NO, AHI ESTA EL BOTOX."
+		TEXT BOX "5HMMM. >QUIERES GUSANITOS?"
+	END
+END
+
+# Crypt 3
+
+ENTERING SCREEN 13
+	IF TRUE
+	THEN
+		TEXT BOX "0EL APARECIDO RETORCIDO"
+		DECOS
+			5, 2, 42
+		END
+	END
+
+	# Piece on its altar
+	IF %TALISMAN3 = 2
+	THEN
+		SET TILE (5, 1) = 35
+	END
+
+	# Guardian gone: Ramiro notices the altar
+	IF %TALISMAN3 = 1
+	THEN
+		TEXT BOX "1<TENGO QUE PONER EL TROZO DE TALISMAN EN ESE ALTAR!"
+	END
+END
+
+PRESS FIRE AT SCREEN 13
+	# PLAYER_TOUCHES 5, 2
+	IF PLAYER IN_X 65, 95
+	IF PLAYER IN_Y 17, 47
+	IF %TALISMAN3 = 1
+	THEN
+		# 20 crosses
+		DECOS
+			12, 1, 29
+			13, 1, 29
+			12, 2, 29
+			13, 2, 29
+			12, 3, 29
+			13, 3, 29
+			12, 4, 29
+			13, 4, 29
+			12, 5, 29
+			13, 5, 29
+			1, 6, 29
+			2, 6, 29
+			4, 6, 29
+			5, 6, 29
+			6, 6, 29
+			1, 8, 29
+			2, 8, 29
+			4, 8, 29
+			5, 8, 29
+			6, 8, 29
+		END
+		# Bats on
+		%MURCIELAGO = 1
+		# Close the gate, paint the piece
+		SET TILE (5, 1) = 35
+		SET TILE (0, 4) = 32
+		%GATEX = 0
+		%GATEY = 4
+		INC %PIECES, 1
+		%TALISMAN3 = 2
+		SHOW
+		EXTERN 9, 6
+		# The rest happens in PLAYER GOT SOMETHING
+	END
+END
+
+ENTERING SCREEN 14
+	IF TRUE
+	THEN
+		TEXT BOX "0YO VENIA AQUI A LIARME..."
+	END
+END
+
+ENTERING SCREEN 15
+	IF TRUE
+	THEN
+		TEXT BOX "0TIERRA FLOTANTE IMPACTANTE"
+	END
+END
+
+ENTERING SCREEN 16
+	IF TRUE
+	THEN
+		TEXT BOX "0LA CAMARA DE ARMAS"
+	END
+END
+
+# Fritz, el Bancario Ario
+
+ENTERING SCREEN 17
+	IF TRUE
+	THEN
+		TEXT BOX "0FRITZ, EL BANCARIO ARIO"
+	END
+
+	# The trap crystal
+	IF %TRAPON = 1
+	THEN
+		SET TILE (9, 2) = 45
+	END
+
+	# The guardian
+	IF %TALISMAN2 = 0
+	THEN
+		SET TILE (11, 7) = 13
+		SET TILE (11, 8) = 38
+	END
+END
+
+PRESS FIRE AT SCREEN 17
+	# Touch the crystal: a block falls on the guardian.
+	IF %TRAPON = 1
+	IF %TALISMAN2 = 0
+	# PLAYER_TOUCHES 9, 2
+	IF PLAYER IN_X 129, 159
+	IF PLAYER IN_Y 17, 47
+	THEN
+		EXTERN 9, 8
+		SET TILE (11, 7) = 44
+		SHOW
+		EXTERN 9, 3
+		EXTERN 9, 4
+		SET TILE (11, 7) = 43
+		SET TILE (11, 8) = 44
+		SHOW
+		EXTERN 9, 10
+		SET TILE (11, 7) = 44
+		SET TILE (11, 8) = 0
+		SHOW
+		EXTERN 9, 3
+		EXTERN 9, 4
+		SET TILE (11, 7) = 0
+		SHOW
+		EXTERN 9, 3
+		EXTERN 9, 4
+		%TALISMAN2 = 1
+	END
+
+	# Talk to the guardian
+	IF %TALISMAN2 = 0
+	# PLAYER_TOUCHES 11, 8
+	IF PLAYER IN_X 161, 191
+	IF PLAYER IN_Y 113, 143
+	THEN
+		TEXT BOX "4MEIN NOMBRRE ES FRITZ, EL BANCARIO ARIO"
+		TEXT BOX "4NO PUEDES IMAGINARR LO QUE VOY A DESIRRTE. NI EN UN MILLON DE A=OS."
+		TEXT BOX "1PRUEBA..."
+		TEXT BOX "4<VENDO MOTO SEMINUEVA!"
+	END
+END
+
+# Crypt 2
+
+ENTERING SCREEN 18
+	IF TRUE
+	THEN
+		TEXT BOX "0EL MAGNIFICO TERRORIFICO"
+		DECOS
+			5, 8, 42
+		END
+	END
+
+	# Piece on its altar
+	IF %TALISMAN2 = 2
+	THEN
+		SET TILE (5, 7) = 34
+	END
+
+	# Guardian gone: Ramiro notices the altar
+	IF %TALISMAN2 = 1
+	THEN
+		TEXT BOX "1<TENGO QUE PONER EL TROZO DE TALISMAN EN ESE ALTAR!"
+	END
+END
+
+PRESS FIRE AT SCREEN 18
+	# PLAYER_TOUCHES 5, 8
+	IF PLAYER IN_X 65, 95
+	IF PLAYER IN_Y 113, 143
+	IF %TALISMAN2 = 1
+	THEN
+		# 20 crosses
+		DECOS
+			9, 2, 29
+			10, 2, 29
+			11, 2, 29
+			12, 2, 29
+			13, 2, 29
+			1, 3, 29
+			2, 3, 29
+			3, 3, 29
+			4, 3, 29
+			5, 3, 29
+			1, 5, 29
+			9, 5, 29
+			10, 5, 29
+			2, 6, 29
+			8, 6, 29
+			11, 6, 29
+			3, 7, 29
+			7, 7, 29
+			12, 7, 29
+			4, 8, 29
+		END
+		# Bats on
+		%MURCIELAGO = 1
+		# Close the gate, paint the piece
+		SET TILE (5, 7) = 34
+		SET TILE (0, 1) = 32
+		%GATEX = 0
+		%GATEY = 1
+		INC %PIECES, 1
+		%TALISMAN2 = 2
+		SHOW
+		EXTERN 9, 6
+		# The rest happens in PLAYER GOT SOMETHING
+	END
+END
+
+ENTERING SCREEN 19
+	IF TRUE
+	THEN
+		TEXT BOX "0CEBOLLAS Y ACELGAS"
+	END
+END
+
+ENTERING SCREEN 20
+	IF TRUE
+	THEN
+		TEXT BOX "0>SALTO CON PERTIGA?"
+	END
+END
+
+ENTERING SCREEN 21
+	IF TRUE
+	THEN
+		TEXT BOX "0UN PASILLO CON FLEQUILLO"
+	END
+END
+
+ENTERING SCREEN 22
+	IF TRUE
+	THEN
+		TEXT BOX "0UN PASILLO MANTEQUILLO"
+	END
+END
+
+ENTERING SCREEN 23
+	IF TRUE
+	THEN
+		TEXT BOX "0EL ABISMO ESTA AHI MISMO"
+	END
+END
+
+ENTERING SCREEN 24
+	IF TRUE
+	THEN
+		TEXT BOX "0EL PATIO DE ATRAS ES FEO"
+	END
+END
+
+# Initial screen. La Bruja Maruja.
+
+ENTERING SCREEN 25
+	IF TRUE
+	THEN
+		TEXT BOX "0AHI JUSTO VIVE GONZALO..."
+		DECOS
+			4, 4, 41
+		END
+	END
+
+	# First time: the whole screen is a fire zone -> the intro runs at once.
+	# SET_FIRE_ZONE_TILES 0, 0, 15, 9
+	IF %FIRSTTIME = 0
+	THEN
+		EXTERN 10, 0
+		EXTERN 11, 0
+		EXTERN 12, 254
+		EXTERN 13, 159
+		BREAK
+	END
+END
+
+PRESS FIRE AT SCREEN 25
+	# Intro
+	IF %FIRSTTIME = 0
+	THEN
+		%FIRSTTIME = 1
+		EXTERN 14, 0
+		TEXT BOX "1NO SE QUE NARICES QUERRA MARUJA Y POR QUE ME HA CITADO AQUI"
+		TEXT BOX "1ESPERO QUE NO SEA PARA DARME AMOR, PORQUE UNO NO ESTA HOY PARA MOVERSE MUCHO"
+		EXTERN 15, 0
+		BREAK
+	END
+
+	# La Bruja Maruja
+	# PLAYER_TOUCHES 4, 4
+	IF PLAYER IN_X 49, 79
+	IF PLAYER IN_Y 49, 79
+	IF %GAMESTATE = 0
+	THEN
+		TEXT BOX "2<VAYA SI HAS TARDADO, RAMIRO!"
+		TEXT BOX "1ES QUE ME HA SALIDO UN PADRASTRO EN EL DEO QUE..."
+		TEXT BOX "2CALLA, TRUHAN. >NO TE HAS ENTERADO? <EL MALO GONZALO SE HA LLEVADO A TU HIJA!"
+		TEXT BOX "1BUENO, NO ME SUELO METER EN LA VIDA DE MI NI=A, YA ES MAYORCITA PARA..."
+		TEXT BOX "2<NO, CABEZA BUQUE! QUE LA HA RAPTADO ASI, EN PLAN MAL."
+		TEXT BOX "2DICE QUE QUIERE VERTE. ESTA EN SUS APOSENTOS, EN LO MAS ALTO DE CASTILLO."
+		TEXT BOX "2TOMA, TE RENUEVO EL HECHIZO POSTIZO. TE HARA FALTA."
+		TEXT BOX "2<RECUERDA QUE, CON EL, SOLO PUEDES SOPORTAR EL SOL UN MINUTO!"
+		%GAMESTATE = 1
+		%HECHIZO = 1
+		BREAK
+	END
+
+	# PLAYER_TOUCHES 4, 4
+	IF PLAYER IN_X 49, 79
+	IF PLAYER IN_Y 49, 79
+	IF %GAMESTATE = 1
+	THEN
+		TEXT BOX "2DEJAME, PESADICO, Y VETE A HABLAR CON GONZALO EL MALO"
+		BREAK
+	END
+
+	# PLAYER_TOUCHES 4, 4
+	IF PLAYER IN_X 49, 79
+	IF PLAYER IN_Y 49, 79
+	IF %GAMESTATE = 2
+	THEN
+		TEXT BOX "2<DEJA DE PERDER EL TIEMPO! <TIENES QUE DEVOLVER LAS PIEZAS DEL TALISMAN!"
+		BREAK
+	END
+
+	# PLAYER_TOUCHES 4, 4
+	IF PLAYER IN_X 49, 79
+	IF PLAYER IN_Y 49, 79
+	THEN
+		TEXT BOX "2AHORA EL CASTILLO SE HA VUELTO CHUNGO DEL TODO"
+	END
+END
+
+ENTERING SCREEN 26
+	IF TRUE
+	THEN
+		TEXT BOX "0ENTRADA PRINCIPAL"
+	END
+END
+
+ENTERING SCREEN 27
+	IF TRUE
+	THEN
+		TEXT BOX "0POR AQUI MEJOR NO VAYAS"
+	END
+END
+
+# Rufino, el Marino
+
+ENTERING SCREEN 28
+	IF TRUE
+	THEN
+		TEXT BOX "0RUFINO, EL MARINO"
+	END
+
+	# The trap crystal
+	IF %TRAPON = 1
+	THEN
+		SET TILE (12, 5) = 45
+	END
+
+	# The guardian
+	IF %TALISMAN1 = 0
+	THEN
+		SET TILE (11, 7) = 13
+		SET TILE (11, 8) = 37
+	END
+END
+
+PRESS FIRE AT SCREEN 28
+	# Touch the crystal: a block falls on the guardian.
+	IF %TRAPON = 1
+	IF %TALISMAN1 = 0
+	# PLAYER_TOUCHES 12, 5
+	IF PLAYER IN_X 177, 207
+	IF PLAYER IN_Y 65, 95
+	THEN
+		EXTERN 9, 8
+		SET TILE (11, 7) = 44
+		SHOW
+		EXTERN 9, 3
+		EXTERN 9, 4
+		SET TILE (11, 7) = 43
+		SET TILE (11, 8) = 44
+		SHOW
+		EXTERN 9, 10
+		SET TILE (11, 7) = 44
+		SET TILE (11, 8) = 0
+		SHOW
+		EXTERN 9, 3
+		EXTERN 9, 4
+		SET TILE (11, 7) = 0
+		SHOW
+		EXTERN 9, 3
+		EXTERN 9, 4
+		%TALISMAN1 = 1
+	END
+
+	# Talk to the guardian
+	IF %TALISMAN1 = 0
+	# PLAYER_TOUCHES 11, 8
+	IF PLAYER IN_X 161, 191
+	IF PLAYER IN_Y 113, 143
+	THEN
+		TEXT BOX "3HAR HAR HAAAR... <ME CABE UN BARCO!"
+		TEXT BOX "1LO SIENTO, NO ME INTERESA"
+		TEXT BOX "3<ESO ES PORQUE NO HAS VISTO AUN MIS TATUAJES!"
+	END
+END
+
+# Crypt 1
+
+ENTERING SCREEN 29
+	IF TRUE
+	THEN
+		TEXT BOX "0EL ESPELUZNANTE CHANANTE"
+		DECOS
+			10, 8, 42
+		END
+	END
+
+	# Piece on its altar
+	IF %TALISMAN1 = 2
+	THEN
+		SET TILE (10, 7) = 33
+	END
+
+	# Guardian gone: Ramiro notices the altar
+	IF %TALISMAN1 = 1
+	THEN
+		TEXT BOX "1<TENGO QUE PONER EL TROZO DE TALISMAN EN ESE ALTAR!"
+	END
+END
+
+PRESS FIRE AT SCREEN 29
+	# PLAYER_TOUCHES 10, 8
+	IF PLAYER IN_X 145, 175
+	IF PLAYER IN_Y 113, 143
+	IF %TALISMAN1 = 1
+	THEN
+		# 20 crosses
+		DECOS
+			3, 2, 29
+			12, 2, 29
+			13, 2, 29
+			7, 3, 29
+			8, 3, 29
+			12, 3, 29
+			13, 3, 29
+			6, 4, 29
+			9, 4, 29
+			12, 4, 29
+			13, 4, 29
+			12, 5, 29
+			13, 5, 29
+			1, 6, 29
+			2, 6, 29
+			3, 6, 29
+			4, 6, 29
+			5, 6, 29
+			12, 6, 29
+			13, 6, 29
+		END
+		# Bats on
+		%MURCIELAGO = 1
+		# Close the gate, paint the piece
+		SET TILE (10, 7) = 33
+		SET TILE (0, 8) = 32
+		%GATEX = 0
+		%GATEY = 8
+		INC %PIECES, 1
+		%TALISMAN1 = 2
+		SHOW
+		EXTERN 9, 6
+		# The rest happens in PLAYER GOT SOMETHING
+	END
+END

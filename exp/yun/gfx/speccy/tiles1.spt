@@ -1,0 +1,36 @@
+# Yun ZX, load 1 (levels 1-4): charset + tile maps (mkts_om mode=scripted, run from dev/)
+#
+# One pattern pool for the whole load: the font first (patterns 0-17: blank,
+# 0-9, A E G M O R V; DIGIT_BASE and GAME_OVER_TEXT in yun_level.h count on
+# this order), then the hotspot tiles and every level's tiles, sharing any
+# pattern they have in common. Each tileset gives a tile map: 8 bytes per tile
+# (attribute, pattern) x 4, top-left, top-right, bottom-left, bottom-right.
+
+open ../gfx/speccy/font.png
+charset 0 0 18 1 0 0 18
+
+# tiles 16-20 (refill, star, key, -, bulb), shared by all levels
+open ../gfx/speccy/tsx.png
+metatileset 0 0 5 1 2 2 0
+output tmaps tsx_tmaps.bin
+
+open ../gfx/speccy/ts0.png
+metatileset 0 0 16 1 2 2 0
+output tmaps lvl0_tmaps.bin
+
+open ../gfx/speccy/ts1.png
+metatileset 0 0 16 1 2 2 0
+output tmaps lvl1_tmaps.bin
+
+open ../gfx/speccy/ts2.png
+metatileset 0 0 16 1 2 2 0
+output tmaps lvl2_tmaps.bin
+
+open ../gfx/speccy/ts3.png
+metatileset 0 0 16 1 2 2 0
+output tmaps lvl3_tmaps.bin
+
+stats
+# only the patterns in use: the engine points chars past them at whatever
+# follows, and no tile uses those
+output patterns tileset.bin

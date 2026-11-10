@@ -15,6 +15,8 @@
 // I. General configuration
 // ============================================================================
 
+#define DIRECT_TO_PLAY 						// The title screen has the frame: no s_marco
+
 #define MAP_W						NN_MAP_W	// arrays for the largest map (VARIABLE_MAP_W)
 #define MAP_H						NN_MAP_H	//
 #define SCR_INICIO					level_scr_ini	// Initial screen (per level)

@@ -4,6 +4,12 @@
 void before_vsync (void) {
 }
 
+#ifdef PLAYER_CUSTOM_MOVE
+	void player_custom_move (void) {
+		// Completely replace player movement & collision
+	}
+#endif
+
 #ifdef PLAYER_CUSTOM_VENG
 	void player_custom_veng (void) {
 		// Modify vy as needed

@@ -1,0 +1,65 @@
+run 100
+key 1 5
+run 60
+key SPACE 3
+run 20
+# --- door: walk to (7,7) then down onto the door
+tp 18 7 7
+run 10
+key A 30
+run 20
+state door_out
+shot shots/r01_hut1_outside.png
+# --- shovel in the shed (screen 6, 3,3)
+tp 6 3 3
+run 20
+shot shots/r02_shed.png
+key SPACE 3
+run 30
+state shovel
+# --- torch in the mess hall (screen 20, 2,2)
+tp 20 2 2
+run 20
+key SPACE 3
+run 30
+state torch
+shot shots/r03_mess.png
+# --- stove + trapdoor
+tp 18 12 3
+run 20
+key SPACE 3
+run 30
+key SPACE 3
+run 20
+key Q 25
+run 40
+state into_tunnel
+shot shots/r04_textbox_torch.png
+key SPACE 3
+run 30
+state tunnel
+shot shots/r05_tunnel.png
+# --- dig out the roof fall (screen 26, standing at 6,4)
+tp 26 6 4
+run 20
+shot shots/r06_rubble.png
+key SPACE 3
+run 30
+key SPACE 3
+run 30
+state dug
+shot shots/r07_dug.png
+# --- up the ladder at the far end, without compass/papers
+tp 28 11 3
+run 20
+key P 20
+run 40
+shot shots/r08_woods_text.png
+state woods
+key SPACE 3
+run 40
+shot shots/r09_arrest_text.png
+key SPACE 3
+run 40
+state cooler
+shot shots/r10_cooler.png

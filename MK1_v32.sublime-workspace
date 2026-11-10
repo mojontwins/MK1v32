@@ -520,23 +520,31 @@
 	"buffers":
 	[
 		{
-			"file": "/C/Users/na_th/Desktop/manager.txt",
+			"contents": "#\tSituación\tCuándo\tFrecuencia\tCheril (a favor / en contra)\tViñeta\tVariaciones\n1\tSALIDA\tLos equipos salen al campo\t1 por partido\tNeutral\tSí\t1\n\n* Señoras y señores del público! {EQ} sale al campo aunque {RIVAL} aún no aparece. ¡Ah no! ¡Están ahí! Es que van vestidos del mismo color que el suelo.\n\n2\tINICIO\tSaque inicial y tras cada tanto\tPocas\tNeutral\tNo\t—\n\n* ¡El cubo de podewr se pone en juego!. Los jugadores ocupan sus puestos dando vorteretas.\n\n3\tFIN_PERIODO\tAcaba el período 1 o 2\t2 por partido\tSegún marcador\tSí\t1\n\n* ¡Y con esto acaba el período {PERIODO}! Es el momento de disfrutar de una actuación del imitador de Torrebruno.\n\n4\tINICIO_PERIODO\tEmpieza el período 2 o 3\t2 por partido\tNeutral\tNo\t—\n\n* Esperemos que en este nuevo período el espectáculo sea aún más dantesco. \n\n5\tFINAL\tSe acaba el tiempo del período 3\t1 por partido\tEuforia / Hundida\tSí\t3 (ganar, perder, empatar)\n\n* ¡Por fin se acaba esta masacre! El árbitro hace así con la mano y como no le han visto grita en checoslovaco.\n\n6\tNUEVE\tUn equipo llega a 9 y gana en el acto\tRara\tEuforia / Hundida\tSí\t2 (a favor, en contra)\n\n* Como el marcador sólo permite un dígito por equipo ¡El partido tiene que acabarse!\n\n7\tDISPUTA\tLos medios pelean por el cubo\tMuy frecuente\tNeutral / Aburrida\tNo\t—\n\n* {J1} y {J2} se disputan el cubo de podewr bailando un vals. ¡No sabemos cómo acabará esto, pero {J2} tiene las manos muy largas!\n\n8\tESCAPADA ★\tUn medio gana la carrera y sube\tMuy frecuente\tNeutral\tSí\t2–3\n\n* ¡A {J1} se le sale un pedo y con la confusión se escapa con el cubo de podewr! {J2} permanece en el suelo, tufado.\n\n9\tALCANZADO\tLo atrapan; el cubo sigue en el centro\tFrecuente\tNeutral\tNo\t—\n\n* Sin embargo {J2} realiza la maniobra de Jensen-Fenster y consigue recuperar el cubo... {J1} ni se ha dado cuenta.\n\n10\tMURO\tLa defensa rechaza el ataque en bloque\tFrecuente\tNeutral\tNo\t—\n\n* Todos los defensores del {EQ} se dan la mano y cantan \"Bravo por la música\". El cubo de podewr sale rebotado y vuelve al centro del terreno.\n\n11\tENCARA\tDelantero frente a defensa\tFrecuente\tNeutral\tSí\t2\n\n* {J1} Encara rugiendo en austriaco al denfesa estrella de {RIVAL}, {J2}, al que se le pone la carita blanca.\n\n12\tREGATE ★\tEl delantero se va, solo ante el portero\tMedia\tTensión\tSí\t2\n\n* {J1} hace una finta de lomo a {J2}, que trompieza con un pelúo, se da en la camolla, y se hace zangre. ¡{J1} se escapa! \n\n13\tENTRADA\tEl defensa corta; el ataque sigue\tFrecuente\tNeutral\tSí\t2\n\n* {J1} Detiene habilmente el ataque de {J2}, ¡pero {J2} sigue en sus trece!\n\n14\tMANO_A_MANO\tDelantero contra portero\tMedia\tTensión\tSí\t2–3\n\n* ¡Esto es un duelo de titanes! {J2} sale a por todas para evitar que {J1} anote.\n\n15\tGOL ★\tMarca\tPocas\tEuforia / Hundida (Sorpresa si es chiripa)\tSí\t3–4\n\n* {J1} empuja el cubo con el culo y consigue anotar! La grada se viene abajo, literalmente, al fallar la cinta aislante del pilar principal.\n\n16\tPARADA ★\tEl portero para, rechace corto\tMedia\tEuforia / Hundida\tSí\t2–3 (comparte con DESPEJE)\n\n* El guardián de {EQ} consigue detener el lanzamiento, aunque le da un poco asín y no consigue mandarla a Gelves. ¡El peligro no ha pasado!\n\n17\tDESPEJE\tEl portero para y despeja al centro\tMedia\tNeutral\tSí\t(comparte con PARADA)\n\n* El {J1} es un excelente guardian! De un peyejazo manda el cubo bien lejos. Detrás del cubo va un guante y el anillo de casada.\n\n18\tFALTA\tEntrada demasiado fuerte\tMedia\tNeutral / Indignada\tSí\t1–2\n\n* {J1} se ha excedido en su entrada: el bate tenía demasiados clavos. ¡Falta!\n\n19\tSANCION\tTarjeta o expulsión\tRara\tNeutral / Indignada\tNo\t—\n\n* El árbitro no está lo suficientemente beodo. {J1} debió haber contado con eso. ¡Ahora le han puesto de patitas en la calle con un negativo y un parte!\n\n20\tLESION\tUn jugador se lesiona\tRara\tNeutral / Indignada\tSí\t1–2\n\n* {J1} pisa raro y cae al foso pequeño del {RIVAL}, golpeándose con un señor que vendía arvellanas.\n\n21\tFUNDIDO\tUn jugador se queda sin fuerzas\tRara\tNeutral\tNo\t—\n\n* {J1} se ha desinflado del todo. No puede seguir, y se lo llevan arrastrándolo con un tractor.\n\n22\tSUBIDON / BAJON\tCambio fuerte de moral\tMedia\tEuforia / Hundida\tNo\t—\n\n* ¡{J1} se flipa sólo y le entran todas las emociones del Colacao! ¡Va a por todas!\n\n23\tEVENTO MOJONO\tSuceso absurdo con efecto en los stats\tRara\tS\n\n* ¡Oh, no! ¡Al {RIVAL} le han dado el premio Devuelgo al mejor equipo rival! Ahora van sobradísimos.",
 			"settings":
 			{
-				"buffer_size": 27327,
-				"encoding": "UTF-8",
+				"buffer_size": 4332,
 				"line_ending": "Windows",
-				"name": "Manager de un deporte inventao"
+				"name": "Find Results",
+				"scratch": true
 			}
 		},
 		{
-			"file": "/C/Users/na_th/Desktop/manager-respuesta.txt",
+			"file": "/C/Users/na_th/Desktop/frases-ejemplo-podewr.md",
 			"settings":
 			{
-				"buffer_size": 6981,
+				"buffer_size": 7719,
 				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "Hueco\tQué pone el motor\n{J1}\tApellido del protagonista de la acción\n{J2}\tApellido del rival directo (el que persigue, defiende o recibe la falta)\n{POR}\tApellido del portero implicado\n{EQ}\tNombre corto del equipo que hace la acción (máximo 12 caracteres)\n{RIVAL}\tNombre corto del otro equipo\n{PERIODO}\tNúmero de período (1, 2 o 3)\n{MARCADOR}\tResultado actual, p. ej. \"2-1\"",
+			"settings":
+			{
+				"buffer_size": 371,
 				"line_ending": "Windows",
-				"name": "Qué gustazo releer esto: el cubo de Podewr, la gal"
+				"name": "Hueco\tQué pone el motor"
 			}
 		}
 	],
@@ -616,10 +624,33 @@
 	},
 	"expanded_folders":
 	[
-		"/D/Git/mk1v32"
+		"/D/Git/mk1v32",
+		"/D/Git/mk1v32/exp"
 	],
 	"file_history":
 	[
+		"/D/Git/mk1v32/exp/yun/yun_a/dev/custom_sprite_cells.h",
+		"/D/Git/mk1v32/exp/yun/yun_a/dev/custom_flick.h",
+		"/C/Users/na_th/AppData/Local/Temp/7zO04BA673A/nn_levels.h",
+		"/D/Git/mk1v32/src/dev/cpc.h",
+		"/D/Git/mk1v32/games/tb/dev/cpc.h",
+		"/D/Git/mk1v32/games/perils/dev/cpc.h",
+		"/D/Git/mk1v32/games/papaya/dev/cpc.h",
+		"/D/Git/mk1v32/games/napia/dev/cpc.h",
+		"/D/Git/mk1v32/games/cosmonautic/dev/cpc.h",
+		"/D/Git/mk1v32/games/cosmonautic/dev/speccy.h",
+		"/D/Git/mk1v32/games/cheril/dev/cpc.h",
+		"/D/Git/mk1v32/games/calavera/dev/cpc.h",
+		"/D/Git/mk1v32/games/ababol/dev/cpc.h",
+		"/D/Git/mk1v32/exp/yun/yun_c/dev/cpc.h",
+		"/D/Git/mk1v32/exp/yun/yun_b/dev/cpc.h",
+		"/D/Git/mk1v32/exp/yun/yun_a/dev/cpc.h",
+		"/D/Git/mk1v32/exp/punchy/dev/cpc.h",
+		"/D/Git/mk1v32/exp/ninnin/dev/speccy.h",
+		"/D/Git/mk1v32/exp/ninnin/dev/cpc.h",
+		"/C/Users/na_th/Desktop/manager.txt",
+		"/C/Users/na_th/Desktop/manager-respuesta.txt",
+		"/D/Git/mk1v32/exp/mk1v32-all.patch",
 		"/C/Users/na_th/AppData/Local/Temp/7zO43ECACF6/enemies.h",
 		"/C/Users/na_th/AppData/Local/Temp/7zO43EDBFEB/main.c",
 		"/C/Users/na_th/AppData/Local/Temp/7zO43E18CBA/assets.h",
@@ -725,29 +756,7 @@
 		"/C/Users/jcastano/AppData/Local/Temp/7zO4F08B214/Nota sobre seriales animados.txt",
 		"/C/Users/jcastano/Downloads/pepsi.bas",
 		"/D/cosas/CPCbasic3/pepsi1.bas",
-		"/D/Proyectos/2022/20221125a - Webmail - arreglo adjuntos/rcube.php",
-		"/D/Proyectos/2022/20221125a - Webmail - arreglo adjuntos/instrucciones.txt",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/agendaapi/ldap.php",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/agendaapi/get_all/index.php",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/program/include/bc.php",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/program/lib/Roundcube/rcube_string_replacer.php",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/program/lib/Roundcube/rcube_washtml.php",
-		"/D/temp/MC_WORK/b1.9/src/minecraft/net/minecraft/src/Item.java",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/program/lib/Roundcube/rcube_utils.php",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/config/defaults.inc.php",
-		"/D/Proyectos/2022/20221102c - Actualización leyenda cambio de password (Webmail)/instrucciones.txt",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/plugins/ldap_search/localization/es_ES.inc",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/plugins/ldap_search/ldap_search.js",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/plugins/ldap_search/client.js",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/plugins/avelsieve/avelsieve.php",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/program/lib/Roundcube/html.php",
-		"/D/Proyectos/2022/20220527a - Reserva de Recursos 1.25.0.0/instrucciones.txt",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/plugins/password/password_strength.js",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/plugins/password/password.min.js",
-		"/C/Users/jcastano/AppData/Local/Temp/7zOCE5A4B81/org.multimc.jarmod.04980a57-9601-4a95-9981-92c6ddfa147a.json",
-		"/C/Users/jcastano/AppData/Local/Temp/7zOCE5B5561/mmc-pack.json",
-		"/D/git/MK1_Pestecera/src/dev/wyz_player.h",
-		"/D/Proyectos/remote/desccobuz05/diario.md"
+		"/D/Proyectos/2022/20221125a - Webmail - arreglo adjuntos/rcube.php"
 	],
 	"find":
 	{
@@ -758,6 +767,7 @@
 		"height": 134.0,
 		"where_history":
 		[
+			"D:\\Git\\mk1v32"
 		]
 	},
 	"find_state":
@@ -765,6 +775,9 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"void saca_a_todo_el_mundo_de_aqui (void) {",
+			"m1 lut",
+			"mundo_de_aqui"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -776,7 +789,7 @@
 		"reverse": false,
 		"show_context": true,
 		"use_buffer2": true,
-		"whole_word": true,
+		"whole_word": false,
 		"wrap": true
 	},
 	"groups":
@@ -787,28 +800,45 @@
 			[
 				{
 					"buffer": 0,
-					"file": "/C/Users/na_th/Desktop/manager.txt",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 27327,
+						"buffer_size": 4332,
 						"regions":
 						{
+							"match":
+							{
+								"flags": 112,
+								"regions":
+								[
+									[
+										4332,
+										4332
+									]
+								],
+								"scope": ""
+							}
 						},
 						"selection":
 						[
 							[
 								0,
-								27327
+								4332
 							]
 						],
 						"settings":
 						{
-							"auto_name": "Manager de un deporte inventao",
-							"syntax": "Packages/Text/Plain text.tmLanguage"
+							"detect_indentation": false,
+							"line_numbers": false,
+							"output_tag": 1,
+							"result_base_dir": "",
+							"result_file_regex": "^([^ \t].*):$",
+							"result_line_regex": "^ +([0-9]+):",
+							"scroll_past_end": true,
+							"syntax": "Packages/Default/Find Results.hidden-tmLanguage"
 						},
 						"translation.x": 0.0,
-						"translation.y": 8895.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 1,
@@ -816,31 +846,64 @@
 				},
 				{
 					"buffer": 1,
-					"file": "/C/Users/na_th/Desktop/manager-respuesta.txt",
+					"file": "/C/Users/na_th/Desktop/frases-ejemplo-podewr.md",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 6981,
+						"buffer_size": 7719,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								6495,
-								6495
+								0,
+								0
 							]
 						],
 						"settings":
 						{
-							"auto_name": "Qué gustazo releer esto: el cubo de Podewr, la gal",
+							"syntax": "Packages/Markdown/Markdown.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 1596.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				}
+			]
+		},
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 2,
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 371,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								371,
+								371
+							]
+						],
+						"settings":
+						{
+							"auto_name": "Hueco\tQué pone el motor",
 							"syntax": "Packages/Text/Plain text.tmLanguage"
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 0,
+					"stack_index": 2,
 					"type": "text"
 				}
 			]
@@ -863,11 +926,18 @@
 				0,
 				1,
 				1
+			],
+			[
+				1,
+				0,
+				2,
+				1
 			]
 		],
 		"cols":
 		[
 			0.0,
+			0.5,
 			1.0
 		],
 		"rows":

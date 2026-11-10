@@ -6,17 +6,29 @@
 // Do your thing, return 0 to prevent screen flick.
 
 unsigned char flick_left (void) {
-	return 1;
+	// return 1;
+	#asm
+			ld  hl, 1
+	#endasm
 }
 
 unsigned char flick_right (void) {
-	return 1;
+	// return 1;
+	#asm
+			ld  hl, 1
+	#endasm
 }
 
 unsigned char flick_up (void) {
-	return 1;
+	// return 1;
+	#asm
+			ld  hl, 1
+	#endasm
 }
 
 unsigned char flick_down (void) {
-	return 1;
+	// return 1;
+	#asm
+			ld  hl, 1
+	#endasm
 }

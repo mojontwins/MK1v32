@@ -33,6 +33,19 @@ extern unsigned char lvl2_spr [];
 		._lvl3_spr
 			BINARY "cpc/lvl3_spr.zx0"
 	#endasm
+#endif
+#if NN_LEVELS > 4
+	extern unsigned char lvl4_area [];
+	extern unsigned char lvl4_spr [];
+	#asm
+		._lvl4_area
+			BINARY "cpc/lvl4_area.zx0"
+		._lvl4_spr
+			BINARY "cpc/lvl4_spr.zx0"
+	#endasm
+	unsigned char *lvl_area [] = { lvl0_area, lvl1_area, lvl2_area, lvl3_area, lvl4_area };
+	unsigned char *lvl_spr [] = { lvl0_spr, lvl1_spr, lvl2_spr, lvl3_spr, lvl4_spr };
+#elif NN_LEVELS > 3
 	unsigned char *lvl_area [] = { lvl0_area, lvl1_area, lvl2_area, lvl3_area };
 	unsigned char *lvl_spr [] = { lvl0_spr, lvl1_spr, lvl2_spr, lvl3_spr };
 #else

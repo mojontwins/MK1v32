@@ -1,0 +1,47 @@
+# Yun CPC, load 1 (levels 1-4): patterns + tile maps (mkts_om mode=scripted, run from dev/)
+#
+# Mode 0 at its own resolution (a 16x16 tile is 8x16 pixels in the PNGs).
+# Split palette: backgrounds use pens 0, 4, 8, 12 (pal_cnvtilesN.png), the
+# hotspot tiles and sprites pens 1-3 (pal_cnvspr.png), which show over
+# anything (pen = bg * 4 + sprite).
+#
+# One pattern pool for the whole load: the font first (patterns 0-17, same
+# order as the ZX one), then the hotspot tiles and every level's tiles. Each
+# tileset gives a tile map: 4 patterns per tile. The font is in background
+# colour 3 of the load's first level (pale yellow in both).
+
+cpcmode 0
+brickinput off
+
+pal ../gfx/cpc/pal_cnvtiles0.png
+open ../gfx/cpc/font.png
+charset 0 0 18 1 0 0 18
+
+# tiles 16-20 (refill, star, key, -, bulb), shared by all levels
+pal ../gfx/cpc/pal_cnvspr.png
+open ../gfx/cpc/tsx.png
+metatileset 0 0 5 1 2 2 0
+output tmaps cpc/tsx_tmaps.bin
+
+pal ../gfx/cpc/pal_cnvtiles0.png
+open ../gfx/cpc/ts0.png
+metatileset 0 0 16 1 2 2 0
+output tmaps cpc/lvl0_tmaps.bin
+
+pal ../gfx/cpc/pal_cnvtiles1.png
+open ../gfx/cpc/ts1.png
+metatileset 0 0 16 1 2 2 0
+output tmaps cpc/lvl1_tmaps.bin
+
+pal ../gfx/cpc/pal_cnvtiles2.png
+open ../gfx/cpc/ts2.png
+metatileset 0 0 16 1 2 2 0
+output tmaps cpc/lvl2_tmaps.bin
+
+pal ../gfx/cpc/pal_cnvtiles3.png
+open ../gfx/cpc/ts3.png
+metatileset 0 0 16 1 2 2 0
+output tmaps cpc/lvl3_tmaps.bin
+
+stats
+output patterns cpc/patterns.bin

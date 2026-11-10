@@ -1,0 +1,71 @@
+run 100
+key 1 5
+run 60
+key SPACE 3
+run 30
+# --- restricted area without uniform: barracks yard (15), stand in the guard's path (row 7)
+tp 15 6 7
+run 150
+state restricted_touch
+shot shots/x01_restricted.png
+key SPACE 3
+run 60
+state after_arrest
+# --- leave the cooler: stand above the door (7,6) and walk down onto it (7,7)
+tp 29 7 6
+run 10
+key A 16
+run 40
+state cooler_door
+shot shots/x02_cooler_text.png
+key SPACE 3
+run 40
+state released
+# --- uniform: pick it up in the barracks (22) and stand in the guard's path there (row 6)
+tp 22 6 2
+run 20
+key SPACE 3
+run 20
+state uniform
+tp 15 6 7
+run 150
+state uniform_touch
+# --- bribe: give flags for bribe, raise the alarm by hand, meet the guard in 7
+flag 15 1
+flag 1 41
+flag 3 1
+tp 7 7 7
+run 150
+state bribe_touch
+shot shots/x03_bribe.png
+key SPACE 3
+run 40
+# --- dog: food in hand, meet the dog in screen 6 (row 8)
+flag 14 1
+flag 1 40
+tp 6 6 8
+run 150
+state dog_touch
+shot shots/x04_dog.png
+key SPACE 3
+run 60
+state dog_after
+shot shots/x05_dog_after.png
+# --- wire cutters: from storeroom yard (12, 3,2)
+tp 12 3 2
+run 20
+key SPACE 3
+run 20
+state snips
+tp 11 4 1
+run 20
+key SPACE 3
+run 40
+state cut
+shot shots/x06_cut.png
+key SPACE 3
+run 40
+key Q 20
+run 40
+state through_hole
+shot shots/x07_woods.png
