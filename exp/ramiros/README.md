@@ -61,14 +61,23 @@ What it provides:
 * **Damage.** Per-type damage (`RAMIRO_LINEAR_HIT`, `RAMIRO_FLYING_HIT`) with
   Ramiro 4's 8-pixel-wide enemy collision.
 * **Fire zone.** msc3's `SET_FIRE_ZONE`, via EXTERN 10-14.
-* **Other EXTERNs.** REENTER (15) and REDRAW (16).
+* **Other EXTERNs.** REDRAW (16). REENTER needs no EXTERN: the scripts do
+  `OPANT = 99`.
 * **Sound.** BeepFX effects (Ramiro 4's set) on ZX, through EXTERN 9, n.
   On CPC they map to WYZ effects.
 * **HUD.** The sunlight countdown.
-* **Text box.** Ramiro 4's text box for msc4's `TEXT BOX`:
+* **Text box.** Sir Ababol / Papaya's text box, ported as is: it grows
+  line by line, types the text character by character, beeps, waits for a
+  key and repaints. Additions for Ramiro:
+  * The frame uses the Ramiro font's frame glyphs.
+  * A leading `"1".."9"` names the speaker, shown in a tab on top of the box
+    (2016 colours, set in `config.h`). The names are in `extern.h`.
   * `"0..."` is a room name, centered in the HUD.
-  * `"1".."9"` selects a speaker; the names are in `extern.h`.
-  * `< > =` print as `¡ ¿ Ñ`.
+  * The screen is updated before the box is drawn, so boxes shown on
+    entering a screen have the new screen behind them.
+  * No runtime character translation: the font has `, . ? !` and space in
+    slots 91–95, where msc4's decoder puts them, and `¡ ¿ Ñ` in the `< > =`
+    slots, so the script writes them as `< > =`.
 
 ## Changes to the engine
 
@@ -98,7 +107,7 @@ There are two changes, both in `dev/engine.h` and both only active with
 ## Things that differ from 2016 (on purpose)
 
 * **Physics.** Ramiro 4's, as requested.
-* **Text box.** Ramiro 4 style: speaker on the first line, double spaced.
+* **Text box.** Sir Ababol / Papaya's, with the 2016 speaker tab.
 * **Trap flag (R1).** Screen 29's trap used an undefined alias, which msc3
   read as flag 0. Visiting screens 6 to 8 reset flag 0, so the trap re-armed.
   It has its own flag now (18).

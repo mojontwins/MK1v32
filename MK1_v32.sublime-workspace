@@ -520,31 +520,12 @@
 	"buffers":
 	[
 		{
-			"contents": "#\tSituación\tCuándo\tFrecuencia\tCheril (a favor / en contra)\tViñeta\tVariaciones\n1\tSALIDA\tLos equipos salen al campo\t1 por partido\tNeutral\tSí\t1\n\n* Señoras y señores del público! {EQ} sale al campo aunque {RIVAL} aún no aparece. ¡Ah no! ¡Están ahí! Es que van vestidos del mismo color que el suelo.\n\n2\tINICIO\tSaque inicial y tras cada tanto\tPocas\tNeutral\tNo\t—\n\n* ¡El cubo de podewr se pone en juego!. Los jugadores ocupan sus puestos dando vorteretas.\n\n3\tFIN_PERIODO\tAcaba el período 1 o 2\t2 por partido\tSegún marcador\tSí\t1\n\n* ¡Y con esto acaba el período {PERIODO}! Es el momento de disfrutar de una actuación del imitador de Torrebruno.\n\n4\tINICIO_PERIODO\tEmpieza el período 2 o 3\t2 por partido\tNeutral\tNo\t—\n\n* Esperemos que en este nuevo período el espectáculo sea aún más dantesco. \n\n5\tFINAL\tSe acaba el tiempo del período 3\t1 por partido\tEuforia / Hundida\tSí\t3 (ganar, perder, empatar)\n\n* ¡Por fin se acaba esta masacre! El árbitro hace así con la mano y como no le han visto grita en checoslovaco.\n\n6\tNUEVE\tUn equipo llega a 9 y gana en el acto\tRara\tEuforia / Hundida\tSí\t2 (a favor, en contra)\n\n* Como el marcador sólo permite un dígito por equipo ¡El partido tiene que acabarse!\n\n7\tDISPUTA\tLos medios pelean por el cubo\tMuy frecuente\tNeutral / Aburrida\tNo\t—\n\n* {J1} y {J2} se disputan el cubo de podewr bailando un vals. ¡No sabemos cómo acabará esto, pero {J2} tiene las manos muy largas!\n\n8\tESCAPADA ★\tUn medio gana la carrera y sube\tMuy frecuente\tNeutral\tSí\t2–3\n\n* ¡A {J1} se le sale un pedo y con la confusión se escapa con el cubo de podewr! {J2} permanece en el suelo, tufado.\n\n9\tALCANZADO\tLo atrapan; el cubo sigue en el centro\tFrecuente\tNeutral\tNo\t—\n\n* Sin embargo {J2} realiza la maniobra de Jensen-Fenster y consigue recuperar el cubo... {J1} ni se ha dado cuenta.\n\n10\tMURO\tLa defensa rechaza el ataque en bloque\tFrecuente\tNeutral\tNo\t—\n\n* Todos los defensores del {EQ} se dan la mano y cantan \"Bravo por la música\". El cubo de podewr sale rebotado y vuelve al centro del terreno.\n\n11\tENCARA\tDelantero frente a defensa\tFrecuente\tNeutral\tSí\t2\n\n* {J1} Encara rugiendo en austriaco al denfesa estrella de {RIVAL}, {J2}, al que se le pone la carita blanca.\n\n12\tREGATE ★\tEl delantero se va, solo ante el portero\tMedia\tTensión\tSí\t2\n\n* {J1} hace una finta de lomo a {J2}, que trompieza con un pelúo, se da en la camolla, y se hace zangre. ¡{J1} se escapa! \n\n13\tENTRADA\tEl defensa corta; el ataque sigue\tFrecuente\tNeutral\tSí\t2\n\n* {J1} Detiene habilmente el ataque de {J2}, ¡pero {J2} sigue en sus trece!\n\n14\tMANO_A_MANO\tDelantero contra portero\tMedia\tTensión\tSí\t2–3\n\n* ¡Esto es un duelo de titanes! {J2} sale a por todas para evitar que {J1} anote.\n\n15\tGOL ★\tMarca\tPocas\tEuforia / Hundida (Sorpresa si es chiripa)\tSí\t3–4\n\n* {J1} empuja el cubo con el culo y consigue anotar! La grada se viene abajo, literalmente, al fallar la cinta aislante del pilar principal.\n\n16\tPARADA ★\tEl portero para, rechace corto\tMedia\tEuforia / Hundida\tSí\t2–3 (comparte con DESPEJE)\n\n* El guardián de {EQ} consigue detener el lanzamiento, aunque le da un poco asín y no consigue mandarla a Gelves. ¡El peligro no ha pasado!\n\n17\tDESPEJE\tEl portero para y despeja al centro\tMedia\tNeutral\tSí\t(comparte con PARADA)\n\n* El {J1} es un excelente guardian! De un peyejazo manda el cubo bien lejos. Detrás del cubo va un guante y el anillo de casada.\n\n18\tFALTA\tEntrada demasiado fuerte\tMedia\tNeutral / Indignada\tSí\t1–2\n\n* {J1} se ha excedido en su entrada: el bate tenía demasiados clavos. ¡Falta!\n\n19\tSANCION\tTarjeta o expulsión\tRara\tNeutral / Indignada\tNo\t—\n\n* El árbitro no está lo suficientemente beodo. {J1} debió haber contado con eso. ¡Ahora le han puesto de patitas en la calle con un negativo y un parte!\n\n20\tLESION\tUn jugador se lesiona\tRara\tNeutral / Indignada\tSí\t1–2\n\n* {J1} pisa raro y cae al foso pequeño del {RIVAL}, golpeándose con un señor que vendía arvellanas.\n\n21\tFUNDIDO\tUn jugador se queda sin fuerzas\tRara\tNeutral\tNo\t—\n\n* {J1} se ha desinflado del todo. No puede seguir, y se lo llevan arrastrándolo con un tractor.\n\n22\tSUBIDON / BAJON\tCambio fuerte de moral\tMedia\tEuforia / Hundida\tNo\t—\n\n* ¡{J1} se flipa sólo y le entran todas las emociones del Colacao! ¡Va a por todas!\n\n23\tEVENTO MOJONO\tSuceso absurdo con efecto en los stats\tRara\tS\n\n* ¡Oh, no! ¡Al {RIVAL} le han dado el premio Devuelgo al mejor equipo rival! Ahora van sobradísimos.",
+			"file": "/C/Users/na_th/AppData/Local/Temp/7zO401AB6CB/config.h",
 			"settings":
 			{
-				"buffer_size": 4332,
-				"line_ending": "Windows",
-				"name": "Find Results",
-				"scratch": true
-			}
-		},
-		{
-			"file": "/C/Users/na_th/Desktop/frases-ejemplo-podewr.md",
-			"settings":
-			{
-				"buffer_size": 7719,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"contents": "Hueco\tQué pone el motor\n{J1}\tApellido del protagonista de la acción\n{J2}\tApellido del rival directo (el que persigue, defiende o recibe la falta)\n{POR}\tApellido del portero implicado\n{EQ}\tNombre corto del equipo que hace la acción (máximo 12 caracteres)\n{RIVAL}\tNombre corto del otro equipo\n{PERIODO}\tNúmero de período (1, 2 o 3)\n{MARCADOR}\tResultado actual, p. ej. \"2-1\"",
-			"settings":
-			{
-				"buffer_size": 371,
-				"line_ending": "Windows",
-				"name": "Hueco\tQué pone el motor"
+				"buffer_size": 5359,
+				"encoding": "Western (Windows 1252)",
+				"line_ending": "Windows"
 			}
 		}
 	],
@@ -625,10 +606,41 @@
 	"expanded_folders":
 	[
 		"/D/Git/mk1v32",
-		"/D/Git/mk1v32/exp"
+		"/D/Git/mk1v32/src",
+		"/D/Git/mk1v32/src/show",
+		"/D/Git/mk1v32/src/utils"
 	],
 	"file_history":
 	[
+		"/C/Users/na_th/Desktop/diseno-manager-podewr.md",
+		"/D/Git/mk1v3.100/src/utils/aportador/README.md",
+		"/D/Git/mk1v3.100/src/utils/aportador/CMakeLists.txt",
+		"/D/Git/mk1v32/exp/greatesc/script/script.spt",
+		"/C/Users/na_th/Downloads/Telegram Desktop/fred.c",
+		"/C/Users/na_th/Desktop/mk1md/docs/BUILD.md",
+		"/D/Git/mk1v32/exp/ramiros/games/ramiro1/dev/extern.h",
+		"/D/Git/mk1v32/exp/greatesc/dev/config.h",
+		"/D/Git/mk1v32/src/dev/config.h",
+		"/D/Git/mk1v32/exp/greatesc/WALKTHROUGH.md",
+		"/D/Git/mk1v32/exp/greatesc/README.md",
+		"/D/Git/mk1v32/exp/ramiros/games/ramiro1/dev/engine.h",
+		"/D/Git/newspectrum/Rehash/key2time/dev/system/sprdefs.h",
+		"/D/Git/mk1v32/exp/yun/dev/speccy/sprites.h",
+		"/D/Git/mk1v32/exp/yun/dev/custom_flick.h",
+		"/D/Git/mk1v32/exp/ramiros/addons/ramiro.h",
+		"/D/Git/mk1v32/msc4/msc4.bas",
+		"/D/Git/newspectrum/Rehash/key2time/dev/my/_k2t_ext_helpers.h",
+		"/D/Temp/Maritrini/Maritrini/dev/Speccy/MK2/Key To Time/tech/3/scripting.txt",
+		"/D/Git/mk1/examples/goku_mal/mus/WYZproPlay47aZXc.ASM",
+		"/C/Users/na_th/AppData/Local/Temp/7zO0E8410BF/config.h",
+		"/C/Users/na_th/Desktop/frases-ejemplo-podewr.md",
+		"/D/Git/mk1v32/exp/yun/dev/speccy/player.h",
+		"/D/Git/Agnes-MD/build/cheril/cheril.md",
+		"/D/Temp/Maritrini/Maritrini/dev/Speccy/MK2/Hanna/dev/hanna.c",
+		"/D/Temp/Maritrini/Maritrini/dev/Speccy/MK2/Hanna/ideas.txt",
+		"/D/Git/mk1v32/exp/yun/tools/check_tiles.py",
+		"/D/Git/newspectrum/Rehash/key2time/diario.md",
+		"/C/Users/na_th/Desktop/manager-respuesta.txt",
 		"/D/Git/mk1v32/exp/yun/yun_a/dev/custom_sprite_cells.h",
 		"/D/Git/mk1v32/exp/yun/yun_a/dev/custom_flick.h",
 		"/C/Users/na_th/AppData/Local/Temp/7zO04BA673A/nn_levels.h",
@@ -649,7 +661,6 @@
 		"/D/Git/mk1v32/exp/ninnin/dev/speccy.h",
 		"/D/Git/mk1v32/exp/ninnin/dev/cpc.h",
 		"/C/Users/na_th/Desktop/manager.txt",
-		"/C/Users/na_th/Desktop/manager-respuesta.txt",
 		"/D/Git/mk1v32/exp/mk1v32-all.patch",
 		"/C/Users/na_th/AppData/Local/Temp/7zO43ECACF6/enemies.h",
 		"/C/Users/na_th/AppData/Local/Temp/7zO43EDBFEB/main.c",
@@ -728,35 +739,7 @@
 		"/C/Users/jcastano/Downloads/instrucciones (3).txt",
 		"/C/Users/jcastano/Downloads/password.php",
 		"/C/Users/jcastano/Downloads/pepsi2.bas",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/program/include/rcmail.php",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/index.php",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/program/lib/Roundcube/rcube_sandetel.php",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/program/lib/Roundcube/rcube_plugin_api.php",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/plugins/sandetel_login/sandetel_login.php",
-		"/D/Proyectos/2023/20230208 - Fix acceso a Webmail mediante SSOWeb de usuarios desautorizados/instrucciones.txt",
-		"/D/Proyectos/2022/20220916a - Reserva de Recursos 1.27.0.0/instrucciones.txt",
-		"/D/cosas/pepsi/pepsi2.bas",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/program/include/rcmail_output_html.php",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/program/js/app.js",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/plugins/_deactivated/markasjunk/markasjunk.php",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/skins/larry_sandetel/templates/login.html",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/program/include/iniset.php",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/simplesamlphp/lib/SimpleSAML/Memcache.php",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/plugins/consigna_attachments/consigna_attachments.js",
-		"/D/Proyectos/2022/20221214a - Desactivar rc_smime en Webmail/instrucciones.txt",
-		"/D/cosas/CPCbasic3/test1.bas",
-		"/D/Proyectos/remote/desowncl02/consultas_usuarios.md",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/simplesamlphp/config/authsources.php",
-		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/simplesamlphp/config/config.php",
-		"/D/Proyectos/2023/20230132 - Reserva de Recursos v1.31.0.0 - Migración organismos Sync/instrucciones.txt",
-		"/C/Users/jcastano/Downloads/oc_accounts.csv",
-		"/D/Proyectos/2023/20230132 - Reserva de Recursos v1.31.0.0 - Migración organismos Sync/act-rr--20230102a/tpl/login.tpl",
-		"/D/git/nes_work/GoddessR/utils/colsmapper.bas",
-		"/C/Users/jcastano/Desktop/[SPAM]Correo marcado como basura que no lo es - Sonia Maria Torres Llanera (sonia.torres@juntadeandalucia.es) - 2023-01-31 0948.eml",
-		"/C/Users/jcastano/AppData/Local/Temp/7zO4F08B214/Nota sobre seriales animados.txt",
-		"/C/Users/jcastano/Downloads/pepsi.bas",
-		"/D/cosas/CPCbasic3/pepsi1.bas",
-		"/D/Proyectos/2022/20221125a - Webmail - arreglo adjuntos/rcube.php"
+		"/D/Proyectos/remote/desccobuz05/correo.juntadeandalucia.es/program/include/rcmail.php"
 	],
 	"find":
 	{
@@ -767,6 +750,12 @@
 		"height": 134.0,
 		"where_history":
 		[
+			"D:\\Git\\mk1v32\\exp\\ramiros",
+			"D:\\Git\\mk1v32\\exp\\ramiros\\games",
+			"D:\\Git\\mk1v32\\exp\\ramiros",
+			"D:\\Git\\mk1v32\\exp\\ramiros\\games\\ramiro1",
+			"D:\\Git\\mk1v32\\exp\\ramiros\\games\\ramiro1\\dev",
+			"D:\\Git\\mk1v32\\exp\\yun\\dev",
 			"D:\\Git\\mk1v32"
 		]
 	},
@@ -775,6 +764,16 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			", TRANSPARENT)",
+			"storage",
+			"opant",
+			"textbox",
+			"rm_tb_skip",
+			"rm_tb_clear",
+			"ramiro_textbox_helpers",
+			"text box",
+			"player_custom_move",
+			"sprite_1_a",
 			"void saca_a_todo_el_mundo_de_aqui (void) {",
 			"m1 lut",
 			"mundo_de_aqui"
@@ -785,6 +784,7 @@
 		"regex": false,
 		"replace_history":
 		[
+			")"
 		],
 		"reverse": false,
 		"show_context": true,
@@ -795,62 +795,16 @@
 	"groups":
 	[
 		{
-			"selected": 1,
+			"selected": 0,
 			"sheets":
 			[
 				{
 					"buffer": 0,
+					"file": "/C/Users/na_th/AppData/Local/Temp/7zO401AB6CB/config.h",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 4332,
-						"regions":
-						{
-							"match":
-							{
-								"flags": 112,
-								"regions":
-								[
-									[
-										4332,
-										4332
-									]
-								],
-								"scope": ""
-							}
-						},
-						"selection":
-						[
-							[
-								0,
-								4332
-							]
-						],
-						"settings":
-						{
-							"detect_indentation": false,
-							"line_numbers": false,
-							"output_tag": 1,
-							"result_base_dir": "",
-							"result_file_regex": "^([^ \t].*):$",
-							"result_line_regex": "^ +([0-9]+):",
-							"scroll_past_end": true,
-							"syntax": "Packages/Default/Find Results.hidden-tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 1,
-					"type": "text"
-				},
-				{
-					"buffer": 1,
-					"file": "/C/Users/na_th/Desktop/frases-ejemplo-podewr.md",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 7719,
+						"buffer_size": 5359,
 						"regions":
 						{
 						},
@@ -863,10 +817,10 @@
 						],
 						"settings":
 						{
-							"syntax": "Packages/Markdown/Markdown.sublime-syntax"
+							"syntax": "Packages/C Improved/C Improved.tmLanguage"
 						},
 						"translation.x": 0.0,
-						"translation.y": 1596.0,
+						"translation.y": 342.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
@@ -875,37 +829,8 @@
 			]
 		},
 		{
-			"selected": 0,
 			"sheets":
 			[
-				{
-					"buffer": 2,
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 371,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								371,
-								371
-							]
-						],
-						"settings":
-						{
-							"auto_name": "Hueco\tQué pone el motor",
-							"syntax": "Packages/Text/Plain text.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 2,
-					"type": "text"
-				}
 			]
 		}
 	],
@@ -937,7 +862,7 @@
 		"cols":
 		[
 			0.0,
-			0.5,
+			0.621647509579,
 			1.0
 		],
 		"rows":

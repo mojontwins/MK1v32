@@ -7,8 +7,9 @@
 # use, and the speakers table for extern.h.
 #   lines 1-30: room names -> "0NAME"
 #   others "SPEAKER%TEXT" -> "kTEXT", k = 1-9 speaker index
-# Font slots: ] = ¡, [ = ¿, \ = Ñ; msc4 can't encode those, so they are
-# written as < > = (addons/ramiro.h translates them back).
+# The 2016 texts have ¡ ¿ Ñ as ] [ \ (their font slots). msc4 can't encode
+# those, so they are written as < > =; the game's font has ¡ ¿ Ñ in the
+# < > = slots (and , . ? ! space in 91-95, where msc4's decoder puts them).
 import sys
 
 def conv(t):

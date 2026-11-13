@@ -7,11 +7,12 @@
 //   EXTERN 9, n          BeepFX sound n
 //   EXTERN 10..13, v     fire zone x1, y1, x2, y2 (13 switches it on)
 //   EXTERN 14, 0         fire zone off
-//   EXTERN 15, 0         REENTER
 //   EXTERN 16, 0         REDRAW
 //
-// TEXT BOX "0..."  room name in the HUD; "N..." (N = 1-9) dialog said by
-// ramiro_speakers [N - 1]; anything else, plain dialog.
+// TEXT BOX (Sir Ababol / Papaya's box, in addons/ramiro.h): "0..." room
+// name in the HUD; "N..." (N = 1-9) dialog said by ramiro_speakers [N - 1]
+// (shown in the box's tab); anything else, plain dialog.
+// REENTER is done in the script with OPANT = 99.
 
 void do_extern_action (unsigned char n, unsigned char m) {
 	// Same parameters, same stack frame: just jump.

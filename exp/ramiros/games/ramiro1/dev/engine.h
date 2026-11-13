@@ -770,1197 +770,1197 @@ void move (void) {
 		// Added for the Ramiro ports: addons/ramiro.h implements it.
 		player_custom_move ();
 	#else
-		// =================================================
-		//                     Vertical
-		// =================================================
-
-		// Modify Velocity
-
-		#ifdef PLAYER_CUSTOM_VENG
-			player_custom_veng ();
-		#elif defined PLAYER_MOGGY_STYLE
-			#asm
-					ld  a, (_pad0)
-					ld  c, a
-
-				// If neither UP nor DOWN pressed, apply RX
-
-					// if ((pad0 & sp_UP) && (pad0 & sp_DOWN)) {
-					and sp_UP
-					jr  z, m_vert_kp_up_or_down_p
-
-					ld  a, c 
-					and sp_DOWN
-					jr  z, m_vert_kp_up_or_down_p
-
-					// Not up or down pressed, apply vertical RX
-					// Depending on the current vy sign, add or subtract:
-
-					// if (player.vy > 0)
-					ld  hl, (_player + 8) 			// player.vy 
-
-					// If player.vy is zero do nothing!
-					ld  a, h 
-					or  l 
-					jr  z, m_vert_kp_done
-
-					bit 7, h 						// bit 7 = 0 positive, 1 negative
-
-					jr  nz, m_vert_kp_rx_negative
-
-				.m_vert_kp_rx_positive
-					ld  de, -PLAYER_RX
-					add hl, de 
-
-					// Changed sign?
-					bit 7, h
-					jr  z, m_vert_kp_vy_write
-
-					ld  hl, 0
-					jr  m_vert_kp_vy_write
-
-				.m_vert_kp_rx_negative
-					ld  de, PLAYER_RX
-					add hl, de 
-
-					// Changed sign?
-					bit 7, h
-					jr  nz, m_vert_kp_vy_write
-
-					ld  hl, 0
-					jr  m_vert_kp_vy_write
-
-				.m_vert_kp_up_or_down_p
-
-				// UP or DOWN pressed, which?
-
-					ld  a, c
-					and sp_UP
-					jr  nz, m_vert_kp_up_done
-
-				.m_vert_kp_up_do
-					ld  a, THRUST_UP
-					ld  (_thrusting), a
-
-					ld  de, -PLAYER_AX
-					ld  hl, (_player + 8) 			// player.vy 
-					add hl, de 
-
-					// Limit, never get below -PLAYER_MAX_VX
-					// if (player.vy < -PLAYER_MAX_VX) player.vy = -PLAYER_MAX_VX;
-					// if (-PLAYER_MAX_VX > player.vy) ...
-					ld  de, -PLAYER_MAX_VX
-					call l_gt 						// C if DE > HL
-					jr  nc, m_vert_kp_up_facing
-
-					ex  de, hl 						// HL = -PLAYER_MAX_VX
-
-				.m_vert_kp_up_facing
-				#ifndef FAKE_SIDE_VIEW
-						ld  a, GENITAL_FACING_UP
-						ld  (_player + 22), a 			// facing
-				#endif
-					jr  m_vert_kp_vy_write
-
-				.m_vert_kp_up_done
-
-					ld  a, c
-					and sp_DOWN
-					jr  nz, m_vert_kp_down_done
-
-				.m_vert_kp_down_do
-					ld  a, THRUST_DOWN
-					ld  (_thrusting), a
-
-					ld  de, PLAYER_AX
-					ld  hl, (_player + 8) 			// player.vy 
-					add hl, de 
-
-					// Limit, never get over PLAYER_MAX_VX
-					// if (player.vy > PLAYER_MAX_VX) player.vy = PLAYER_MAX_VX;
-					// if (PLAYER_MAX_VX < player.vy) ...
-					ld  de, PLAYER_MAX_VX
-					call l_lt 						// C if DE > HL
-					jr  nc, m_vert_kp_down_facing
-
-					ex  de, hl 						// HL = PLAYER_MAX_VX
-
-				.m_vert_kp_down_facing
-				#ifndef FAKE_SIDE_VIEW
-						ld  a, GENITAL_FACING_DOWN
-						ld  (_player + 22), a 			// facing
-				#endif
-		
-				.m_vert_kp_down_done
-
-				.m_vert_kp_vy_write
-					ld  (_player + 8), hl 			// player.vy
-
-				.m_vert_kp_done
-			#endasm
-		#else
-			// Early: ladder detection
-
-			#ifdef PLAYER_HAS_LADDERS 
-				// cx1 = (gpx + 4) >> 4; cx2 = (gpx + 12) >> 4;
-				// cy1 = (gpy + 8) >> 4; cy2 = (gpy + 16) >> 4;
-				// ATTR en las cuatro esquinas debe ser & 16
-				// Detectamos con salida rápida (en cuanto encontramos punto)
-
-				#asm
-					.m_vert_ladder_detect
-						xor a 
-						ld  (player + 47), a 			// player.hit_ladder = 0
-
-						ld  a, (_gpx)
-						add 4
-						srl a
-						srl a
-						srl a
-						srl a
-						ld  (_cx1), a 
-						ld  a, (_gpx)
-						add 11 
-						srl a 
-						srl a 
-						srl a 
-						srl a 
-						ld  (_cx2), a
-
-					// Top edge
-						// A = cx2
-						ld  c, a 			// C = cx2
-						ld  a, (_gpy)
-						add 8 
-						srl a 
-						srl a 
-						srl a 
-						srl a 				// A = cy1
-						ld  (_cy1), a
-						call _attr2 
-						xor a 
-						or  l 
-						jr  nz, m_vert_set_ladder 
-
-						ld  a, (_cx1)
-						ld  c, a 
-						ld  a, (_cy1)
-						call _attr2 
-						xor a 
-						or  l
-						jr  nz, m_vert_set_ladder
-
-					// Bottom edge
-						ld  a, (_cx1)
-						ld  c, a 
-						ld  a, (_gpy)
-						add 16 
-						srl a 
-						srl a 
-						srl a 
-						srl a 
-						ld  (_cy2), a 
-						call _attr2
-						xor a 
-						or  l
-						jr  nz, m_vert_set_ladder
-
-						ld  a, (_cx2)
-						ld  c, a 
-						ld  a, (_cy2)
-						call _attr2 
-						xor a 
-						or  l
-
-						jr  z,  m_vert_set_ladder_done
-
-					.m_vert_set_ladder
-						ld  a, 1
-						ld  (_player + 47), a 			// player.hit_ladder = 0
-
-						jr  m_vert_set_ladder_done_done
-
-					.m_vert_set_ladder_done
-						ld  (_player + 48), a 			// player.on_ladder
-
-					.m_vert_set_ladder_done_done
-			
-					// Skip gravity if on ladder.
-
-						ld  a, (_player + 48) 				// player.on_ladder
-						or  a 
-						jr  nz, m_vert_gravity_skip
-				#endasm
-			#endif
-
-			// Apply gravity
-
-			#asm
-
-				.m_vert_gravity_do
-					ld  hl, (_player + 8) 			// player.vy
-					ld  de, PLAYER_G 
-					add hl, de 
-
-					ld  de, PLAYER_MAX_VY_CAYENDO 
-
-					// if PLAYER_MAX_VY_CAYENDO < player.vy
-					call l_lt 						// C set if DE < HL 
-					jr  nc, m_vert_gravity_done
-
-					ex  de, hl 						// HL = PLAYER_MAX_VY_CAYENDO
-
-				.m_vert_gravity_done
-					ld  (_player + 8), hl 
-
-				.m_vert_gravity_skip
-			#endasm 
-
-			#ifdef PLAYER_HAS_JUMP
-				// Make jump
-			
-				#asm
-
-						ld  a, (_pad_this_frame)
-
-						#ifdef PLAYER_CAN_FIRE
-							and sp_UP
-							jr  nz, m_jump_start_done
-						#else
-							and #(sp_UP | sp_FIRE)
-							cp  #(sp_UP | sp_FIRE)
-							jr  z, m_jump_start_done
-						#endif
-
-						ld  a, (_player + 19)		// player.saltando 
-						or  a
-						jr  nz, m_jump_start_done 
-
-						ld  a, (_player + 26) 		// player.possee 
-						ld  c, a 
-						ld  a, (_player + 25) 		// player.gotten 
-						or  c
-					#ifdef PLAYER_HAS_LADDERS
-							ld  c, a 
-							ld  a, (_player + 48) 		// player.on_ladder
-							or  c 
-					#endif
-						jr  z, m_jump_start_done 
-
-						ld  (_player + 19), a  		// player.saltando
-						xor a 
-						ld  (_player + 14), a  		// player.cont_salto
-
-						ld  l, 3 
-						call _peta_el_beeper
-					.m_jump_start_done
-
-						ld  a, (_pad0)
-						#ifdef PLAYER_CAN_FIRE
-							and sp_UP
-							jr  nz, m_jump_perform_not_pressing
-						#else
-							and #(sp_UP | sp_FIRE)
-							cp  #(sp_UP | sp_FIRE)
-							jr  z, m_jump_perform_not_pressing
-						#endif
-
-						ld  a, (_player + 19) 		// player.saltando
-						or  a 
-						jr  z, m_jump_perform_done
-
-						// player.vy -= (PLAYER_VY_INICIAL_SALTO + PLAYER_INCR_SALTO - (player.cont_salto >> 1));
-						ld  a, (_player + 14) 		// player.cont_salto
-						srl a
-						ld  d, 0 
-						ld  e, a 
-						ld  hl, PLAYER_VY_INICIAL_SALTO + PLAYER_INCR_SALTO
-						sbc hl, de 
-						ex  de, hl 
-						ld  hl, (_player + 8) 		// player.vy 
-						sbc hl, de 
-
-						// if (player.vy < -PLAYER_MAX_VY_SALTANDO) player.vy = -PLAYER_MAX_VY_SALTANDO;
-						// if (-PLAYER_MAX_VY_SALTANDO > player.vy) ...
-						ld  de, -PLAYER_MAX_VY_SALTANDO
-						call l_gt 
-						jr  nc, m_jump_perform_write_vy
-
-						ex  de, hl 					// HL = -PLAYER_MAX_VY_SALTANDO
-
-					.m_jump_perform_write_vy
-						ld  (_player + 8), hl 		// player.vy 
-
-						ld  a, (_player + 14) 		// player.cont_salto
-						inc a 
-						ld  (_player + 14), a 
-						cp  8
-						jr  c, m_jump_perform_done 
-
-					.m_jump_perform_not_pressing
-						xor a 
-						ld  (_player + 19), a 		// player.saltando
-
-					.m_jump_perform_done
-
-				#endasm
-
-
-			#elif defined PLAYER_HAS_JETPAC
-				// Make jetpac
-			#endif
-
-			#ifdef JUMP_DOWN_PLATFORM
-				#asm
-						ld  a, (_pad0)
-						and sp_DOWN
-						ld  a, 0
-						jr  nz, m_vert_jump_down_done
-
-						ld  hl, PLAYER_VY_INICIAL_SALTO
-						ld  (_player + 8), hl 		// player.vy
-
-						inc a 
-
-					.m_vert_jump_down_done
-						ld  (_disable_collide_platform), a
-				#endasm
-			#endif
-
-			// Ladders!
-
-			#ifdef PLAYER_HAS_LADDERS
-					ld  a, (_player + 48) 			// player.on_ladder 
-					or  a 
-					jr  nz, m_vert_ladders_on_ladder
-
-					// Not on ladder. If !hit_ladder -> done
-					ld  a, (_player + 47) 			// player.hit_ladder
-					or  a 
-					jr  z, m_vert_ladders_done
-
-					// Hop on a ladder? if UP | DOWN
-					// pad0 & (UP | DOWN) != UP | DOWN
-
-					ld  a, (_pad0)
-					and sp_UP|sp_DOWN 
-					cp  sp_UP|sp_DOWN
-					jr  z, m_vert_ladders_done
-
-					ld  a, 1
-					ld  (_player + 48), a 			// player.on_ladder 
-
-				.m_vert_ladders_on_ladder
-					// UP|DOWN move fixed amount, no acceleration
-					
-					ld  a, (_pad0)
-					and sp_UP
-					jr  nz, m_vert_ladders_on_ladder_up_done
-
-					ld  hl, -PLAYER_LADDER_VX 
-					ld  (player + 8), hl
-
-				.m_vert_ladders_on_ladder_up_done
-
-					ld  a, (_pad0)
-					and sp_DOWN
-					jr  nz, m_vert_ladders_done
-
-					ld  hl, PLAYER_LADDER_VX 
-					ld  (player + 8), hl
-
-
-				.m_vert_ladders_done
-			#endif
-		#endif 
-
-		// Vertical thrust: apply vy to y
-
+	// =================================================
+	//                     Vertical
+	// =================================================
+
+	// Modify Velocity
+
+	#ifdef PLAYER_CUSTOM_VENG
+		player_custom_veng ();
+	#elif defined PLAYER_MOGGY_STYLE
 		#asm
-				ld  hl, (_player + 8) 				// player.vy
-				ex  de, hl  						// DE = player.vy
-
-				ld  hl, (_player + 2)				// player.y
-
-				add hl, de 							// HL = player.y + player.vy
-
-				bit 7, h 			
-				jr  z, m_vert_thrust_notneg
-
-				// HL is negative, crop to 0:
-				ld  hl, 0
-				jr  m_vert_thurst_write
-
-			.m_vert_thrust_notneg
-
-				// if (player.y > 144*64) player.y = 144*64;
-				// if (144*64 < player.y) ...
-				ld  de, 144*64
-				call l_lt  							// c if DE < HL
-				jr  nc, m_vert_thurst_write
-
-				ex  de, hl 							// HL = 144 * 64
-
-			.m_vert_thurst_write
-				ld  (_player + 2), hl 				// player.y
-				call HLshr6_A
-				ld  (_gpy), a
-
-			#ifdef JUMP_DOWN_PLATFORM
-					and 15
-					cp  8
-					jr  c, m_vert_jd_disable_done
-
-					xor a 
-					ld  (_disable_collide_platform), a
-
-				.m_vert_jd_disable_done
-			#endif
-		#endasm
-
-		// Collide vertical.
-		// Includes evil tile detection, open lock & push boxes
-
-		#asm
-				// cx1 = (gpx + 4) >> 4; cx2 = (gpx + 11) >> 4;
-				ld  a, (_gpx)
+				ld  a, (_pad0)
 				ld  c, a
-				add 4
-				srl a 
-				srl a 
-				srl a 
-				srl a
-				ld  (_cx1), a
-				ld  a, c
-				add 11
-				srl a 
-				srl a 
-				srl a 
-				srl a
-				ld  (_cx2), a
 
-				ld  hl, (_ptgmy)
-				ex  de, hl 
-				ld  hl, (_player + 8) 				// player.vy
-				add hl, de
-				ld  (_pvy_total), hl
+			// If neither UP nor DOWN pressed, apply RX
 
-				// If no vertical speed, do nothing at this stage
+				// if ((pad0 & sp_UP) && (pad0 & sp_DOWN)) {
+				and sp_UP
+				jr  z, m_vert_kp_up_or_down_p
 
+				ld  a, c 
+				and sp_DOWN
+				jr  z, m_vert_kp_up_or_down_p
+
+				// Not up or down pressed, apply vertical RX
+				// Depending on the current vy sign, add or subtract:
+
+				// if (player.vy > 0)
+				ld  hl, (_player + 8) 			// player.vy 
+
+				// If player.vy is zero do nothing!
 				ld  a, h 
-				or  l
-				jp  z, m_vert_coll_done
+				or  l 
+				jr  z, m_vert_kp_done
 
-			.m_vert_coll_do
+				bit 7, h 						// bit 7 = 0 positive, 1 negative
 
-				// Check bit 7 of HL to see if pvy_total is negative or positive
+				jr  nz, m_vert_kp_rx_negative
 
+			.m_vert_kp_rx_positive
+				ld  de, -PLAYER_RX
+				add hl, de 
+
+				// Changed sign?
 				bit 7, h
-				jr nz, m_vert_coll_up
+				jr  z, m_vert_kp_vy_write
 
-			.m_vert_coll_down
+				ld  hl, 0
+				jr  m_vert_kp_vy_write
 
-				// Collide down
+			.m_vert_kp_rx_negative
+				ld  de, PLAYER_RX
+				add hl, de 
 
-				ld  a, (_gpy)
-				add 15
-				srl a
-				srl a
-				srl a 
-				srl a 
-				ld  (_cy1), a 
-				ld  (_cy2), a
+				// Changed sign?
+				bit 7, h
+				jr  nz, m_vert_kp_vy_write
 
-				call _cm_two_points 
+				ld  hl, 0
+				jr  m_vert_kp_vy_write
 
-				// Collision down check is simpler for genital or if you don't have 8s on 4s:
+			.m_vert_kp_up_or_down_p
 
-			#if defined PLAYER_MOGGY_STYLE || defined SIMPLE_PLATFORMS || defined PLAYER_CUSTOM_VENG
-					ld  c, 12
+			// UP or DOWN pressed, which?
 
-				#ifdef JUMP_DOWN_PLATFORM
-						ld  a, (_disable_collide_platform)
-						or  a 
-						jr  z, jump_down_platform_done
-						ld  c, 8
-					.jump_down_platform_done					
-				#endif
+				ld  a, c
+				and sp_UP
+				jr  nz, m_vert_kp_up_done
 
-					// (at1 & 12) || (at2 & 12)
-					ld  a, (_at1)
-					and c
-					jr  nz, m_vert_coll_down_adjust
+			.m_vert_kp_up_do
+				ld  a, THRUST_UP
+				ld  (_thrusting), a
 
-					ld  a, (_at2)
-					and c
-					jp  z, m_vert_coll_checks_done
-			#else
-					// 	(at1 & 8) || (at2 & 8) || (       ch3
-					// 		((gpy - 1) & 15) < 8 && ( 	  ch2
-					// 			(at1 & 4) || (at2 & 4)    ch1
-					// 		)
-					// 	)
+				ld  de, -PLAYER_AX
+				ld  hl, (_player + 8) 			// player.vy 
+				add hl, de 
 
-					#ifdef AVOID_PLATFORM_HOP
-						ld  hl, (_player + 8) 				// player.vy
-						call HLshr6_A
-						inc a 
-						ld  c, a 							// C = VY in pixels + 1
-					#endif
+				// Limit, never get below -PLAYER_MAX_VX
+				// if (player.vy < -PLAYER_MAX_VX) player.vy = -PLAYER_MAX_VX;
+				// if (-PLAYER_MAX_VX > player.vy) ...
+				ld  de, -PLAYER_MAX_VX
+				call l_gt 						// C if DE > HL
+				jr  nc, m_vert_kp_up_facing
 
-					// We have an OR outside, discard easier conditions first
-					ld  a, (_at1)
-					and 8 
-					jr  nz, m_vert_coll_down_adjust
+				ex  de, hl 						// HL = -PLAYER_MAX_VX
 
-					ld  a, (_at2)
-					and 8 
-					jr  nz, m_vert_coll_down_adjust
+			.m_vert_kp_up_facing
+			#ifndef FAKE_SIDE_VIEW
+					ld  a, GENITAL_FACING_UP
+					ld  (_player + 22), a 			// facing
+			#endif
+				jr  m_vert_kp_vy_write
 
-					// Gotten here, we have to check the big condition.
-					// We have an AND, so BOTH sides must be true
-				
-				#ifdef JUMP_DOWN_PLATFORM
-						ld  a, (_disable_collide_platform)
-						or  a 
-						jr  nz, m_vert_coll_checks_done
-				#endif
+			.m_vert_kp_up_done
 
-					ld  a, (_at1)
-					and 4
-					jr  nz, m_vert_coll_down_ch2 		// ch1 is true, check ch2
+				ld  a, c
+				and sp_DOWN
+				jr  nz, m_vert_kp_down_done
 
-					ld  a, (_at2)
-					and 4
-					jp  z, m_vert_coll_checks_done 		// ch1 is false, so ch2 is false.
+			.m_vert_kp_down_do
+				ld  a, THRUST_DOWN
+				ld  (_thrusting), a
 
-				.m_vert_coll_down_ch2
+				ld  de, PLAYER_AX
+				ld  hl, (_player + 8) 			// player.vy 
+				add hl, de 
+
+				// Limit, never get over PLAYER_MAX_VX
+				// if (player.vy > PLAYER_MAX_VX) player.vy = PLAYER_MAX_VX;
+				// if (PLAYER_MAX_VX < player.vy) ...
+				ld  de, PLAYER_MAX_VX
+				call l_lt 						// C if DE > HL
+				jr  nc, m_vert_kp_down_facing
+
+				ex  de, hl 						// HL = PLAYER_MAX_VX
+
+			.m_vert_kp_down_facing
+			#ifndef FAKE_SIDE_VIEW
+					ld  a, GENITAL_FACING_DOWN
+					ld  (_player + 22), a 			// facing
+			#endif
+	
+			.m_vert_kp_down_done
+
+			.m_vert_kp_vy_write
+				ld  (_player + 8), hl 			// player.vy
+
+			.m_vert_kp_done
+		#endasm
+	#else
+		// Early: ladder detection
+
+		#ifdef PLAYER_HAS_LADDERS 
+			// cx1 = (gpx + 4) >> 4; cx2 = (gpx + 12) >> 4;
+			// cy1 = (gpy + 8) >> 4; cy2 = (gpy + 16) >> 4;
+			// ATTR en las cuatro esquinas debe ser & 16
+			// Detectamos con salida rápida (en cuanto encontramos punto)
+
+			#asm
+				.m_vert_ladder_detect
+					xor a 
+					ld  (player + 47), a 			// player.hit_ladder = 0
+
+					ld  a, (_gpx)
+					add 4
+					srl a
+					srl a
+					srl a
+					srl a
+					ld  (_cx1), a 
+					ld  a, (_gpx)
+					add 11 
+					srl a 
+					srl a 
+					srl a 
+					srl a 
+					ld  (_cx2), a
+
+				// Top edge
+					// A = cx2
+					ld  c, a 			// C = cx2
 					ld  a, (_gpy)
-					dec a 
-					and 15
-					#ifdef AVOID_PLATFORM_HOP
-						cp  c  // was: 8
+					add 8 
+					srl a 
+					srl a 
+					srl a 
+					srl a 				// A = cy1
+					ld  (_cy1), a
+					call _attr2 
+					xor a 
+					or  l 
+					jr  nz, m_vert_set_ladder 
+
+					ld  a, (_cx1)
+					ld  c, a 
+					ld  a, (_cy1)
+					call _attr2 
+					xor a 
+					or  l
+					jr  nz, m_vert_set_ladder
+
+				// Bottom edge
+					ld  a, (_cx1)
+					ld  c, a 
+					ld  a, (_gpy)
+					add 16 
+					srl a 
+					srl a 
+					srl a 
+					srl a 
+					ld  (_cy2), a 
+					call _attr2
+					xor a 
+					or  l
+					jr  nz, m_vert_set_ladder
+
+					ld  a, (_cx2)
+					ld  c, a 
+					ld  a, (_cy2)
+					call _attr2 
+					xor a 
+					or  l
+
+					jr  z,  m_vert_set_ladder_done
+
+				.m_vert_set_ladder
+					ld  a, 1
+					ld  (_player + 47), a 			// player.hit_ladder = 0
+
+					jr  m_vert_set_ladder_done_done
+
+				.m_vert_set_ladder_done
+					ld  (_player + 48), a 			// player.on_ladder
+
+				.m_vert_set_ladder_done_done
+		
+				// Skip gravity if on ladder.
+
+					ld  a, (_player + 48) 				// player.on_ladder
+					or  a 
+					jr  nz, m_vert_gravity_skip
+			#endasm
+		#endif
+
+		// Apply gravity
+
+		#asm
+
+			.m_vert_gravity_do
+				ld  hl, (_player + 8) 			// player.vy
+				ld  de, PLAYER_G 
+				add hl, de 
+
+				ld  de, PLAYER_MAX_VY_CAYENDO 
+
+				// if PLAYER_MAX_VY_CAYENDO < player.vy
+				call l_lt 						// C set if DE < HL 
+				jr  nc, m_vert_gravity_done
+
+				ex  de, hl 						// HL = PLAYER_MAX_VY_CAYENDO
+
+			.m_vert_gravity_done
+				ld  (_player + 8), hl 
+
+			.m_vert_gravity_skip
+		#endasm 
+
+		#ifdef PLAYER_HAS_JUMP
+			// Make jump
+		
+			#asm
+
+					ld  a, (_pad_this_frame)
+
+					#ifdef PLAYER_CAN_FIRE
+						and sp_UP
+						jr  nz, m_jump_start_done
 					#else
-						cp  8
+						and #(sp_UP | sp_FIRE)
+						cp  #(sp_UP | sp_FIRE)
+						jr  z, m_jump_start_done
 					#endif
-					jr  nc, m_vert_coll_checks_done		// Everything failed!
+
+					ld  a, (_player + 19)		// player.saltando 
+					or  a
+					jr  nz, m_jump_start_done 
+
+					ld  a, (_player + 26) 		// player.possee 
+					ld  c, a 
+					ld  a, (_player + 25) 		// player.gotten 
+					or  c
+				#ifdef PLAYER_HAS_LADDERS
+						ld  c, a 
+						ld  a, (_player + 48) 		// player.on_ladder
+						or  c 
+				#endif
+					jr  z, m_jump_start_done 
+
+					ld  (_player + 19), a  		// player.saltando
+					xor a 
+					ld  (_player + 14), a  		// player.cont_salto
+
+					ld  l, 3 
+					call _peta_el_beeper
+				.m_jump_start_done
+
+					ld  a, (_pad0)
+					#ifdef PLAYER_CAN_FIRE
+						and sp_UP
+						jr  nz, m_jump_perform_not_pressing
+					#else
+						and #(sp_UP | sp_FIRE)
+						cp  #(sp_UP | sp_FIRE)
+						jr  z, m_jump_perform_not_pressing
+					#endif
+
+					ld  a, (_player + 19) 		// player.saltando
+					or  a 
+					jr  z, m_jump_perform_done
+
+					// player.vy -= (PLAYER_VY_INICIAL_SALTO + PLAYER_INCR_SALTO - (player.cont_salto >> 1));
+					ld  a, (_player + 14) 		// player.cont_salto
+					srl a
+					ld  d, 0 
+					ld  e, a 
+					ld  hl, PLAYER_VY_INICIAL_SALTO + PLAYER_INCR_SALTO
+					sbc hl, de 
+					ex  de, hl 
+					ld  hl, (_player + 8) 		// player.vy 
+					sbc hl, de 
+
+					// if (player.vy < -PLAYER_MAX_VY_SALTANDO) player.vy = -PLAYER_MAX_VY_SALTANDO;
+					// if (-PLAYER_MAX_VY_SALTANDO > player.vy) ...
+					ld  de, -PLAYER_MAX_VY_SALTANDO
+					call l_gt 
+					jr  nc, m_jump_perform_write_vy
+
+					ex  de, hl 					// HL = -PLAYER_MAX_VY_SALTANDO
+
+				.m_jump_perform_write_vy
+					ld  (_player + 8), hl 		// player.vy 
+
+					ld  a, (_player + 14) 		// player.cont_salto
+					inc a 
+					ld  (_player + 14), a 
+					cp  8
+					jr  c, m_jump_perform_done 
+
+				.m_jump_perform_not_pressing
+					xor a 
+					ld  (_player + 19), a 		// player.saltando
+
+				.m_jump_perform_done
+
+			#endasm
+
+
+		#elif defined PLAYER_HAS_JETPAC
+			// Make jetpac
+		#endif
+
+		#ifdef JUMP_DOWN_PLATFORM
+			#asm
+					ld  a, (_pad0)
+					and sp_DOWN
+					ld  a, 0
+					jr  nz, m_vert_jump_down_done
+
+					ld  hl, PLAYER_VY_INICIAL_SALTO
+					ld  (_player + 8), hl 		// player.vy
+
+					inc a 
+
+				.m_vert_jump_down_done
+					ld  (_disable_collide_platform), a
+			#endasm
+		#endif
+
+		// Ladders!
+
+		#ifdef PLAYER_HAS_LADDERS
+				ld  a, (_player + 48) 			// player.on_ladder 
+				or  a 
+				jr  nz, m_vert_ladders_on_ladder
+
+				// Not on ladder. If !hit_ladder -> done
+				ld  a, (_player + 47) 			// player.hit_ladder
+				or  a 
+				jr  z, m_vert_ladders_done
+
+				// Hop on a ladder? if UP | DOWN
+				// pad0 & (UP | DOWN) != UP | DOWN
+
+				ld  a, (_pad0)
+				and sp_UP|sp_DOWN 
+				cp  sp_UP|sp_DOWN
+				jr  z, m_vert_ladders_done
+
+				ld  a, 1
+				ld  (_player + 48), a 			// player.on_ladder 
+
+			.m_vert_ladders_on_ladder
+				// UP|DOWN move fixed amount, no acceleration
+				
+				ld  a, (_pad0)
+				and sp_UP
+				jr  nz, m_vert_ladders_on_ladder_up_done
+
+				ld  hl, -PLAYER_LADDER_VX 
+				ld  (player + 8), hl
+
+			.m_vert_ladders_on_ladder_up_done
+
+				ld  a, (_pad0)
+				and sp_DOWN
+				jr  nz, m_vert_ladders_done
+
+				ld  hl, PLAYER_LADDER_VX 
+				ld  (player + 8), hl
+
+
+			.m_vert_ladders_done
+		#endif
+	#endif 
+
+	// Vertical thrust: apply vy to y
+
+	#asm
+			ld  hl, (_player + 8) 				// player.vy
+			ex  de, hl  						// DE = player.vy
+
+			ld  hl, (_player + 2)				// player.y
+
+			add hl, de 							// HL = player.y + player.vy
+
+			bit 7, h 			
+			jr  z, m_vert_thrust_notneg
+
+			// HL is negative, crop to 0:
+			ld  hl, 0
+			jr  m_vert_thurst_write
+
+		.m_vert_thrust_notneg
+
+			// if (player.y > 144*64) player.y = 144*64;
+			// if (144*64 < player.y) ...
+			ld  de, 144*64
+			call l_lt  							// c if DE < HL
+			jr  nc, m_vert_thurst_write
+
+			ex  de, hl 							// HL = 144 * 64
+
+		.m_vert_thurst_write
+			ld  (_player + 2), hl 				// player.y
+			call HLshr6_A
+			ld  (_gpy), a
+
+		#ifdef JUMP_DOWN_PLATFORM
+				and 15
+				cp  8
+				jr  c, m_vert_jd_disable_done
+
+				xor a 
+				ld  (_disable_collide_platform), a
+
+			.m_vert_jd_disable_done
+		#endif
+	#endasm
+
+	// Collide vertical.
+	// Includes evil tile detection, open lock & push boxes
+
+	#asm
+			// cx1 = (gpx + 4) >> 4; cx2 = (gpx + 11) >> 4;
+			ld  a, (_gpx)
+			ld  c, a
+			add 4
+			srl a 
+			srl a 
+			srl a 
+			srl a
+			ld  (_cx1), a
+			ld  a, c
+			add 11
+			srl a 
+			srl a 
+			srl a 
+			srl a
+			ld  (_cx2), a
+
+			ld  hl, (_ptgmy)
+			ex  de, hl 
+			ld  hl, (_player + 8) 				// player.vy
+			add hl, de
+			ld  (_pvy_total), hl
+
+			// If no vertical speed, do nothing at this stage
+
+			ld  a, h 
+			or  l
+			jp  z, m_vert_coll_done
+
+		.m_vert_coll_do
+
+			// Check bit 7 of HL to see if pvy_total is negative or positive
+
+			bit 7, h
+			jr nz, m_vert_coll_up
+
+		.m_vert_coll_down
+
+			// Collide down
+
+			ld  a, (_gpy)
+			add 15
+			srl a
+			srl a
+			srl a 
+			srl a 
+			ld  (_cy1), a 
+			ld  (_cy2), a
+
+			call _cm_two_points 
+
+			// Collision down check is simpler for genital or if you don't have 8s on 4s:
+
+		#if defined PLAYER_MOGGY_STYLE || defined SIMPLE_PLATFORMS || defined PLAYER_CUSTOM_VENG
+				ld  c, 12
+
+			#ifdef JUMP_DOWN_PLATFORM
+					ld  a, (_disable_collide_platform)
+					or  a 
+					jr  z, jump_down_platform_done
+					ld  c, 8
+				.jump_down_platform_done					
 			#endif
 
-			.m_vert_coll_down_adjust
-				#if (!defined DEACTIVATE_KEYS || defined PLAYER_PUSH_BOXES) && (defined PLAYER_MOGGY_STYLE || defined PLAYER_CUSTOM_VENG)
-						call _check_lock_or_box_vert
+				// (at1 & 12) || (at2 & 12)
+				ld  a, (_at1)
+				and c
+				jr  nz, m_vert_coll_down_adjust
+
+				ld  a, (_at2)
+				and c
+				jp  z, m_vert_coll_checks_done
+		#else
+				// 	(at1 & 8) || (at2 & 8) || (       ch3
+				// 		((gpy - 1) & 15) < 8 && ( 	  ch2
+				// 			(at1 & 4) || (at2 & 4)    ch1
+				// 		)
+				// 	)
+
+				#ifdef AVOID_PLATFORM_HOP
+					ld  hl, (_player + 8) 				// player.vy
+					call HLshr6_A
+					inc a 
+					ld  c, a 							// C = VY in pixels + 1
 				#endif
 
-				ld  hl, 0 
-			#ifdef ENABLE_BOTIBOINS
-					ld  a, (_at1)
-					and 2 
-					jr  nz, m_vert_coll_down_botiboin
+				// We have an OR outside, discard easier conditions first
+				ld  a, (_at1)
+				and 8 
+				jr  nz, m_vert_coll_down_adjust
 
-					ld  a, (_at2) 
-					and 2
-					jr  z, m_vert_coll_down_set_vy
+				ld  a, (_at2)
+				and 8 
+				jr  nz, m_vert_coll_down_adjust
 
-				.m_vert_coll_down_botiboin
-					ld  l, 2 
-					call _peta_el_beeper
-					ld  hl, -PLAYER_MAX_VX
-
+				// Gotten here, we have to check the big condition.
+				// We have an AND, so BOTH sides must be true
+			
+			#ifdef JUMP_DOWN_PLATFORM
+					ld  a, (_disable_collide_platform)
+					or  a 
+					jr  nz, m_vert_coll_checks_done
 			#endif
-			.m_vert_coll_down_set_vy
-				ld  (_player + 8), hl 	// player.vy
 
+				ld  a, (_at1)
+				and 4
+				jr  nz, m_vert_coll_down_ch2 		// ch1 is true, check ch2
+
+				ld  a, (_at2)
+				and 4
+				jp  z, m_vert_coll_checks_done 		// ch1 is false, so ch2 is false.
+
+			.m_vert_coll_down_ch2
 				ld  a, (_gpy)
-				and 0xf0 
-				ld  (_gpy), a 
-				call Ashl16_HL
-				ld  (_player + 2), HL 	// player.y
+				dec a 
+				and 15
+				#ifdef AVOID_PLATFORM_HOP
+					cp  c  // was: 8
+				#else
+					cp  8
+				#endif
+				jr  nc, m_vert_coll_checks_done		// Everything failed!
+		#endif
 
-				ld  a, WALL_DOWN
-				ld  (_wall), a
+		.m_vert_coll_down_adjust
+			#if (!defined DEACTIVATE_KEYS || defined PLAYER_PUSH_BOXES) && (defined PLAYER_MOGGY_STYLE || defined PLAYER_CUSTOM_VENG)
+					call _check_lock_or_box_vert
+			#endif
 
-				jr  m_vert_coll_checks_done
+			ld  hl, 0 
+		#ifdef ENABLE_BOTIBOINS
+				ld  a, (_at1)
+				and 2 
+				jr  nz, m_vert_coll_down_botiboin
 
-			.m_vert_coll_up
+				ld  a, (_at2) 
+				and 2
+				jr  z, m_vert_coll_down_set_vy
 
-				// Collide up
+			.m_vert_coll_down_botiboin
+				ld  l, 2 
+				call _peta_el_beeper
+				ld  hl, -PLAYER_MAX_VX
 
-				ld  a, (_gpy) 
-				add 4 
+		#endif
+		.m_vert_coll_down_set_vy
+			ld  (_player + 8), hl 	// player.vy
+
+			ld  a, (_gpy)
+			and 0xf0 
+			ld  (_gpy), a 
+			call Ashl16_HL
+			ld  (_player + 2), HL 	// player.y
+
+			ld  a, WALL_DOWN
+			ld  (_wall), a
+
+			jr  m_vert_coll_checks_done
+
+		.m_vert_coll_up
+
+			// Collide up
+
+			ld  a, (_gpy) 
+			add 4 
+			srl a 
+			srl a 
+			srl a 
+			srl a 
+			ld  (_cy1), a 
+			ld  (_cy2), a
+
+			call _cm_two_points
+
+			ld  a, (_at1)
+			and 8 
+			jr  nz, m_vert_coll_up_adjust
+
+			ld  a, (_at2)
+			and 8 
+			jr  z, m_vert_coll_checks_done
+
+		.m_vert_coll_up_adjust
+
+			#if (!defined DEACTIVATE_KEYS || defined PLAYER_PUSH_BOXES) && (defined PLAYER_MOGGY_STYLE || defined PLAYER_CUSTOM_VENG)
+					call _check_lock_or_box_vert
+			#endif	
+
+			ld  hl, 0 
+		#ifdef ENABLE_BOTIBOINS
+				ld  a, (_at1)
+				and 2 
+				jr  nz, m_vert_coll_up_botiboin
+
+				ld  a, (_at2) 
+				and 2
+				jr  z, m_vert_coll_up_set_vy
+
+			.m_vert_coll_up_botiboin
+				ld  l, 2 
+				call _peta_el_beeper
+				ld  hl, PLAYER_MAX_VX
+
+		#endif
+		.m_vert_coll_up_set_vy
+			ld  (_player + 8), hl 	// player.vy
+
+			ld  a, (_gpy)
+			and 0xf0
+			add 12 
+			ld  (_gpy), a 
+			call Ashl16_HL
+			ld  (_player + 2), HL 
+
+			ld  a, WALL_UP
+			ld  (_wall), a
+
+		.m_vert_coll_checks_done
+
+		#ifndef DEACTIVATE_EVIL_TILE
+				ld  a, (_at1)
+				and 1
+				jr  nz, m_vert_coll_sethit
+
+				ld  a, (_at2)
+				and 1
+				jr  z, m_vert_coll_done
+
+			.m_vert_coll_sethit
+
+				// This, as is, is problematic. We need more checks:
+				// If at1 or at2 are obstacle and not "1", hit shouldn't be set.
+				// if (at1 == 8 || at1 == 4 || at2 == 8 || at2 == 4) -> abort
+				ld  a, (_at1)
+			#ifndef PLAYER_MOGGY_STYLE
+					cp  4
+					jr  z, m_vert_coll_done
+			#endif
+				cp  8
+				jr  z, m_vert_coll_done
+				ld  a, (_at2)
+			#ifndef PLAYER_MOGGY_STYLE
+					cp  4
+					jr  z, m_vert_coll_done
+			#endif
+				cp  8
+				jr  z, m_vert_coll_done
+
+				ld  a, 1
+				ld  (_hit_v), a
+		#endif
+
+		.m_vert_coll_done
+
+	#endasm
+
+	#ifndef PLAYER_MOGGY_STYLE
+		// Calculate if possee
+
+		#asm
+				ld  a, (_gpy)
+				add 16
 				srl a 
 				srl a 
 				srl a 
 				srl a 
 				ld  (_cy1), a 
-				ld  (_cy2), a
+				ld  (_cy2), a 
 
 				call _cm_two_points
 
 				ld  a, (_at1)
-				and 8 
-				jr  nz, m_vert_coll_up_adjust
+				and 12 
+				jr  nz, m_vert_set_possee
 
 				ld  a, (_at2)
-				and 8 
-				jr  z, m_vert_coll_checks_done
+				and 12
+				jr  nz, m_vert_set_possee
 
-			.m_vert_coll_up_adjust
+				xor a 
+				jr  m_vert_set_possee_write
 
-				#if (!defined DEACTIVATE_KEYS || defined PLAYER_PUSH_BOXES) && (defined PLAYER_MOGGY_STYLE || defined PLAYER_CUSTOM_VENG)
-						call _check_lock_or_box_vert
-				#endif	
+			.m_vert_set_possee
+				ld  a, 1
 
-				ld  hl, 0 
-			#ifdef ENABLE_BOTIBOINS
-					ld  a, (_at1)
-					and 2 
-					jr  nz, m_vert_coll_up_botiboin
-
-					ld  a, (_at2) 
-					and 2
-					jr  z, m_vert_coll_up_set_vy
-
-				.m_vert_coll_up_botiboin
-					ld  l, 2 
-					call _peta_el_beeper
-					ld  hl, PLAYER_MAX_VX
-
-			#endif
-			.m_vert_coll_up_set_vy
-				ld  (_player + 8), hl 	// player.vy
-
-				ld  a, (_gpy)
-				and 0xf0
-				add 12 
-				ld  (_gpy), a 
-				call Ashl16_HL
-				ld  (_player + 2), HL 
-
-				ld  a, WALL_UP
-				ld  (_wall), a
-
-			.m_vert_coll_checks_done
-
-			#ifndef DEACTIVATE_EVIL_TILE
-					ld  a, (_at1)
-					and 1
-					jr  nz, m_vert_coll_sethit
-
-					ld  a, (_at2)
-					and 1
-					jr  z, m_vert_coll_done
-
-				.m_vert_coll_sethit
-
-					// This, as is, is problematic. We need more checks:
-					// If at1 or at2 are obstacle and not "1", hit shouldn't be set.
-					// if (at1 == 8 || at1 == 4 || at2 == 8 || at2 == 4) -> abort
-					ld  a, (_at1)
-				#ifndef PLAYER_MOGGY_STYLE
-						cp  4
-						jr  z, m_vert_coll_done
-				#endif
-					cp  8
-					jr  z, m_vert_coll_done
-					ld  a, (_at2)
-				#ifndef PLAYER_MOGGY_STYLE
-						cp  4
-						jr  z, m_vert_coll_done
-				#endif
-					cp  8
-					jr  z, m_vert_coll_done
-
-					ld  a, 1
-					ld  (_hit_v), a
-			#endif
-
-			.m_vert_coll_done
-
+			.m_vert_set_possee_write
+				ld  (_player + 26), a 		// player.possee
 		#endasm
+	#endif
+
+	// =================================================
+	//                     Horizontal
+	// =================================================
+
+	// Modify Velocity
+
+	#ifdef PLAYER_CUSTOM_HENG
+		player_custom_heng ();
+	#else
+
+		// Read keyboard and apply A/R to VX
+		// Nomenclature: m -> move, horz->axis, kp->keypress
+
+		#asm
+				ld  a, (_pad0)
+				ld  c, a
+
+			// If neither LEFT nor RIGHT pressed, apply RX
+
+				// if ((pad0 & sp_LEFT) && (pad0 & sp_RIGHT)) {
+				and sp_LEFT
+				jr  z, m_horz_kp_left_or_right_p
+
+				ld  a, c 
+				and sp_RIGHT
+				jr  z, m_horz_kp_left_or_right_p
+
+				// Not left or right pressed, apply horizontal RX
+				// Depending on the current vx sign, add or subtract:
+
+				// if (player.vx > 0)
+				ld  hl, (_player + 6) 		// player.vx 
+
+				// If player.vx is zero do nothing!
+				ld  a, h 
+				or  l 
+				jr  z, m_horz_kp_done
+
+				bit 7, h 					// bit 7 = 0 positive, 1 negative
+
+				jr  nz, m_horz_kp_rx_negative
+
+			.m_horz_kp_rx_positive
+				ld  de, -PLAYER_RX
+				add hl, de 
+
+				// Changed sign?
+				bit 7, h
+				jr  z, m_horz_kp_vx_write
+
+				ld  hl, 0
+				jr  m_horz_kp_vx_write
+
+			.m_horz_kp_rx_negative
+				ld  de, PLAYER_RX
+				add hl, de 
+
+				// Changed sign?
+				bit 7, h
+				jr  nz, m_horz_kp_vx_write
+
+				ld  hl, 0
+				jr  m_horz_kp_vx_write
+
+			.m_horz_kp_left_or_right_p
+
+			// LEFT or RIGHT pressed, which?
+				ld  a, c
+				and sp_LEFT
+				jr  nz, m_horz_kp_left_done
+
+			.m_horz_kp_left_do
+				ld  a, THRUST_LEFT
+				ld  (_thrusting), a
+
+				ld  de, -PLAYER_AX
+				ld  hl, (_player + 6) 		// player.vx 
+				add hl, de 
+
+				// Limit, never get below -PLAYER_MAX_VX
+				// if (player.vx < -PLAYER_MAX_VX) player.vx = -PLAYER_MAX_VX;
+				// if (-PLAYER_MAX_VX > player.vx) ...
+				ld  de, -PLAYER_MAX_VX
+				call l_gt 						// C if DE > HL
+				jr  nc, m_horz_kp_left_facing
+
+				ex  de, hl 						// HL = -PLAYER_MAX_VX
+
+			.m_horz_kp_left_facing
+			#if defined PLAYER_MOGGY_STYLE && !defined FAKE_SIDE_VIEW
+					ld  a, GENITAL_FACING_LEFT
+			#else
+		 			ld  a, SIDEVIEW_FACING_LEFT
+			#endif
+				ld  (_player + 22), a 			// facing
+				jr  m_horz_kp_vx_write
+
+			.m_horz_kp_left_done
+
+				ld  a, c
+				and sp_RIGHT
+				jr  nz, m_horz_kp_right_done
+
+			.m_horz_kp_right_do
+				ld  a, THRUST_RIGHT 
+				ld  (_thrusting), a
+
+				ld  de, PLAYER_AX
+				ld  hl, (_player + 6) 		// player.vx 
+				add hl, de 
+
+				// Limit, never get over PLAYER_MAX_VX
+				// if (player.vx > PLAYER_MAX_VX) player.vx = PLAYER_MAX_VX;
+				// if (PLAYER_MAX_VX < player.vx) ...
+				ld  de, PLAYER_MAX_VX
+				call l_lt 						// C if DE > HL
+				jr  nc, m_horz_kp_right_facing
+
+				ex  de, hl 						// HL = PLAYER_MAX_VX
+
+			.m_horz_kp_right_facing
+			#if defined PLAYER_MOGGY_STYLE && !defined FAKE_SIDE_VIEW
+					ld  a, GENITAL_FACING_RIGHT
+			#else
+		 			ld  a, SIDEVIEW_FACING_RIGHT
+			#endif
+				ld  (_player + 22), a 			// facing
+				//jr  m_horz_kp_vx_write
+
+			.m_horz_kp_right_done
+
+			.m_horz_kp_vx_write
+				ld  (_player + 6), hl 		// player.vx
+
+			.m_horz_kp_done
+		#endasm
+	#endif
+
+	// Horizontal thrust: apply vx to x
+
+	#asm
+			ld  hl, (_player + 6) 		// player.vx
+			ex  de, hl  				// DE = player.vx
+
+			ld  hl, (_player + 0)		// player.x
+
+			add hl, de 					// HL = player.x + player.vx
 
 		#ifndef PLAYER_MOGGY_STYLE
-			// Calculate if possee
-
-			#asm
-					ld  a, (_gpy)
-					add 16
-					srl a 
-					srl a 
-					srl a 
-					srl a 
-					ld  (_cy1), a 
-					ld  (_cy2), a 
-
-					call _cm_two_points
-
-					ld  a, (_at1)
-					and 12 
-					jr  nz, m_vert_set_possee
-
-					ld  a, (_at2)
-					and 12
-					jr  nz, m_vert_set_possee
-
-					xor a 
-					jr  m_vert_set_possee_write
-
-				.m_vert_set_possee
-					ld  a, 1
-
-				.m_vert_set_possee_write
-					ld  (_player + 26), a 		// player.possee
-			#endasm
+				ex  de, hl 				// DE = player.x + player.vx
+				ld  hl, (_ptgmx) 
+				add hl, de 				// HL = player.x + player.vy + ptgmx
 		#endif
 
-		// =================================================
-		//                     Horizontal
-		// =================================================
+			bit 7, h 			
+			jr  z, m_horz_thrust_notneg
 
-		// Modify Velocity
+			// HL is negative, crop to 0:
+			ld  hl, 0
+			jr  m_horz_thurst_write
 
-		#ifdef PLAYER_CUSTOM_HENG
-			player_custom_heng ();
-		#else
+		.m_horz_thrust_notneg
 
-			// Read keyboard and apply A/R to VX
-			// Nomenclature: m -> move, horz->axis, kp->keypress
+			// if (player.x > 224*64) player.x = 224*64;
+			// if (224*64 < player.x) ...
+			ld  de, 224*64
+			call l_lt  					// c if DE < HL
+			jr  nc, m_horz_thurst_write
 
-			#asm
-					ld  a, (_pad0)
-					ld  c, a
+			ex  de, hl 					// HL = 224 * 64
 
-				// If neither LEFT nor RIGHT pressed, apply RX
+		.m_horz_thurst_write
+			ld  (_player + 0), hl 		// player.x
+			call HLshr6_A
+			ld  (_gpx), A
+	#endasm
 
-					// if ((pad0 & sp_LEFT) && (pad0 & sp_RIGHT)) {
-					and sp_LEFT
-					jr  z, m_horz_kp_left_or_right_p
+	// Collide horizontal.
+	// Includes evil tile detection, open lock & push boxes
 
-					ld  a, c 
-					and sp_RIGHT
-					jr  z, m_horz_kp_left_or_right_p
+	#asm
+			ld  hl, (_ptgmx)
+			ex  de, hl 
+			ld  hl, (_player + 6) 		// player.vx
+			add hl, de
+			ld  (_pvx_total), hl
 
-					// Not left or right pressed, apply horizontal RX
-					// Depending on the current vx sign, add or subtract:
+			// If no horizontal speed, do nothing at this stage
 
-					// if (player.vx > 0)
-					ld  hl, (_player + 6) 		// player.vx 
+			ld  a, h 
+			or  l
+			jp  z, m_horz_coll_done
 
-					// If player.vx is zero do nothing!
-					ld  a, h 
-					or  l 
-					jr  z, m_horz_kp_done
+		.m_horz_coll_do
 
-					bit 7, h 					// bit 7 = 0 positive, 1 negative
+			// _y = (gpy + 4) >> 4; _y2 = (gpy + 15) >> 4;
+			ld  a, (_gpy)
+			ld  c, a
+			add 4
+			srl a 
+			srl a 
+			srl a 
+			srl a
+			ld  (_cy1), a
+			ld  a, c
+			add 15
+			srl a 
+			srl a 
+			srl a 
+			srl a
+			ld  (_cy2), a
 
-					jr  nz, m_horz_kp_rx_negative
+			// Check bit 7 of HL to see if pvx_total is negative or positive
 
-				.m_horz_kp_rx_positive
-					ld  de, -PLAYER_RX
-					add hl, de 
+			bit 7, h
+			jr nz, m_horz_coll_left
 
-					// Changed sign?
-					bit 7, h
-					jr  z, m_horz_kp_vx_write
+		.m_horz_coll_right
 
-					ld  hl, 0
-					jr  m_horz_kp_vx_write
+			// Collide right
 
-				.m_horz_kp_rx_negative
-					ld  de, PLAYER_RX
-					add hl, de 
+			ld  a, (_gpx)
+			add 12
+			srl a
+			srl a
+			srl a 
+			srl a 
+			ld  (_cx1), a 
+			ld  (_cx2), a
 
-					// Changed sign?
-					bit 7, h
-					jr  nz, m_horz_kp_vx_write
+			call _cm_two_points 
 
-					ld  hl, 0
-					jr  m_horz_kp_vx_write
+			// (at1 & 8) || (at2 & 8)
+			ld  a, (_at1)
+			and 8
+			jr  nz, m_horz_coll_right_adjust
 
-				.m_horz_kp_left_or_right_p
+			ld  a, (_at2)
+			and 8
+			jp  z, m_horz_coll_checks_done
 
-				// LEFT or RIGHT pressed, which?
-					ld  a, c
-					and sp_LEFT
-					jr  nz, m_horz_kp_left_done
+		.m_horz_coll_right_adjust
+			#if !defined DEACTIVATE_KEYS || defined PLAYER_PUSH_BOXES
+					call _check_lock_or_box_horz
+			#endif
 
-				.m_horz_kp_left_do
-					ld  a, THRUST_LEFT
-					ld  (_thrusting), a
+			ld  hl, 0 
+		#ifdef ENABLE_BOTIBOINS
+				ld  a, (_at1)
+				and 2 
+				jr  nz, m_vert_coll_right_botiboin
 
-					ld  de, -PLAYER_AX
-					ld  hl, (_player + 6) 		// player.vx 
-					add hl, de 
+				ld  a, (_at2) 
+				and 2
+				jr  z, m_vert_coll_right_set_vy
 
-					// Limit, never get below -PLAYER_MAX_VX
-					// if (player.vx < -PLAYER_MAX_VX) player.vx = -PLAYER_MAX_VX;
-					// if (-PLAYER_MAX_VX > player.vx) ...
-					ld  de, -PLAYER_MAX_VX
-					call l_gt 						// C if DE > HL
-					jr  nc, m_horz_kp_left_facing
+			.m_vert_coll_right_botiboin
+				ld  l, 2 
+				call _peta_el_beeper
+				ld  hl, -PLAYER_MAX_VX
 
-					ex  de, hl 						// HL = -PLAYER_MAX_VX
-
-				.m_horz_kp_left_facing
-				#if defined PLAYER_MOGGY_STYLE && !defined FAKE_SIDE_VIEW
-						ld  a, GENITAL_FACING_LEFT
-				#else
-			 			ld  a, SIDEVIEW_FACING_LEFT
-				#endif
-					ld  (_player + 22), a 			// facing
-					jr  m_horz_kp_vx_write
-
-				.m_horz_kp_left_done
-
-					ld  a, c
-					and sp_RIGHT
-					jr  nz, m_horz_kp_right_done
-
-				.m_horz_kp_right_do
-					ld  a, THRUST_RIGHT 
-					ld  (_thrusting), a
-
-					ld  de, PLAYER_AX
-					ld  hl, (_player + 6) 		// player.vx 
-					add hl, de 
-
-					// Limit, never get over PLAYER_MAX_VX
-					// if (player.vx > PLAYER_MAX_VX) player.vx = PLAYER_MAX_VX;
-					// if (PLAYER_MAX_VX < player.vx) ...
-					ld  de, PLAYER_MAX_VX
-					call l_lt 						// C if DE > HL
-					jr  nc, m_horz_kp_right_facing
-
-					ex  de, hl 						// HL = PLAYER_MAX_VX
-
-				.m_horz_kp_right_facing
-				#if defined PLAYER_MOGGY_STYLE && !defined FAKE_SIDE_VIEW
-						ld  a, GENITAL_FACING_RIGHT
-				#else
-			 			ld  a, SIDEVIEW_FACING_RIGHT
-				#endif
-					ld  (_player + 22), a 			// facing
-					//jr  m_horz_kp_vx_write
-
-				.m_horz_kp_right_done
-
-				.m_horz_kp_vx_write
-					ld  (_player + 6), hl 		// player.vx
-
-				.m_horz_kp_done
-			#endasm
 		#endif
+		.m_vert_coll_right_set_vy
+			ld  (_player + 6), hl 	// player.vx
 
-		// Horizontal thrust: apply vx to x
+			ld  a, (_gpx)
+			and 0xf0 
+			add 4
+			ld  (_gpx), a 
+			call Ashl16_HL
+			ld  (_player + 0), HL 	// player.x
 
-		#asm
-				ld  hl, (_player + 6) 		// player.vx
-				ex  de, hl  				// DE = player.vx
+			ld  a, WALL_RIGHT
+			ld  (_wall), a
 
-				ld  hl, (_player + 0)		// player.x
+			jr  m_horz_coll_checks_done
 
-				add hl, de 					// HL = player.x + player.vx
+		.m_horz_coll_left
 
-			#ifndef PLAYER_MOGGY_STYLE
-					ex  de, hl 				// DE = player.x + player.vx
-					ld  hl, (_ptgmx) 
-					add hl, de 				// HL = player.x + player.vy + ptgmx
-			#endif
+			// Collide left
 
-				bit 7, h 			
-				jr  z, m_horz_thrust_notneg
+			ld  a, (_gpx) 
+			add 4 
+			srl a 
+			srl a 
+			srl a 
+			srl a 
+			ld  (_cx1), a 
+			ld  (_cx2), a
 
-				// HL is negative, crop to 0:
-				ld  hl, 0
-				jr  m_horz_thurst_write
+			call _cm_two_points
 
-			.m_horz_thrust_notneg
+			ld  a, (_at1)
+			and 8 
+			jr  nz, m_horz_coll_left_adjust
 
-				// if (player.x > 224*64) player.x = 224*64;
-				// if (224*64 < player.x) ...
-				ld  de, 224*64
-				call l_lt  					// c if DE < HL
-				jr  nc, m_horz_thurst_write
+			ld  a, (_at2)
+			and 8 
+			jr  z, m_horz_coll_checks_done
 
-				ex  de, hl 					// HL = 224 * 64
+		.m_horz_coll_left_adjust
 
-			.m_horz_thurst_write
-				ld  (_player + 0), hl 		// player.x
-				call HLshr6_A
-				ld  (_gpx), A
-		#endasm
+			#if !defined DEACTIVATE_KEYS || defined PLAYER_PUSH_BOXES
+					call _check_lock_or_box_horz
+			#endif	
 
-		// Collide horizontal.
-		// Includes evil tile detection, open lock & push boxes
-
-		#asm
-				ld  hl, (_ptgmx)
-				ex  de, hl 
-				ld  hl, (_player + 6) 		// player.vx
-				add hl, de
-				ld  (_pvx_total), hl
-
-				// If no horizontal speed, do nothing at this stage
-
-				ld  a, h 
-				or  l
-				jp  z, m_horz_coll_done
-
-			.m_horz_coll_do
-
-				// _y = (gpy + 4) >> 4; _y2 = (gpy + 15) >> 4;
-				ld  a, (_gpy)
-				ld  c, a
-				add 4
-				srl a 
-				srl a 
-				srl a 
-				srl a
-				ld  (_cy1), a
-				ld  a, c
-				add 15
-				srl a 
-				srl a 
-				srl a 
-				srl a
-				ld  (_cy2), a
-
-				// Check bit 7 of HL to see if pvx_total is negative or positive
-
-				bit 7, h
-				jr nz, m_horz_coll_left
-
-			.m_horz_coll_right
-
-				// Collide right
-
-				ld  a, (_gpx)
-				add 12
-				srl a
-				srl a
-				srl a 
-				srl a 
-				ld  (_cx1), a 
-				ld  (_cx2), a
-
-				call _cm_two_points 
-
-				// (at1 & 8) || (at2 & 8)
+			ld  hl, 0 
+		#ifdef ENABLE_BOTIBOINS
 				ld  a, (_at1)
-				and 8
-				jr  nz, m_horz_coll_right_adjust
+				and 2 
+				jr  nz, m_vert_coll_left_botiboin
 
-				ld  a, (_at2)
-				and 8
-				jp  z, m_horz_coll_checks_done
+				ld  a, (_at2) 
+				and 2
+				jr  z, m_vert_coll_left_set_vy
 
-			.m_horz_coll_right_adjust
-				#if !defined DEACTIVATE_KEYS || defined PLAYER_PUSH_BOXES
-						call _check_lock_or_box_horz
-				#endif
+			.m_vert_coll_left_botiboin
+				ld  l, 2 
+				call _peta_el_beeper
+				ld  hl, PLAYER_MAX_VX
 
-				ld  hl, 0 
-			#ifdef ENABLE_BOTIBOINS
-					ld  a, (_at1)
-					and 2 
-					jr  nz, m_vert_coll_right_botiboin
+		#endif
+		.m_vert_coll_left_set_vy
+			ld  (_player + 6), hl 	// player.vx
 
-					ld  a, (_at2) 
-					and 2
-					jr  z, m_vert_coll_right_set_vy
+			ld  a, (_gpx)
+			and 0xf0
+			add 12 
+			ld  (_gpx), a 
+			call Ashl16_HL
+			ld  (_player + 0), HL 
 
-				.m_vert_coll_right_botiboin
-					ld  l, 2 
-					call _peta_el_beeper
-					ld  hl, -PLAYER_MAX_VX
+			ld  a, WALL_LEFT
+			ld  (_wall), a
 
-			#endif
-			.m_vert_coll_right_set_vy
-				ld  (_player + 6), hl 	// player.vx
-
-				ld  a, (_gpx)
-				and 0xf0 
-				add 4
-				ld  (_gpx), a 
-				call Ashl16_HL
-				ld  (_player + 0), HL 	// player.x
-
-				ld  a, WALL_RIGHT
-				ld  (_wall), a
-
-				jr  m_horz_coll_checks_done
-
-			.m_horz_coll_left
-
-				// Collide left
-
-				ld  a, (_gpx) 
-				add 4 
-				srl a 
-				srl a 
-				srl a 
-				srl a 
-				ld  (_cx1), a 
-				ld  (_cx2), a
-
-				call _cm_two_points
-
-				ld  a, (_at1)
-				and 8 
-				jr  nz, m_horz_coll_left_adjust
-
-				ld  a, (_at2)
-				and 8 
-				jr  z, m_horz_coll_checks_done
-
-			.m_horz_coll_left_adjust
-
-				#if !defined DEACTIVATE_KEYS || defined PLAYER_PUSH_BOXES
-						call _check_lock_or_box_horz
-				#endif	
-
-				ld  hl, 0 
-			#ifdef ENABLE_BOTIBOINS
-					ld  a, (_at1)
-					and 2 
-					jr  nz, m_vert_coll_left_botiboin
-
-					ld  a, (_at2) 
-					and 2
-					jr  z, m_vert_coll_left_set_vy
-
-				.m_vert_coll_left_botiboin
-					ld  l, 2 
-					call _peta_el_beeper
-					ld  hl, PLAYER_MAX_VX
-
-			#endif
-			.m_vert_coll_left_set_vy
-				ld  (_player + 6), hl 	// player.vx
-
-				ld  a, (_gpx)
-				and 0xf0
-				add 12 
-				ld  (_gpx), a 
-				call Ashl16_HL
-				ld  (_player + 0), HL 
-
-				ld  a, WALL_LEFT
-				ld  (_wall), a
-
-			.m_horz_coll_checks_done
-
-			#ifndef DEACTIVATE_EVIL_TILE
-
-					ld  a, (_at1)
-					and 1
-					jr  nz, m_horz_coll_sethit
-
-					ld  a, (_at2)
-					and 1
-					jr  z, m_horz_coll_done
-
-				.m_horz_coll_sethit
-					ld  a, 1
-					ld  (_hit_h), a
-			#endif
-
-			.m_horz_coll_done
-
-		#endasm
-
-		// bigger vx or vy?
-		//rdi = abs (pvx_total) > abs (pvy_total);
-		#asm
-				ld  hl, (_pvx_total)
-				call _abs 
-				ex  de, hl 				// DE = abs (pvx_total)
-				ld  hl, (_pvy_total)
-				call _abs  				// HL = abs (pvy_total), won't trash DE
-				call l_gt 				// C set if DE > HL
-				rl  a 					// put carry in A's bit 0
-				and 1
-				ld  (_rdi), a
-		#endasm
+		.m_horz_coll_checks_done
 
 		#ifndef DEACTIVATE_EVIL_TILE
 
-			// Evil tile hit?
+				ld  a, (_at1)
+				and 1
+				jr  nz, m_horz_coll_sethit
 
-			#asm
-				#ifdef PLAYER_CUSTOM_BG_HIT
-						call _custom_bg_hit
-						xor a 
-						or  l
-						jr  z, m_evil_tile_hit_done
+				ld  a, (_at2)
+				and 1
+				jr  z, m_horz_coll_done
 
-				#elif defined PLAYER_MOGGY_STYLE
-					// In top view, max velocity component takes precedence
-						ld  a, (_hit_v)
-						ld  c, a 
-						ld  a, (_hit_h)
-						or  c 
-						jr  z, m_evil_tile_hit_done
-			
-					.m_evil_tile_hit_do
-						ld  a, (_rdi) 
-						or  a
-						jr  z, m_evil_tile_hit_v
-
-					.m_evil_tile_hit_h
-						ld  hl, (_pvx_total)
-						call l_neg 
-						ld  (_player + 6), hl 		// player.vx
-						jr  m_evil_tile_vel_set
-
-					.m_evil_tile_hit_v
-						ld  hl, (_pvy_total)
-						call l_neg 
-						ld  (_player + 8), hl 		// player.vy
-							
-				#else
-					// In side view, vertical hit takes precedence
-
-					.m_evil_tile_hit_check_v
-						ld  a, (_hit_v)
-						or  a 
-						jr  z, m_evil_tile_hit_check_h
-
-						ld  hl, (_pvy_total)
-						call l_neg 
-						ld  (_player + 8), hl 		// player.vy
-						jr  m_evil_tile_vel_set
-
-					.m_evil_tile_hit_check_h
-						ld  a, (_hit_h)
-						or  a
-						jr  z, m_evil_tile_hit_done
-
-						ld  hl, (_pvx_total)
-						call l_neg 
-						ld  (_player + 6), hl 		// player.vx
-
-				#endif
-
-				.m_evil_tile_vel_set
-
-				#ifdef PLAYER_FLICKERS
-						// Cancel if flickering
-						ld  a, (_player + 23)			// player.estado 
-						or  a 
-						jr  nz, m_evil_tile_hit_done
-				#endif 
-						
-					ld  l, 2 
-					call _peta_el_beeper 
-					ld  a, 1 
-					ld  (_player + 46), a		// player.drain_amount
-					ld  a, PLAYER_KILLED_BY_BG
-					ld  (_player + 36), a 		// player.is_dead
-
-				.m_evil_tile_hit_done
-
-			#endasm
+			.m_horz_coll_sethit
+				ld  a, 1
+				ld  (_hit_h), a
 		#endif
+
+		.m_horz_coll_done
+
+	#endasm
+
+	// bigger vx or vy?
+	//rdi = abs (pvx_total) > abs (pvy_total);
+	#asm
+			ld  hl, (_pvx_total)
+			call _abs 
+			ex  de, hl 				// DE = abs (pvx_total)
+			ld  hl, (_pvy_total)
+			call _abs  				// HL = abs (pvy_total), won't trash DE
+			call l_gt 				// C set if DE > HL
+			rl  a 					// put carry in A's bit 0
+			and 1
+			ld  (_rdi), a
+	#endasm
+
+	#ifndef DEACTIVATE_EVIL_TILE
+
+		// Evil tile hit?
+
+		#asm
+			#ifdef PLAYER_CUSTOM_BG_HIT
+					call _custom_bg_hit
+					xor a 
+					or  l
+					jr  z, m_evil_tile_hit_done
+
+			#elif defined PLAYER_MOGGY_STYLE
+				// In top view, max velocity component takes precedence
+					ld  a, (_hit_v)
+					ld  c, a 
+					ld  a, (_hit_h)
+					or  c 
+					jr  z, m_evil_tile_hit_done
+		
+				.m_evil_tile_hit_do
+					ld  a, (_rdi) 
+					or  a
+					jr  z, m_evil_tile_hit_v
+
+				.m_evil_tile_hit_h
+					ld  hl, (_pvx_total)
+					call l_neg 
+					ld  (_player + 6), hl 		// player.vx
+					jr  m_evil_tile_vel_set
+
+				.m_evil_tile_hit_v
+					ld  hl, (_pvy_total)
+					call l_neg 
+					ld  (_player + 8), hl 		// player.vy
+						
+			#else
+				// In side view, vertical hit takes precedence
+
+				.m_evil_tile_hit_check_v
+					ld  a, (_hit_v)
+					or  a 
+					jr  z, m_evil_tile_hit_check_h
+
+					ld  hl, (_pvy_total)
+					call l_neg 
+					ld  (_player + 8), hl 		// player.vy
+					jr  m_evil_tile_vel_set
+
+				.m_evil_tile_hit_check_h
+					ld  a, (_hit_h)
+					or  a
+					jr  z, m_evil_tile_hit_done
+
+					ld  hl, (_pvx_total)
+					call l_neg 
+					ld  (_player + 6), hl 		// player.vx
+
+			#endif
+
+			.m_evil_tile_vel_set
+
+			#ifdef PLAYER_FLICKERS
+					// Cancel if flickering
+					ld  a, (_player + 23)			// player.estado 
+					or  a 
+					jr  nz, m_evil_tile_hit_done
+			#endif 
+					
+				ld  l, 2 
+				call _peta_el_beeper 
+				ld  a, 1 
+				ld  (_player + 46), a		// player.drain_amount
+				ld  a, PLAYER_KILLED_BY_BG
+				ld  (_player + 36), a 		// player.is_dead
+
+			.m_evil_tile_hit_done
+
+		#endasm
+	#endif
 
 	#endif
 

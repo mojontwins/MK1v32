@@ -127,8 +127,9 @@
 #define RAMIRO_EZ_SLOW_FLAG 		30 		// != 0: sunlight (beh 3) kills slowly (Hechizo Postizo)
 #define RAMIRO_EZ_GAUGE_X 			21 		//
 #define RAMIRO_EZ_GAUGE_Y 			23 		// Sunlight countdown
-#define RAMIRO_TB_ATTR 				71 		// Text box: bright white on black
-#define RAMIRO_TB_SPEAKER_ATTR 		70 		// Speaker: bright yellow on black
+#define RAMIRO_TB_ATTR 				71 		// Text box frame and text
+#define RAMIRO_TB_TAB_ATTR 			2 		// Speaker tab ends (as in 2016)
+#define RAMIRO_TB_SPEAKER_ATTR 		23 		// Speaker name (as in 2016)
 #define RAMIRO_RN_Y 				22 		// Room names line
 #define RAMIRO_RN_ATTR 				23 		// Room names attribute
 //#define PLAYER_CUSTOM_BG_HIT 				// Implement your own bounce.

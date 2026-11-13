@@ -41,7 +41,7 @@
 //  * Fire zone               msc3's SET_FIRE_ZONE, via EXTERN.
 //  * BeepFX sound effects    Ramiro 4's beeper set: rm_sfx (n).
 //  * HUD                     evil zone gauge.
-//  * Text box                Ramiro 4 style, for msc4's TEXT BOX.
+//  * Text box                Sir Ababol / Papaya's, for msc4's TEXT BOX.
 //
 // EXTERN numbers (do_extern_action -> ramiro_extern):
 //   EXTERN 9, n    play BeepFX sound n (Ramiro 4 numbers, see rm_sfx)
@@ -50,7 +50,6 @@
 //   EXTERN 12, x2  fire zone x2
 //   EXTERN 13, y2  fire zone y2, and switch the zone on
 //   EXTERN 14, 0   fire zone off (do it in ENTERING ANY)
-//   EXTERN 15, 0   REENTER: draw the screen again and run its ENTERING scripts
 //   EXTERN 16, 0   REDRAW: repaint the play area from the map buffer
 
 // ----------------------------------------------------------------------------
@@ -1989,17 +1988,9 @@ unsigned char ramiro_extern (unsigned char n, unsigned char m) {
 
 		.rm_ext_14
 			cp  14
-			jr  nz, rm_ext_15
+			jr  nz, rm_ext_16
 			xor a
 			ld  (_rm_fz_on), a
-			jr  rm_ext_yes
-
-		.rm_ext_15
-			cp  15
-			jr  nz, rm_ext_16
-			// REENTER: on_pant = 0xff -> the main loop redraws n_pant
-			ld  a, 0xff
-			ld  (_on_pant), a
 			jr  rm_ext_yes
 
 		.rm_ext_16
@@ -2063,175 +2054,447 @@ void ramiro_redraw (void) {
 }
 
 // ----------------------------------------------------------------------------
-// Text box, Ramiro 4 style (show_text_box), for msc4's TEXT BOX.
+// Text box for msc4's TEXT BOX: MK1 v3.2's Sir Ababol / Papaya text box
+// (games/ababol/dev/extern.h), ported as is, with two Ramiro additions:
 //
-// The first character of the text selects what to do:
+//   * The frame uses the Ramiro font's own frame glyphs (the 2016 games'),
+//     and the speaker's name goes in the tab on top, like in 2016.
+//   * The screen is updated (not just validated) before the box is drawn,
+//     so boxes shown while entering a screen have the screen behind them.
+//   * Room names: a text starting with '0' is not a box but the room name,
+//     centered on the HUD line RAMIRO_RN_Y (columns 1-30, RAMIRO_RN_ATTR).
 //
-//   '0'        Room name: printed centered on the HUD line RAMIRO_RN_Y
-//              (columns 1-30, attribute RAMIRO_RN_ATTR). No box, no wait.
-//   '1'..'9'   Dialog said by speaker N: the box shows ramiro_speakers [N-1]
-//              (an array of strings the game defines in extern.h) on the
-//              first line, then the text.
-//   other      Plain dialog.
+// The first character of a dialog may be '1'..'9': speaker N, whose name is
+// ramiro_speakers [N-1] (an array of strings the game defines in extern.h).
 //
-// Dialog lines (msc4 wraps them to TEXT WIDTH and separates them with '%')
-// are printed double spaced on a band of attribute RAMIRO_TB_ATTR, with a
-// "talk" sound per line. Then it waits for a key and repaints the play area.
+// As in Ababol: the box (x = 4, 24 wide, 22 characters per line, so
+// TEXT WIDTH = 22) grows line by line from y = 6 while the text is typed
+// character by character; then a beep, wait for a key (pad), and the play
+// area is repainted.
 //
-// Character translation (the font has ¡ ¿ Ñ in the [ ] \ slots, while
-// msc4's 5-bit decoder outputs , . ? ! space as [ \ ] ^ _):
-//   [ \ ] ^ _   ->  , . ? ! space
-//   < > =       ->  ] [ \       (the text converter writes ¡ ¿ Ñ as < > =)
+// The font has , . ? ! and space in slots 91-95 (where msc4's decoder puts
+// them) and ¡ ¿ Ñ in the < > = slots, so no translation is done here.
+//
+// Frame glyphs (Ramiro font):  " #  tab ends   $ top   % top right corner
+//                              & left   ' right   ( ) * bottom
 // ----------------------------------------------------------------------------
 
 #ifndef RAMIRO_TB_ATTR
-	#define RAMIRO_TB_ATTR 		40 		// Ramiro 4: black on cyan
+	#define RAMIRO_TB_ATTR 			71 		// ZX: frame and text, bright white on black
 #endif
 #ifndef RAMIRO_TB_SPEAKER_ATTR
-	#define RAMIRO_TB_SPEAKER_ATTR RAMIRO_TB_ATTR
+	#define RAMIRO_TB_SPEAKER_ATTR 	23 		// ZX: speaker's name (2016: white on red)
 #endif
-#ifndef RAMIRO_TB_X
-	#define RAMIRO_TB_X 		4
-#endif
-#ifndef RAMIRO_TB_Y
-	#define RAMIRO_TB_Y 		6
+#ifndef RAMIRO_TB_TAB_ATTR
+	#define RAMIRO_TB_TAB_ATTR 		2 		// ZX: the tab's rounded ends (2016: red on black)
 #endif
 #ifndef RAMIRO_RN_Y
-	#define RAMIRO_RN_Y 		22
+	#define RAMIRO_RN_Y 			22
 #endif
 #ifndef RAMIRO_RN_ATTR
-	#define RAMIRO_RN_ATTR 		23
+	#define RAMIRO_RN_ATTR 			23
 #endif
 
-unsigned char rm_temp_string [] = "                              ";	// 30 + 0
-unsigned char rm_tb_y, rm_tb_x, rm_tb_a, rm_tb_nl;
-unsigned char *rm_tb_ptr;
+unsigned char rm_top_string []    = "&                      %";
+unsigned char rm_mid_string []    = "&                      '";
+unsigned char rm_bottom_string [] = "())))))))))))))))))))))*";
+unsigned char rm_temp_string []   = "                              ";	// 30 (room names)
+unsigned char *rm_speaker;
 
-void ramiro_textbox_helpers (void) {
+#ifndef CPC
+	void rm_sprite_remove_aid (void) {
+		#asm
+				call _saca_a_todo_el_mundo_de_aqui
+
+				// Ababol validates the whole screen here so sprites stay
+				// away on the next update. Ramiro shows text boxes also from
+				// ENTERING scripts, when the new screen is still pending
+				// (invalidated, not on screen yet), so we update instead:
+				// same result, and the screen gets drawn.
+				jp  SPUpdateNow
+		#endasm
+	}
+#else
+	void rm_print_tile_inv (void) {
+		#asm
+				// Tile address in DE
+				call __tile_address
+
+				// Write the tile
+				ld  a, (__n)
+				ld  (de), a
+
+				// Invalidate tile E, D
+				ld  a, (__x)
+				ld  e, a
+				ld  a, (__y)
+				ld  d, a
+				jp  cpc_UpdTileTable
+		#endasm
+	}
+#endif
+
+void rm_draw_text_cbc (void) {
+	// Ababol's draw_text_cbc: text in HL, 0 terminated, at (rdx, rdy),
+	// one character every two frames.
+	#ifdef CPC
+		#asm
+			.rm_dtcbc_loop
+				ld  a, (_rdx)
+				ld  (__x), a
+				ld  c, a
+				inc a
+				ld  (_rdx), a
+
+				ld  a, (hl)
+				or  a
+				ret z 						// End of line
+				inc hl
+				sub 32
+				jr  z, rm_dtcbc_loop 		// Skip spaces.
+
+				halt
+				halt
+
+				push hl
+
+				// Draw inv tile A @ rdx, rdy
+				ld  (__n), a
+				ld  a, (_rdy)
+				ld  (__y), a
+				call _rm_print_tile_inv
+
+				ld  hl, 0
+				push hl
+				call _cpc_UpdateNow
+				pop hl
+
+				pop hl
+				jr  rm_dtcbc_loop
+		#endasm
+	#else
+		#asm
+			.rm_dtcbc_loop
+				ld  a, (_rdx)
+				ld  c, a
+				inc a
+				ld  (_rdx), a
+				ld  a, RAMIRO_TB_ATTR
+				ld  d, a
+				ld  a, (hl)
+				or  a
+				ret z
+				inc hl
+				sub 32
+				halt
+				halt
+
+				jr  z, rm_dtcbc_loop 		// Skip spaces.
+
+				ld  e, a
+				ld  a, (_rdy)
+
+				push hl
+				call SPPrintAtInv
+				call SPUpdateNow
+				pop hl
+
+				jr  rm_dtcbc_loop
+		#endasm
+	#endif
+}
+
+void rm_draw_frame_line (void) {
+	// HL = string, (__x), (__y) set. Ababol draws frame lines with draw_text.
+	#ifdef CPC
+		#asm
+				jp  draw_text_pre_loop
+		#endasm
+	#else
+		#asm
+				ld  a, RAMIRO_TB_ATTR
+				ld  (__n), a
+				jp  draw_text_loop
+		#endasm
+	#endif
+}
+
+void rm_room_name (void) {
+	// HL -> name (after the '0'). msc4 wraps at TEXT WIDTH with '%': those
+	// are spaces here. Centered in columns 1-30 of line RAMIRO_RN_Y.
 	#asm
-		// Clear rm_temp_string (30 spaces)
-		.rm_tb_clear
+			push hl
+
+			// Clear the buffer
 			ld  hl, _rm_temp_string
 			ld  de, _rm_temp_string + 1
 			ld  bc, 29
 			ld  (hl), 32
 			ldir
-			ret
 
-		// Copy from HL to DE, at most B chars, until 0 or '%', translating.
-		// Out: HL -> the terminator, C = chars copied.
-		// With rm_tb_nl != 0, '%' (a line break inserted by msc4) is a space.
-		.rm_tb_fill
-			ld  c, 0
-		.rm_tb_fill_loop
-			ld  a, (hl)
-			or  a
-			ret z
-			cp  '%'
-			jr  nz, rm_tb_fill_nopc
-			ld  a, (_rm_tb_nl)
-			or  a
-			ret z
-			ld  a, ' '
-			jr  rm_tb_tr_done
-		.rm_tb_fill_nopc
-
-			cp  '['
-			jr  c, rm_tb_tr_lt
-			cp  '_' + 1
-			jr  nc, rm_tb_tr_done
-			// 91..95 -> , . ? ! space
-			push hl
-			push bc
-			sub '['
-			ld  c, a
-			ld  b, 0
-			ld  hl, rm_tb_tr_table
-			add hl, bc
-			ld  a, (hl)
-			pop bc
+			// Length (max 30)
 			pop hl
-			jr  rm_tb_tr_done
-		.rm_tb_tr_lt
-			cp  '<'
-			jr  nz, rm_tb_tr_2
-			ld  a, ']' 					// ¡
-			jr  rm_tb_tr_done
-		.rm_tb_tr_2
-			cp  '>'
-			jr  nz, rm_tb_tr_3
-			ld  a, '[' 					// ¿
-			jr  rm_tb_tr_done
-		.rm_tb_tr_3
-			cp  '='
-			jr  nz, rm_tb_tr_done
-			ld  a, 92 					// Ñ
-		.rm_tb_tr_done
+			push hl
+			ld  b, 0
+		.rm_rn_len
+			ld  a, (hl)
+			or  a
+			jr  z, rm_rn_len_done
+			inc hl
+			inc b
+			ld  a, b
+			cp  30
+			jr  c, rm_rn_len
+		.rm_rn_len_done
+
+			// DE = rm_temp_string + (30 - length) / 2
+			ld  a, 30
+			sub b
+			srl a
+			ld  e, a
+			ld  d, 0
+			ld  hl, _rm_temp_string
+			add hl, de
+			ex  de, hl
+
+			// Copy, '%' -> ' '
+			pop hl
+			inc b
+		.rm_rn_copy
+			dec b
+			jr  z, rm_rn_print
+			ld  a, (hl)
+			inc hl
+			cp  '%'
+			jr  nz, rm_rn_copy_store
+			ld  a, ' '
+		.rm_rn_copy_store
 			ld  (de), a
 			inc de
+			jr  rm_rn_copy
+
+		.rm_rn_print
+			ld  a, 1
+			ld  (__x), a
+			ld  (__t), a
+			ld  a, RAMIRO_RN_Y
+			ld  (__y), a
+			ld  hl, _rm_temp_string
+		#ifdef CPC
+			jp  draw_text_pre_loop
+		#else
+			ld  a, RAMIRO_RN_ATTR
+			ld  (__n), a
+			jp  draw_text_loop
+		#endif
+	#endasm
+}
+
+void __FASTCALL__ ramiro_textbox (unsigned char *ptr) {
+	#asm
+			// Room name?
+			ld  a, (hl)
+			cp  '0'
+			jr  nz, rm_tb_dialog
+			inc hl
+			jp  _rm_room_name
+
+		.rm_tb_dialog
+			// Speaker?
+			ld  de, 0
+			sub '1'
+			cp  9
+			jr  nc, rm_tb_nospeaker
+			inc hl
+			add a, a
+			ld  e, a
+			push hl
+			ld  hl, _ramiro_speakers
+			add hl, de
+			ld  e, (hl)
+			inc hl
+			ld  d, (hl)
+			pop hl
+		.rm_tb_nospeaker
+			ld  (_gp_gen), hl
+			ld  (_rm_speaker), de
+	#endasm
+
+	#ifndef CPC
+		rm_sprite_remove_aid ();
+	#endif
+
+	#asm
+			// Speaker's tab, above the frame, and the top line of the frame
+			// under it with a gap where the tab is (as in 2016):
+			//   y = 5:   "NAME#
+			//   y = 6:   &      $$$$$$$$$$$$$%
+			ld  hl, _rm_top_string + 1
+			ld  de, _rm_top_string + 2
+			ld  bc, 21
+			ld  (hl), '$'
+			ldir
+
+			ld  hl, (_rm_speaker)
+			ld  a, h
+			or  l
+			jr  z, rm_tb_top
+
+			// Tab
+			ld  a, 4
+			ld  (__x), a
+			ld  a, 5
+			ld  (__y), a
+			push hl
+			ld  hl, rm_tb_tab_l
+			call rm_draw_tab_end
+			pop hl
+		#ifdef CPC
+			ld  a, 5
+			ld  (__x), a
+			call draw_text_pre_loop
+		#else
+			ld  a, RAMIRO_TB_SPEAKER_ATTR
+			ld  (__n), a
+			call rm_draw_text_keep_x 		// leaves __x after the name
+		#endif
+
+			// Gap in the top line: name length + 1
+			ld  hl, (_rm_speaker)
+			ld  de, _rm_top_string + 1
+			ld  a, ' '
+		.rm_tb_gap
+			ld  (de), a
+			inc de
+			ld  c, (hl)
 			inc hl
 			inc c
-			djnz rm_tb_fill_loop
+			dec c
+			jr  nz, rm_tb_gap
 
-			// Too long: skip to the end of the line
-		.rm_tb_skip
+		#ifdef CPC
+			// After the name: x = 5 + length
+			ld  hl, _rm_top_string + 1
+			ex  de, hl
+			or  a
+			sbc hl, de
+			ld  a, l
+			add 4
+			ld  (__x), a
+		#endif
+			ld  a, 5
+			ld  (__y), a
+			ld  hl, rm_tb_tab_r
+			call rm_draw_tab_end
+
+		.rm_tb_top
+			// Draw FRAME TOP
+			ld  a, 6
+			ld  (__y), a
+			ld  a, 4
+			ld  (__x), a
+			ld  hl, _rm_top_string
+			call _rm_draw_frame_line
+
+			ld  a, 7
+			ld  (_rdy), a
+
+			// Main loop to output lines of text
+
+		.rm_stb_loop
+			// Clear line above, if rdy > 7
+			ld  a, (_rdy)
+			cp  8
+			jr  c, rm_stb_notop
+
+			// Draw FRAME INNER
+			ld  a, (_rdy)
+			dec a
+			ld  (__y), a
+			ld  a, 4
+			ld  (__x), a
+			ld  hl, _rm_mid_string
+			call _rm_draw_frame_line
+
+		.rm_stb_notop
+			// Draw FRAME INNER (text bg)
+			ld  a, (_rdy)
+			ld  (__y), a
+			ld  a, 4
+			ld  (__x), a
+			ld  hl, _rm_mid_string
+			call _rm_draw_frame_line
+
+			// Draw FRAME BOTTOM
+			ld  a, (_rdy)
+			inc a
+			ld  (__y), a
+			ld  a, 4
+			ld  (__x), a
+			ld  hl, _rm_bottom_string
+			call _rm_draw_frame_line
+
+			// Fill buffer with the next line of text
+			ld  de, _rm_temp_string
+			ld  hl, (_gp_gen) 				// HL -> current text
+
+		.rm_fill_buffer_loop
+			ld  a, (hl) 					// Read char from text
+			or  a
+			jr  z, rm_fill_buffer_end 		// 0 -> done filling buffer (string end)
+			cp  '%'
+			jr  z, rm_fill_buffer_end 		// % -> done filling buffer (new line)
+			ld  (de), a 					// Write to buffer
+			inc de
+			inc hl
+			jr  rm_fill_buffer_loop
+
+		.rm_fill_buffer_end
+			xor a
+			ld  (de), a 					// String end
+			ld  (_gp_gen), hl
+
+			ld  a, 5 						// Left border + 1
+			ld  (_rdx), a
+
+			ld  hl, _rm_temp_string
+			call rm_dtcbc_loop
+
+			ld  a, (_rdy)
+			add 2
+			ld  (_rdy), a
+
+			// if (*gp_gen == 0) break;
+			ld  hl, (_gp_gen)
 			ld  a, (hl)
 			or  a
-			ret z
-			cp  '%'
-			ret z
+			jr  z, rm_stb_exitloop
+
+			// gp_gen ++;
 			inc hl
-			jr  rm_tb_skip
+			ld  (_gp_gen), hl
+			jp  rm_stb_loop
 
-		.rm_tb_tr_table
-			defm ",.?! "
-
-		// draw_text (rm_tb_x, rm_tb_y ++, rm_tb_a, rm_temp_string);
-		.rm_tb_print
-			ld  a, (_rm_tb_x)
-			ld  l, a
-			ld  h, 0
-			push hl
-			ld  a, (_rm_tb_y)
-			ld  l, a
-			push hl
-			inc a
-			ld  (_rm_tb_y), a
-			ld  a, (_rm_tb_a)
-			ld  l, a
-			push hl
-			ld  hl, _rm_temp_string
-			push hl
-			call _draw_text
-			pop hl
-			pop hl
-			pop hl
-			pop hl
+		.rm_draw_tab_end
+		#ifdef CPC
+			jp  draw_text_pre_loop
+		#else
+			ld  a, RAMIRO_TB_TAB_ATTR
+			ld  (__n), a
+		.rm_draw_text_keep_x
+			// draw_text_loop leaves __x one past the end; fix it
+			call draw_text_loop
+			ld  hl, __x
+			dec (hl)
 			ret
+		#endif
 
-		// One dialog line from HL: line, then a blank line, sound.
-		// Out: HL -> terminator.
-		.rm_tb_dialog_line
-			push hl
-			call rm_tb_clear
-			pop hl
-			ld  de, _rm_temp_string + 1
-			ld  b, 22
-			call rm_tb_fill
-			push hl
+		.rm_tb_tab_l
+			defb 34, 0 					// '"': tab, left end
+		.rm_tb_tab_r
+			defb 35, 0 					// '#': tab, right end
 
-			// Box is 24 wide
-			xor a
-			ld  (_rm_temp_string + 24), a
-
-			call rm_tb_print 			// the line
-			call rm_tb_clear
-			xor a
-			ld  (_rm_temp_string + 24), a
-			ld  a, RAMIRO_TB_ATTR
-			ld  (_rm_tb_a), a
-			call rm_tb_print 			// blank line under it
-
+		.rm_stb_exitloop
 		#ifdef CPC
 			ld  hl, 0
 			push hl
@@ -2241,150 +2504,20 @@ void ramiro_textbox_helpers (void) {
 			call SPUpdateNow
 		#endif
 
-			// play_sfx (talk_sounds [rand () & 1]);
-			call _rand
-			ld  a, l
-			and 1
-			ld  l, 7
-			jr  z, rm_tb_talk
-			ld  l, 11
-		.rm_tb_talk
-			call _rm_sfx
+			// peta_el_beeper (1);
+			ld  l, 1
+			call _peta_el_beeper
 
-			pop hl
-			ret
-	#endasm
-}
-
-void __FASTCALL__ ramiro_textbox (unsigned char *ptr) {
-	#asm
-			ld  (_rm_tb_ptr), hl
-
-			// '0': room name in the HUD
-			ld  a, (hl)
-			sub '0'
-			ld  (_rm_tb_nl), a 			// 0 -> '%' ends a line; else it's a space
-			jr  nz, rm_tb_dialog
-			inc a
-			ld  (_rm_tb_nl), a
-
-			inc hl
-			push hl
-			call rm_tb_clear
-			pop hl
-			ld  de, _rm_temp_string
-			ld  b, 30
-			call rm_tb_fill 			// C = length
-
-			// Center it: x = 1 + (30 - length) / 2
-			push bc
-			call rm_tb_clear
-			pop bc
-			ld  a, 30
-			sub c
-			srl a
-			ld  e, a
-			ld  d, 0
-			ld  hl, _rm_temp_string
-			add hl, de
-			ex  de, hl
-			ld  hl, (_rm_tb_ptr)
-			inc hl
-			ld  b, 30
-			call rm_tb_fill
-
-			ld  a, 1
-			ld  (_rm_tb_x), a
-			ld  a, RAMIRO_RN_Y
-			ld  (_rm_tb_y), a
-			ld  a, RAMIRO_RN_ATTR
-			ld  (_rm_tb_a), a
-			jp  rm_tb_print
-
-		.rm_tb_dialog
-			xor a
-			ld  (_rm_tb_nl), a
-
-			// sprite_remove_aid ()
-			call _saca_a_todo_el_mundo_de_aqui
-
-			ld  a, RAMIRO_TB_X
-			ld  (_rm_tb_x), a
-			ld  a, RAMIRO_TB_Y
-			ld  (_rm_tb_y), a
-			ld  a, RAMIRO_TB_ATTR
-			ld  (_rm_tb_a), a
-
-			// Top blank line
-			call rm_tb_clear
-			xor a
-			ld  (_rm_temp_string + 24), a
-			call rm_tb_print
-
-			// Speaker?
-			ld  hl, (_rm_tb_ptr)
-			ld  a, (hl)
-			sub '1'
-			cp  9
-			jr  nc, rm_tb_line_loop
-
-			inc hl
-			ld  (_rm_tb_ptr), hl
-
-			add a, a
-			ld  e, a
-			ld  d, 0
-			ld  hl, _ramiro_speakers
-			add hl, de
-			ld  a, (hl)
-			inc hl
-			ld  h, (hl)
-			ld  l, a
-			ld  a, RAMIRO_TB_SPEAKER_ATTR
-			ld  (_rm_tb_a), a
-			call rm_tb_dialog_line
-
-		.rm_tb_line_loop
-			ld  a, RAMIRO_TB_ATTR
-			ld  (_rm_tb_a), a
-			ld  hl, (_rm_tb_ptr)
-			call rm_tb_dialog_line
-
-			// if (*gp_gen == 0) break; gp_gen ++;
-			ld  a, (hl)
-			or  a
-			jr  z, rm_tb_wait
-			inc hl
-			ld  (_rm_tb_ptr), hl
-			ld  a, (_rm_tb_y)
-			cp  21
-			jr  c, rm_tb_line_loop
-
-		.rm_tb_wait
-		#ifdef CPC
-			// Wait for a fresh key press (as MK1 v3.2's ababol / papaya)
-		.rm_tb_wait_key
+			// do { pad_read (); } while (0xff == pad_this_frame);
+		.rm_stb_waitkey
 			call _pad_read
 			ld  a, (_pad_this_frame)
 			inc a
-			jr  z, rm_tb_wait_key
-		#else
-			// while (any_key ()); while (!any_key ());
-		.rm_tb_wait_release
-			call _any_key
-			ld  a, l
-			or  a
-			jr  nz, rm_tb_wait_release
-		.rm_tb_wait_press
-			call _any_key
-			ld  a, l
-			or  a
-			jr  z, rm_tb_wait_press
-		#endif
+			jr  z, rm_stb_waitkey 			// if pad = 0xff, inc pad = 0, so loop.
 
-			// redraw_from_buffer (); hotspot_paint (); render_all_sprites ();
-			call _ramiro_redraw
+			call _ramiro_redraw 			// redraw_from_buffer + hotspot_paint
 			call _render_all_sprites
+
 		#ifdef CPC
 			ld  hl, 1
 			push hl

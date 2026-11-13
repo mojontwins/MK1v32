@@ -33,8 +33,8 @@
 ; 5bit text decoder
 	XREF _run_text_box
 	XREF script_bytecode
-; Target SPECCY
-	LIB SPUpdateNow
+; Target CPC
+	XREF _cpc_UpdateNow
 ; Exports
 	XDEF _script_do
 	XDEF _script_n
@@ -248,7 +248,7 @@
 .aopcode_E1
 	ld  hl, 1
 	push hl
-	call SPUpdateNow
+	call _cpc_UpdateNow
 	pop bc
 	jp  script_actions
 .aopcode_E1_end
@@ -358,6 +358,12 @@
 	call read_vbyte 		; Read value
 	ld  (sc_y), a
 	ld  a, c  				; C = flag index
+; OPANT LVALUE
+	cp  0xEA
+	jr  nz, riv_set_on_pant_done
+	ld  hl, _on_pant
+	jr  read_i_v_cont
+.riv_set_on_pant_done
 	ld  b, 0 				; BC = flag index
 	ld  hl, _flags
 	add hl, bc 				; HL -> FLAGS [X]

@@ -40,16 +40,17 @@
 #   EXTERN 12, x2   inside the box (msc3's SET_FIRE_ZONE). 13 switches it
 #   EXTERN 13, y2   on. ENTERING ANY switches it off (EXTERN 14).
 #   EXTERN 14, 0    fire zone off
-#   EXTERN 15, 0    REENTER (draw the screen again, run its ENTERING section)
 #   EXTERN 16, 0    REDRAW (repaint the play area)
 #
-# TEXT BOX strings (addons/ramiro.h): the first character says what it is.
+# TEXT BOX: Sir Ababol / Papaya's text box (addons/ramiro.h). The first
+# character says what it is:
 #   "0..."   room name, centered in the HUD
 #   "1..."   RAMIRO says...          "5..."   VOZ DE ULTRATUMBA
 #   "2..."   HIJA CANIJA             "6..."   GIGANTE ELEGANTE
 #   "3..."   BRUJA MARUJA            "7..."   ENANO MARRANO
 #   "4..."   JUANILLO EL COLMILLO    "8..."   SIRVIENTE VICENTE
-#   (the names are in dev/extern.h). In the texts < is ¡, > is ¿, = is Ñ.
+#   (the names are in dev/extern.h, shown in the box's tab).
+#   In the texts < is ¡, > is ¿, = is Ñ (that's where the font has them).
 #
 # TRANSLATION NOTES (msc3 -> msc4)
 # --------------------------------
@@ -311,7 +312,9 @@ PRESS FIRE AT SCREEN 7
 		TEXT BOX "1RAYAS Y CENTOLLAS, CALAMIDAD DE MI... CABEZA DE AJO, <MALDICION! OLVIDE EL CUMPLE MUERTES DE MI HIJA CANIJA..."
 		TEXT BOX "1AHORA ESTA HECHA UNA FURIA, LA MACABRA. SALE A SU MADRE, LA VAMPIRESA DE FRAMBUESA, ESTA CLARO."
 		TEXT BOX "1NO PERMITIRA QUE ESTOS VIEJOS HUESOS DESCANSEN EN SU SEPULCRO HASTA QUE LE LLEVE UNA BUENA COMPENSACION."
-		EXTERN 15, 0
+		# REENTER: an out of range OPANT makes the engine draw the screen
+		# again and run its ENTERING sections.
+		OPANT = 99
 		BREAK
 	END
 
