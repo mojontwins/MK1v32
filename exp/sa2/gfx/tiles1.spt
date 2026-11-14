@@ -1,0 +1,28 @@
+# Sir Ababol 2 CPC, load 1: patterns + tile maps (mkts_om mode=scripted, run from dev/)
+#
+# Nibble mode 0 at its own resolution (a 16x16 tile is 8x16 pixels in the
+# PNGs), the 16 pens of pal.png. One pattern pool for the whole load: the
+# font first (patterns 0-63, ASCII 32-95), then each level's 32 tiles; each
+# level gives a tile map (4 patterns per tile).
+
+cpcmode 0
+brickinput off
+pal ../gfx/pal.png
+
+open ../gfx/font.png
+charset 0 0 64 1 0 0 64
+
+open ../gfx/tsA.png
+metatileset 0 0 16 2 2 2 0
+output tmaps cpc/lvl0_tmaps.bin
+
+open ../gfx/tsA.png
+metatileset 0 0 16 2 2 2 0
+output tmaps cpc/lvl1_tmaps.bin
+
+open ../gfx/tsA.png
+metatileset 0 0 16 2 2 2 0
+output tmaps cpc/lvl2_tmaps.bin
+
+stats
+output patterns cpc/patterns.bin

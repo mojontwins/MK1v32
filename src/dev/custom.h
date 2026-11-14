@@ -1,25 +1,22 @@
 // MTE MK1 v3.2
 // Copyleft 2011, 2026 by The Mojon Twins
 
-void before_vsync (void) {
-}
-
 #ifdef PLAYER_CUSTOM_MOVE
 	void player_custom_move (void) {
 		// Completely replace player movement & collision
 	}
-#endif
+#else 
+	#ifdef PLAYER_CUSTOM_VENG
+		void player_custom_veng (void) {
+			// Modify vy as needed
+		}
+	#endif
 
-#ifdef PLAYER_CUSTOM_VENG
-	void player_custom_veng (void) {
-		// Modify vy as needed
-	}
-#endif
-
-#ifdef PLAYER_CUSTOM_HENG
-	void player_custom_heng (void) {
-		// Modify vx as needed
-	}
+	#ifdef PLAYER_CUSTOM_HENG
+		void player_custom_heng (void) {
+			// Modify vx as needed
+		}
+	#endif
 #endif
 
 #ifdef PLAYER_CUSTOM_FRAME
@@ -73,5 +70,19 @@ void before_vsync (void) {
 	unsigned char custom_hotspots() {
 		// hotspot type is hotspot_t.
 		// set rdi to prevent clearing the hotspot.
+	}
+#endif
+
+#ifdef ENABLE_CUSTOM_CODE
+	void entering_game (void) {
+		
+	}
+
+	void entering_screen (void) {
+
+	}
+
+	void before_vsync(void) {
+
 	}
 #endif

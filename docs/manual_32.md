@@ -1718,6 +1718,14 @@ tipo del hotspot (1 = objeto, 2 = llave, 3 = recarga). Si pones `rdi = 1`, el ho
 **no** se borra y el script no se ejecuta (útil para "no puedes coger esto hasta haber
 hablado con alguien").
 
+## `ENABLE_CUSTOM_CODE`
+
+Con esto activado, el motor llamará a `entering_game` justo antes de empezar el loop
+principal de juego, `entering_screen` cada vez que entremos en una nueva pantalla, tras
+construir el fondo e inicializar hotspots y enemigos, y `before_vsync` justo antes de
+que se actualice la pantalla en el bucle de juego. Estas tres funciones se definen,
+como las demás, en `custom.h`, y permiten realizar todo tipo de ampliaciones al motor.
+
 ## `custom_flick.h`: las transiciones de pantalla
 
 Con `ENABLE_CUSTOM_FLICK` el motor te pregunta antes de dejar al jugador pasar a la

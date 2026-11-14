@@ -1,0 +1,4 @@
+# hardware inks of pens 0-15 in the original (my_inks)
+20, 4, 21, 23, 27, 11, 3, 14, 5, 12, 24, 28, 0, 22, 26, 7
+# hardware inks of the cutscenes (mode 1, pens 0-3)
+20, 23, 27, 11

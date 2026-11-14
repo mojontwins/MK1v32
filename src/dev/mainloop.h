@@ -99,6 +99,10 @@ void main (void) {
 			AY_PLAY_MUSIC (1);
 		#endif
 
+		#ifdef ENABLE_CUSTOM_CODE
+			entering_game ();
+		#endif
+
 		while (playing) {
 			// Change room ?
 			#asm
@@ -118,6 +122,10 @@ void main (void) {
 
 				#if defined AUTO_SPLIT && !defined ALWAYS_SPLIT
 						ld  (_do_split), a
+				#endif
+
+				#ifdef ENABLE_CUSTOM_CODE
+						call _entering_screen
 				#endif
 
 				.ml_ud_skip
@@ -321,7 +329,9 @@ void main (void) {
 			
 			// Render to screen
 
-			before_vsync ();
+			#ifdef ENABLE_CUSTOM_CODE
+				before_vsync ();
+			#endif
 
 			#ifdef CPC
 				
