@@ -275,7 +275,7 @@ If inCommand("pureblack47") Then
 		For i = 0 To 7
 			tileset (idx * 8 + i) = 0
 		Next i 
-		tileset (2048 + i) = 0
+		tileset (2048 + idx) = 0
 	Next idx 
 End If
 
