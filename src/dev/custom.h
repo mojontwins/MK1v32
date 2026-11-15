@@ -65,7 +65,7 @@
 	}
 #endif
 
-#ifdef CUSTOM_MAP_RENDERER
+#ifdef ENABLE_CUSTOM_MAP_RENDERER
 	void custom_draw_scr_background () {
 
 	}

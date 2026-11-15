@@ -2424,7 +2424,7 @@ void draw_scr_background (void) {
 		#endif
 	#endasm
 
-	#ifdef CUSTOM_MAP_RENDERER
+	#ifdef ENABLE_CUSTOM_MAP_RENDERER
 		custom_draw_scr_background ();
 	#else
 
