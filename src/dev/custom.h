@@ -32,6 +32,13 @@
 	}
 #endif
 
+#ifdef PLAYER_MOVE_OVERRIDE
+	unsigned char player_move_override (void) {
+		// Return 1 if call to `move` should be skipped.
+		return 0;
+	}
+#endif
+
 #ifdef ENABLE_CUSTOM_ENEMS
 
 	void extra_enems_init (void) {

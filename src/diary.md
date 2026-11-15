@@ -68,4 +68,5 @@ Early en vert.axis, se detecta (o no) la escalera y se establece `player.hit_lad
 [X] Si `!player.hit_ladder` -> `player.on_ladder = 0`.
 [X] Si `player.on_ladder`, la gravedad no aplica.
 [X] Iniciar el salto: se puede si `player.on_ladder`. 
-[ ] Lógica `player.hit_ladder && !player.on_ladder`, si UP|DOWN `player.onladder = 1`.
+[X] Lógica `player.hit_ladder && !player.on_ladder`, si UP|DOWN `player.onladder = 1`.
+[X] Lógica de `player.on_ladder`: UP y DOWN Mueven con vy fija PLAYER_LADDER_VY.
