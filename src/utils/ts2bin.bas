@@ -148,7 +148,8 @@ End Function
 Sub usage
 	Print "Usage: "
 	Print 
-	Print "$ ts2bin font.png/nofont work.png|notiles|blank ts.bin defaultink [onlyattrs|noattrs] [straittiles]"
+	Print "$ ts2bin font.png/nofont work.png|notiles|blank ts.bin defaultink"
+	Print "  [onlyattrs|noattrs] [straittiles] [pureblack47]"
 	Print
 	Print "where:"
 	Print "   * font.png is a 256x16 file with 64 chars ascii 32-95"
@@ -164,6 +165,7 @@ Sub usage
 	Print "   * onlyattrs: if specified, only output attributes"
 	Print "   * noattrs: if specified, don't output attributes"
 	Print "   * straittiles: process tileset as charset"
+	Print "   * pureblack47: tile 47 is 0 for all bitmap & 0 for attributes"
 End Sub
 
 ' VARS.
@@ -176,6 +178,7 @@ Dim As Any Ptr img
 Dim As uByte tileset (2303)
 Dim As Integer switchToInverted
 Dim As Integer switchToDefaultInk
+Dim As Integer pureblack47
 
 ' DO
 
@@ -265,6 +268,16 @@ End If
 
 If inCommand ("noattrs") And finByte = 2303 Then finByte = 2047
 If inCommand ("onlyattrs") Then iniByte = 2048: finByte = 2303
+
+If inCommand("pureblack47") Then
+	' Just patch it. tile 47 uses patterns 252-255
+	For idx = 252 To 255
+		For i = 0 To 7
+			tileset (idx * 8 + i) = 0
+		Next i 
+		tileset (2048 + i) = 0
+	Next idx 
+End If
 
 For i = iniByte To finByte
 	d = tileset (i)
