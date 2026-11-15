@@ -973,10 +973,12 @@ Ver el capítulo 7.
 ```c
     //#define PLAYER_CUSTOM_VENG                 // Replace Vertical axis for your own
     //#define PLAYER_CUSTOM_HENG                 // Replace Horizontal axis for your own
-    #define PLAYER_CUSTOM_FRAME                 // Replace frame number selection for your own
+    #define PLAYER_CUSTOM_FRAME                  // Replace frame number selection for your own
     //#define PLAYER_CUSTOM_BG_HIT               // Implement your own bounce.
+    //#define ENABLE_CUSTOM_MAP_RENDERER         // Implement your own map renderer / map data.
     //#define ENABLE_CUSTOM_HOTSPOTS             // Add your own hotspots!
     //#define ENABLE_CUSTOM_FLICK                // define flick_* in custom_flick.h, return 0 to override flick
+    //#define ENABLE_CUSTOM_CODE                 // Enables entering_screen () & before_vsync ()
     //#define CUSTOM_SPRITE_CELLS                // Use your own sprite cell luts from custom_sprite_cells.h
     //#define ENEMS_CELL_OFFSET         8        // If the above is defined, this is the 1st cell for the enemies.
 ```
@@ -1701,6 +1703,20 @@ aplastar. En **Papaya** se usa para que el "viejo" (el tendero) no mate al jugad
 Para que un enemigo custom tenga su propio gráfico, hay que llamar a
 `enems_en_an_calc (tipo - 1)` en `extra_enems_init()`, que calcula el cell base a partir
 del tipo (ver `ENEMS_CELL_OFFSET`).
+
+### Mapas custom
+
+```c
+    #ifdef CUSTOM_MAP_RENDERER
+       void custom_draw_scr_background () {   
+
+       }
+    #endif
+```
+
+Sustituye totalmente el motor de mapas de MK1. Permite crear tu propio formato que use
+datos custom y código concreto para renderizarlos. Para que esto funcione, tu sistema
+debe rellenar `map_buff` y `map_attr`.
 
 ### Hotspots custom
 

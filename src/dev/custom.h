@@ -63,7 +63,12 @@
 
 		return 1;
 	}
+#endif
 
+#ifdef CUSTOM_MAP_RENDERER
+	void custom_draw_scr_background () {
+
+	}
 #endif
 
 #ifdef ENABLE_CUSTOM_HOTSPOTS
@@ -75,7 +80,7 @@
 
 #ifdef ENABLE_CUSTOM_CODE
 	void entering_game (void) {
-		
+
 	}
 
 	void entering_screen (void) {

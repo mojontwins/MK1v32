@@ -2424,231 +2424,236 @@ void draw_scr_background (void) {
 		#endif
 	#endasm
 
-	#ifdef RLE_MAP
-		#asm
-			._draw_scr_get_scr_address
-				// Full 16 bits calculation
-				ld  hl, (_n_pant)
-				ld  h, 0
-				add hl, hl
-				ld  de, _mapa
-
-				add hl, de 		; HL = map + (n_pant << 1)
-				ld  e, (hl)
-				inc hl
-				ld  d, (hl) 	; DE = index
-				ld  hl, _mapa
-				add hl, de      ; HL = map + index
-				ld  (_gp_gen), hl		
-		#endasm
-	#elif defined UNPACKED_MAP
-		gp_gen = mapa + (n_pant * 150);
+	#ifdef CUSTOM_MAP_RENDERER
+		custom_draw_scr_background ();
 	#else
-		gp_gen = mapa + (n_pant * 75);
-	#endif
 
-	#ifdef UNPACKED_MAP
-		// UNPACKED map, every byte represents one tile.
-		
-		for (gpit = 0; gpit < 150; gpit ++) {
-			rdd = *gp_gen ++;
-			#if defined(USE_COINS) && defined(COINS_DEACTIVABLE)
-				if (rdd == COIN_TILE && 0 == scenery_info.show_coins) rdd = COIN_TILE_DEACT_SUBS;
-			#endif
-			map_attr [rdi] = comportamiento_tiles [rdd];
-			map_buff [rdi] = rdd;
-			draw_coloured_tile (VIEWPORT_X + rdx, VIEWPORT_Y + rdy, rdd);
-			rdi ++;
-			rdx += 2;
-			if (rdx == 30) {
-				rdx = 0;
-				rdy += 2;
+		#ifdef RLE_MAP
+			#asm
+				._draw_scr_get_scr_address
+					// Full 16 bits calculation
+					ld  hl, (_n_pant)
+					ld  h, 0
+					add hl, hl
+					ld  de, _mapa
+
+					add hl, de 		; HL = map + (n_pant << 1)
+					ld  e, (hl)
+					inc hl
+					ld  d, (hl) 	; DE = index
+					ld  hl, _mapa
+					add hl, de      ; HL = map + index
+					ld  (_gp_gen), hl		
+			#endasm
+		#elif defined UNPACKED_MAP
+			gp_gen = mapa + (n_pant * 150);
+		#else
+			gp_gen = mapa + (n_pant * 75);
+		#endif
+
+		#ifdef UNPACKED_MAP
+			// UNPACKED map, every byte represents one tile.
+			
+			for (gpit = 0; gpit < 150; gpit ++) {
+				rdd = *gp_gen ++;
+				#if defined(USE_COINS) && defined(COINS_DEACTIVABLE)
+					if (rdd == COIN_TILE && 0 == scenery_info.show_coins) rdd = COIN_TILE_DEACT_SUBS;
+				#endif
+				map_attr [rdi] = comportamiento_tiles [rdd];
+				map_buff [rdi] = rdd;
+				draw_coloured_tile (VIEWPORT_X + rdx, VIEWPORT_Y + rdy, rdd);
+				rdi ++;
+				rdx += 2;
+				if (rdx == 30) {
+					rdx = 0;
+					rdy += 2;
+				}
 			}
-		}
-	#elif defined RLE_MAP
-		// RLE'd map, inserted as an insert from a future age
+		#elif defined RLE_MAP
+			// RLE'd map, inserted as an insert from a future age
 
-		#asm
-			._draw_scr_rle
-				
-			._draw_scr_loop
-				ld  a, (_rdi)
-				cp  150
-				jr  z, _draw_scr_loop_done
+			#asm
+				._draw_scr_rle
+					
+				._draw_scr_loop
+					ld  a, (_rdi)
+					cp  150
+					jr  z, _draw_scr_loop_done
 
-				ld  hl, (_gp_gen)
-				ld  a, (hl)
-				inc hl
-				ld  (_gp_gen), hl
-				
-				ld  (_rdn), a
+					ld  hl, (_gp_gen)
+					ld  a, (hl)
+					inc hl
+					ld  (_gp_gen), hl
+					
+					ld  (_rdn), a
 
-			#if RLE_MAP == 44
-				and 0x0f
-			#elif RLE_MAP == 53
-				and 0x1f
-			#else
-				and 0x3f
-			#endif			
+				#if RLE_MAP == 44
+					and 0x0f
+				#elif RLE_MAP == 53
+					and 0x1f
+				#else
+					and 0x3f
+				#endif			
 
-			#ifdef MAPPED_TILESETS
-				ld  hl, (_tileset_mappings)
-				add a, l
-				ld  l, a
-				jr  nc, dsl_noinc
-				inc h
-			.dsl_noinc
-				ld  a, (hl)
-			#endif
-
-				ld  (_rdc), a
-
-			._draw_scr_advance_loop
-				ld  a, (_rdn)
-			#if RLE_MAP == 44
-				cp  0x10
-			#elif RLE_MAP == 53			
-				cp  0x20
-			#else
-				cp  0x40
-			#endif
-
-				jr  c, _draw_scr_advance_loop_done
-
-			#if RLE_MAP == 44
-				sub 0x10
-			#elif RLE_MAP == 53
-				sub 0x20
-			#else
-				sub 0x40
-			#endif
-				ld  (_rdn), a
-
-				call _advance_worm
-
-				// That's it!
-
-				jr _draw_scr_advance_loop
-
-			._draw_scr_advance_loop_done
-				call _advance_worm
-
-				jr _draw_scr_loop
-
-				#ifndef NO_ALT_BG
-					.no_alt_bg_subst
-						or  a
-						ret  nz
-
-						call _rand
-						ld  a, l
-						and 15
-						cp  2
-						jr  nc, draw_scr_alt_no
-
-						ld  a, HOTSPOTS_FIRST_TILE + 3
-						ret
-
-					.draw_scr_alt_no
-						xor a
-						ret
+				#ifdef MAPPED_TILESETS
+					ld  hl, (_tileset_mappings)
+					add a, l
+					ld  l, a
+					jr  nc, dsl_noinc
+					inc h
+				.dsl_noinc
+					ld  a, (hl)
 				#endif
 
-			._advance_worm
-				ld  a, (_rdc)
+					ld  (_rdc), a
 
-				#ifndef NO_ALT_BG
-					call no_alt_bg_subst
+				._draw_scr_advance_loop
+					ld  a, (_rdn)
+				#if RLE_MAP == 44
+					cp  0x10
+				#elif RLE_MAP == 53			
+					cp  0x20
+				#else
+					cp  0x40
 				#endif
 
-				ld  (__n), a
-				call _draw_and_advance
-				ret
+					jr  c, _draw_scr_advance_loop_done
 
-			._draw_scr_loop_done
-		#endasm		
-	#else
-		// PACKED map, every byte packs two tiles.
-
-		#asm
-				xor a
-				ld  (_rdi), a
-				ld  (_gpit), a
-
-			.draw_scr_bg_loop
-				
-				ld  hl, (_gp_gen)
-				ld  a, (hl)
-				inc hl
-				ld  (_gp_gen), hl
-				ld  b, a
-
-				srl a
-				srl a
-				srl a
-				srl a
-
-				#if defined USE_COINS && defined COINS_DEACTIVABLE
-						call coins_check
+				#if RLE_MAP == 44
+					sub 0x10
+				#elif RLE_MAP == 53
+					sub 0x20
+				#else
+					sub 0x40
 				#endif
+					ld  (_rdn), a
 
-				ld  (_rdt1), a
+					call _advance_worm
 
-				ld  a, b
-				and 15
+					// That's it!
 
-				#if defined USE_COINS && defined COINS_DEACTIVABLE
-						call coins_check
-				#endif
+					jr _draw_scr_advance_loop
 
-				ld  (_rdt2), a
+				._draw_scr_advance_loop_done
+					call _advance_worm
 
+					jr _draw_scr_loop
 
-				ld  a, (_rdt1)
-				#ifndef NO_ALT_BG
+					#ifndef NO_ALT_BG
+						.no_alt_bg_subst
+							or  a
+							ret  nz
+
+							call _rand
+							ld  a, l
+							and 15
+							cp  2
+							jr  nc, draw_scr_alt_no
+
+							ld  a, HOTSPOTS_FIRST_TILE + 3
+							ret
+
+						.draw_scr_alt_no
+							xor a
+							ret
+					#endif
+
+				._advance_worm
+					ld  a, (_rdc)
+
+					#ifndef NO_ALT_BG
 						call no_alt_bg_subst
-				#endif
-				ld  (__n), a
-				call _draw_and_advance
+					#endif
 
-				ld  a, (_rdt2)
-				#ifndef NO_ALT_BG
-						call no_alt_bg_subst
-				#endif
-				ld  (__n), a
-				call _draw_and_advance
+					ld  (__n), a
+					call _draw_and_advance
+					ret
 
-				ld  a, (_gpit)
-				inc a
-				ld  (_gpit), a
-				cp  75
-				jr  nz, draw_scr_bg_loop
+				._draw_scr_loop_done
+			#endasm		
+		#else
+			// PACKED map, every byte packs two tiles.
 
-				jr  draw_scr_bg_loop_end
+			#asm
+					xor a
+					ld  (_rdi), a
+					ld  (_gpit), a
 
-				#ifndef NO_ALT_BG
-					.no_alt_bg_subst
-						ld  c, a
-						call _rand
-						ld  a, l
-						and 15
-						cp  2
-						jr  nc, draw_scr_alt_no
+				.draw_scr_bg_loop
+					
+					ld  hl, (_gp_gen)
+					ld  a, (hl)
+					inc hl
+					ld  (_gp_gen), hl
+					ld  b, a
 
-						ld  a, c
-						or  a
-						ret  nz
+					srl a
+					srl a
+					srl a
+					srl a
 
-						ld  a, HOTSPOTS_FIRST_TILE + 3
-						ret
+					#if defined USE_COINS && defined COINS_DEACTIVABLE
+							call coins_check
+					#endif
 
-					.draw_scr_alt_no
-						ld  a, c
-						ret
-				#endif
-			.draw_scr_bg_loop_end
-		#endasm
-	#endif	
+					ld  (_rdt1), a
+
+					ld  a, b
+					and 15
+
+					#if defined USE_COINS && defined COINS_DEACTIVABLE
+							call coins_check
+					#endif
+
+					ld  (_rdt2), a
+
+
+					ld  a, (_rdt1)
+					#ifndef NO_ALT_BG
+							call no_alt_bg_subst
+					#endif
+					ld  (__n), a
+					call _draw_and_advance
+
+					ld  a, (_rdt2)
+					#ifndef NO_ALT_BG
+							call no_alt_bg_subst
+					#endif
+					ld  (__n), a
+					call _draw_and_advance
+
+					ld  a, (_gpit)
+					inc a
+					ld  (_gpit), a
+					cp  75
+					jr  nz, draw_scr_bg_loop
+
+					jr  draw_scr_bg_loop_end
+
+					#ifndef NO_ALT_BG
+						.no_alt_bg_subst
+							ld  c, a
+							call _rand
+							ld  a, l
+							and 15
+							cp  2
+							jr  nc, draw_scr_alt_no
+
+							ld  a, c
+							or  a
+							ret  nz
+
+							ld  a, HOTSPOTS_FIRST_TILE + 3
+							ret
+
+						.draw_scr_alt_no
+							ld  a, c
+							ret
+					#endif
+				.draw_scr_bg_loop_end
+			#endasm
+		#endif	
+	#endif
 
 	hotspot_paint ();
 
