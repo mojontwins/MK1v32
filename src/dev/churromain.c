@@ -53,4 +53,7 @@
 #include "mainloop.h" 	// Main is here!
 #ifndef CPC
 	#include "music.h"
+	#ifdef SFX_IDLE_PLAYER
+		#include "sfx_player.h" 	// Last: out of contended memory
+	#endif
 #endif

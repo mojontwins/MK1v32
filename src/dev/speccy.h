@@ -134,10 +134,114 @@ unsigned char ay_counter     @ 23298;
 	defw 0	// 2 bytes libres
 #endasm
 
+#ifdef SFX_IDLE_PLAYER
+	#include "sfx.h"
+#endif
+
+#ifdef MODE_128K_DUAL
+	// 128K: the WYZ player, songs & effects are in RAM1 (ogt/ram1/ram1.bin),
+	// loaded at C000 only on a 128K (system/zxloader.asm). Jump table:
+	#define RAM1_ISR 			0xC000 	// Every frame
+	#define RAM1_INIT 			0xC003
+	#define RAM1_PLAY 			0xC006 	// A = song
+	#define RAM1_FX 			0xC009 	// A = effect
+	#define RAM1_STOP 			0xC00C
+
+	// While RAM1 is paged in, C000-FFFF (the end of the program, the stack,
+	// splib2's IM2 table) is not there: interrupts are off, the stack is moved
+	// under the program (mainloop.h) and this code must stay below C000.
+
+	// ay_player_on: 23297 (above)
+	unsigned char is128k;
+
+	#asm
+		// B = RAM page at C000 (ROM 1)
+		.SetRAMBank
+				ld  a, 0x10
+				or  b
+				ld  bc, 0x7ffd
+				out (c), a
+				ret
+	#endasm
+
+	void __FASTCALL__ ay_play_music (unsigned char n) {
+		#asm
+				ld  a, (_is128k)
+				or  a
+				ret z
+
+				ld  e, l
+				di
+				ld  b, 1
+				call SetRAMBank
+				ld  a, e
+				push ix
+				push iy
+				call RAM1_PLAY
+				pop iy
+				pop ix
+				ld  b, 0
+				call SetRAMBank
+				ei
+		#endasm
+	}
+
+	void ay_stop_sound (void) {
+		#asm
+				ld  a, (_is128k)
+				or  a
+				ret z
+
+				di
+				ld  b, 1
+				call SetRAMBank
+				call RAM1_STOP
+				ld  b, 0
+				call SetRAMBank
+				ei
+		#endasm
+	}
+#endif
+
 void ISR (void) {	
 	#asm
 			ld  hl, _isrc
 			inc (hl)
+
+		#ifdef MODE_128K_DUAL
+				ld  a, (_is128k)
+				or  a
+				jr  z, isr_48k
+
+				ld  a, (_ay_player_on)
+				or  a
+				ret z
+
+				push bc
+				push de
+				push ix
+				push iy
+				ld  b, 1
+				call SetRAMBank
+				call RAM1_ISR
+				ld  b, 0
+				call SetRAMBank
+				pop iy
+				pop ix
+				pop de
+				pop bc
+				ret
+
+			.isr_48k
+		#endif
+
+		#ifdef SFX_IDLE_PLAYER
+				push bc
+				push de
+				call sfx_tick
+				pop de
+				pop bc
+		#endif
 	#endasm
 }
 
@@ -762,7 +866,11 @@ void pad_read (void) {
 void no_break (void) {
 	for (gpit = 0; gpit < 40; gpit ++) {
 		#asm 
-			halt
+			#ifdef SFX_IDLE_PLAYER
+					call _sfx_halt
+			#else
+					halt
+			#endif
 		#endasm
 	}
 }
@@ -771,7 +879,11 @@ void espera_activa (int espera) {
 	do {
 		pad_read ();
 		#asm
-				halt
+			#ifdef SFX_IDLE_PLAYER
+					call _sfx_halt
+			#else
+					halt
+			#endif
 		#endasm
 		if (pad_this_frame != 0xff) break;
 	} while (-- espera);
@@ -1317,263 +1429,265 @@ void __FASTCALL__ enems_en_an_calc (unsigned char n) {
 	#endasm
 }
 
-#asm
-	.playsfx
-		;di
-		ld l,a
-		ld h,0
-		add hl,hl
-		ld de,proclist
-		add hl,de
-		ld a,(hl)
-		inc hl
-		ld h,(hl)
-		ld l,a
-		ld de,0
-		jp (hl)
-	
-	.sound1	;enemy destroyed
-		ex de,hl
-		ld bc,500
-	.sound1l0
-		ld a,(hl)
-		and 16
-		out ($FE),a
-		ld e,a
-		inc a
-		sla a
-		sla a
-	.sound1l1
-		dec a
-		jr nz,sound1l1
-		out ($FE),a
-		ld a,e
-		inc a
-		add a,a
-		add a,a
-		add a,a
-	.sound1l2
-		dec a
-		jr nz,sound1l2
-		ld a,b
-		inc hl
-		dec bc
-		ld a,b
-		or c
-		jr nz,sound1l0
-		;ei
-		ret
-	
-	.sound2	;enemy hit
-		ex de,hl
-		ld bc,40*256+100
-	.sound2l0
-		ld a,(hl)
-		and 16
-		out ($FE),a
-		inc hl
-		ld a,c
-	.sound2l1
-		dec a
-		jr nz,sound2l1
-		out ($FE),a
-		ld a,c
-	.sound2l2
-		dec a
-		jr nz,sound2l2
-		djnz sound2l0
-		;ei
-		ret
-	
-	.sound3	;something
-		ex de,hl
-		ld b,100
-		ld de,$1020
-	.sound3l0
-		ld a,(hl)
-		and d
-		out ($FE),a
-		inc hl
-		ld a,e
-	.sound3l0a
-		dec a
-		jr nz,sound3l0a
-		djnz sound3l0
-		ld b,250
-	.sound3l1
-		ld a,(hl)
-		and d
-		out ($FE),a
-		inc hl
-		ld a,2
-	.sound3l2
-		dec a
-		jr nz,sound3l2
-		xor a
-		out ($FE),a
-		ld a,e
-	.sound3l3
-		dec a
-		jr nz,sound3l3
-		djnz sound3l1
-		;ei
-		ret
-	
-	.sound4	;jump
-		ld bc,20*256+250
-	.sound4l0
-		ld a,16
-		out ($FE),a
-		ld a,4
-	.sound4l1
-		dec a
-		jr nz,sound4l1
-		out ($FE),a
-		ld a,c
-	.sound4l2
-		dec a
-		jr nz,sound4l2
-		dec c
-		dec c
-		djnz sound4l0
-		;ei
-		ret
-	
-	.sound5	;player hit
-		ex de,hl
-		ld bc,100*256+16
-	.sound5l0
-		ld a,(hl)
-		and c
-		out ($FE),a
-		inc hl
-		ld a,110
-		sub b
-		ld e,a
-		and c
-		out ($FE),a
-	.sound5l1
-		dec e
-		jr nz,sound5l1
-		djnz sound5l0
-		;ei
-		ret
-	
-	.sound6	;enemy destroyed 2
-		ex de,hl
-		ld bc,20*256+16
-	.sound6l0
-		ld a,(hl)
-		inc hl
-		and c
-		out ($FE),a
-		xor a
-	.sound6l0a
-		dec a
-		jr nz,sound6l0a
-		djnz sound6l0
-	.sound6l1
-		ld a,(hl)
-		inc hl
-		and c
-		out ($FE),a
-	.sound6l2
-		dec a
-		jr nz,sound6l2
-		djnz sound6l1
-		;ei
-		ret
+#ifndef SFX_IDLE_PLAYER
+	#asm
+		.playsfx
+			;di
+			ld l,a
+			ld h,0
+			add hl,hl
+			ld de,proclist
+			add hl,de
+			ld a,(hl)
+			inc hl
+			ld h,(hl)
+			ld l,a
+			ld de,0
+			jp (hl)
 		
-	.sound7	;shot
-		ex de,hl
-		ld bc,100*256
-	.sound7l0
-		ld a,(hl)
-		inc hl
-		or c
-		and 16
-		out ($FE),a
-		ld a,(hl)
-		srl a
-		srl a
-	.sound7l1
-		dec a
-		jr nz,sound7l1
-		ld a,c
-		add a,4
-		ld c,a
-		djnz sound7l0
-		;ei
-		ret
-	
-	.sound8	;take item
-		ld a,200
-		jr soundItem
-	.sound9
-		ld a,175
-		jr soundItem
-	.sound10
-		ld a,100
-	.soundItem
-		ld (frq),a
-		ld b,4
-		ld d,128
-	.sound8l2
-		push bc
-	;.frq=$+1
-	;	ld bc,2*256+200
-		defb #01	;ld bc
-	.frq
-		defb 200	;+200
-		defb 2	;2*256
-	.sound8l0
-		push bc
-		ld b,50
-	.sound8l1
-		xor 16
-		and 16
-		out ($FE),a
-		ld e,a
-		ld a,d
-	.sound8l2b
-		dec a
-		jr nz,sound8l2b
-		out ($FE),a
-		ld a,129
-		sub d
-	.sound8l3
-		dec a
-		jr nz,sound8l3
-		ld a,e
-		ld e,c
-	.sound8l4
-		dec e
-		jr nz,sound8l4
-		djnz sound8l1
-		pop bc
-		ld a,c
-		sub 16
-		ld c,a
-		djnz sound8l0
-		pop bc
-		srl d
-		srl d
-		djnz sound8l2
-		;ei
-		ret
-	
-	.proclist
-		defw sound1
-		defw sound2
-		defw sound3
-		defw sound4
-		defw sound5
-		defw sound6
-		defw sound7
-		defw sound8
-		defw sound9
-		defw sound10
-#endasm
+		.sound1	;enemy destroyed
+			ex de,hl
+			ld bc,500
+		.sound1l0
+			ld a,(hl)
+			and 16
+			out ($FE),a
+			ld e,a
+			inc a
+			sla a
+			sla a
+		.sound1l1
+			dec a
+			jr nz,sound1l1
+			out ($FE),a
+			ld a,e
+			inc a
+			add a,a
+			add a,a
+			add a,a
+		.sound1l2
+			dec a
+			jr nz,sound1l2
+			ld a,b
+			inc hl
+			dec bc
+			ld a,b
+			or c
+			jr nz,sound1l0
+			;ei
+			ret
+		
+		.sound2	;enemy hit
+			ex de,hl
+			ld bc,40*256+100
+		.sound2l0
+			ld a,(hl)
+			and 16
+			out ($FE),a
+			inc hl
+			ld a,c
+		.sound2l1
+			dec a
+			jr nz,sound2l1
+			out ($FE),a
+			ld a,c
+		.sound2l2
+			dec a
+			jr nz,sound2l2
+			djnz sound2l0
+			;ei
+			ret
+		
+		.sound3	;something
+			ex de,hl
+			ld b,100
+			ld de,$1020
+		.sound3l0
+			ld a,(hl)
+			and d
+			out ($FE),a
+			inc hl
+			ld a,e
+		.sound3l0a
+			dec a
+			jr nz,sound3l0a
+			djnz sound3l0
+			ld b,250
+		.sound3l1
+			ld a,(hl)
+			and d
+			out ($FE),a
+			inc hl
+			ld a,2
+		.sound3l2
+			dec a
+			jr nz,sound3l2
+			xor a
+			out ($FE),a
+			ld a,e
+		.sound3l3
+			dec a
+			jr nz,sound3l3
+			djnz sound3l1
+			;ei
+			ret
+		
+		.sound4	;jump
+			ld bc,20*256+250
+		.sound4l0
+			ld a,16
+			out ($FE),a
+			ld a,4
+		.sound4l1
+			dec a
+			jr nz,sound4l1
+			out ($FE),a
+			ld a,c
+		.sound4l2
+			dec a
+			jr nz,sound4l2
+			dec c
+			dec c
+			djnz sound4l0
+			;ei
+			ret
+		
+		.sound5	;player hit
+			ex de,hl
+			ld bc,100*256+16
+		.sound5l0
+			ld a,(hl)
+			and c
+			out ($FE),a
+			inc hl
+			ld a,110
+			sub b
+			ld e,a
+			and c
+			out ($FE),a
+		.sound5l1
+			dec e
+			jr nz,sound5l1
+			djnz sound5l0
+			;ei
+			ret
+		
+		.sound6	;enemy destroyed 2
+			ex de,hl
+			ld bc,20*256+16
+		.sound6l0
+			ld a,(hl)
+			inc hl
+			and c
+			out ($FE),a
+			xor a
+		.sound6l0a
+			dec a
+			jr nz,sound6l0a
+			djnz sound6l0
+		.sound6l1
+			ld a,(hl)
+			inc hl
+			and c
+			out ($FE),a
+		.sound6l2
+			dec a
+			jr nz,sound6l2
+			djnz sound6l1
+			;ei
+			ret
+			
+		.sound7	;shot
+			ex de,hl
+			ld bc,100*256
+		.sound7l0
+			ld a,(hl)
+			inc hl
+			or c
+			and 16
+			out ($FE),a
+			ld a,(hl)
+			srl a
+			srl a
+		.sound7l1
+			dec a
+			jr nz,sound7l1
+			ld a,c
+			add a,4
+			ld c,a
+			djnz sound7l0
+			;ei
+			ret
+		
+		.sound8	;take item
+			ld a,200
+			jr soundItem
+		.sound9
+			ld a,175
+			jr soundItem
+		.sound10
+			ld a,100
+		.soundItem
+			ld (frq),a
+			ld b,4
+			ld d,128
+		.sound8l2
+			push bc
+		;.frq=$+1
+		;	ld bc,2*256+200
+			defb #01	;ld bc
+		.frq
+			defb 200	;+200
+			defb 2	;2*256
+		.sound8l0
+			push bc
+			ld b,50
+		.sound8l1
+			xor 16
+			and 16
+			out ($FE),a
+			ld e,a
+			ld a,d
+		.sound8l2b
+			dec a
+			jr nz,sound8l2b
+			out ($FE),a
+			ld a,129
+			sub d
+		.sound8l3
+			dec a
+			jr nz,sound8l3
+			ld a,e
+			ld e,c
+		.sound8l4
+			dec e
+			jr nz,sound8l4
+			djnz sound8l1
+			pop bc
+			ld a,c
+			sub 16
+			ld c,a
+			djnz sound8l0
+			pop bc
+			srl d
+			srl d
+			djnz sound8l2
+			;ei
+			ret
+		
+		.proclist
+			defw sound1
+			defw sound2
+			defw sound3
+			defw sound4
+			defw sound5
+			defw sound6
+			defw sound7
+			defw sound8
+			defw sound9
+			defw sound10
+	#endasm
+#endif
 
 /*
 	TABLA DE SONIDOS
@@ -1594,10 +1708,39 @@ void __FASTCALL__ enems_en_an_calc (unsigned char n) {
 */
 
 void __FASTCALL__ peta_el_beeper (unsigned char n) {
-	#asm
-		ld a, l
-		call playsfx
-	#endasm
+	#ifdef MODE_128K_DUAL
+		// 128K: the AY effect with the same number (RAM1's table)
+		#asm
+				ld  a, (_is128k)
+				or  a
+				jr  z, peb_48k
+
+				ld  e, l
+				di
+				ld  b, 1
+				call SetRAMBank
+				ld  a, e
+				call RAM1_FX
+				ld  b, 0
+				call SetRAMBank
+				ei
+				ret
+
+			.peb_48k
+		#endasm
+	#endif
+
+	#ifdef SFX_IDLE_PLAYER
+		// Non blocking: sfx_player.h
+		#asm
+				jp  _sfx_play
+		#endasm
+	#else
+		#asm
+			ld a, l
+			call playsfx
+		#endasm
+	#endif
 }
 
 #ifdef DEBUG

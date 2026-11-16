@@ -46,6 +46,9 @@ void title_screen (void) {
 			ld  hl, _s_title
 			call _unpack_screen
 	#endasm
+	#ifdef CPC
+		cpc_ShowTileMap (1);
+	#endif
 	
 	draw_text (12, 12, 
 		#ifndef CPC 
@@ -59,6 +62,11 @@ void title_screen (void) {
 	#else 
 		#asm 
 				call SPUpdateNow
+		#endasm
+		#ifdef MODE_128K_DUAL
+			if (is128k) ay_play_music (MUSIC_TITLE); else
+		#endif
+		#asm
 				call musicstart
 		#endasm
 	#endif
@@ -94,6 +102,7 @@ void game_ending (void) {
 
 	#ifdef CPC
 		cpc_ShowTileMap (1);
+		cpc_UpdateNow (0);
 		AY_PLAY_MUSIC (0);
 	#else
 		#asm 

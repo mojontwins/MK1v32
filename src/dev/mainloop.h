@@ -7,6 +7,41 @@ void main (void) {
 	#ifndef CPC
 		#asm 
 			ld  sp, STACK_ADDR
+
+			#ifdef MODE_128K_DUAL
+				// 128K? Paging the ROM changes what's at 0001.
+					xor a
+					ld  (_is128k), a
+					ld  (_ay_player_on), a
+
+					ld  bc, 0x7ffd
+					out (c), a
+					ld  a, (0x0001)
+					ld  h, a
+					ld  a, 0x10
+					out (c), a
+					ld  a, (0x0001)
+					cp  h
+					jr  z, ml_48k
+
+				// 128K: the stack goes under the program, as RAM1 is paged in
+				// at C000. The player was loaded there by the loader.
+					ld  sp, 24200
+					ld  a, 1
+					ld  (_is128k), a
+
+					di
+					ld  b, 1
+					call SetRAMBank
+					call RAM1_INIT
+					ld  b, 0
+					call SetRAMBank
+
+					ld  a, 1
+					ld  (_ay_player_on), a
+
+				.ml_48k
+			#endif
 		#endasm 
 	#endif
 
@@ -207,8 +242,13 @@ void main (void) {
 			#endif
 			
 			mueve_bicharracos ();
-			move ();
-				
+
+			#ifdef PLAYER_MOVE_OVERRIDE
+				if (player_move_override () == 0) move ();
+			#else
+				move ();
+			#endif
+							
 			#ifdef PLAYER_CAN_FIRE
 				mueve_bullets ();
 			#endif
@@ -339,12 +379,17 @@ void main (void) {
 
 			#else
 				#asm
-					.ml_min_faps_loop
-						ld  a, (_isrc)
-						cp  MIN_FAPS_PER_FRAME
-						jr  nc, ml_min_faps_loop_end
-						halt
-						jr  ml_min_faps_loop
+					#ifdef SFX_IDLE_PLAYER
+							// Sound effects in the idle time until the frame is over
+							call _sfx_idle_wait
+					#else
+						.ml_min_faps_loop
+							ld  a, (_isrc)
+							cp  MIN_FAPS_PER_FRAME
+							jr  nc, ml_min_faps_loop_end
+							halt
+							jr  ml_min_faps_loop
+					#endif
 
 					.ml_min_faps_loop_end
 						xor a

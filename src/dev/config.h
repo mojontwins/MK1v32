@@ -4,6 +4,15 @@
 // config.h 
 
 #define MIN_FAPS_PER_FRAME 			2		// 50 / N fps if possible
+
+//#define MODE_128K_DUAL 					// ZX: on a 128K, WYZ music & AY effects from RAM1 (see speccy.h)
+
+//#define SFX_IDLE_PLAYER 					// ZX: non blocking beeper effects in the idle frame time (sfx_player.h)
+//#define SFX_MIN_SLICE 			1500 	// ZX: with SFX_IDLE_PLAYER, minimum sound per frame (~21 T-states units)
+
+//#define WYZ_FX_CHANNEL 			0 		// CPC: effects over channel A (drums on B), as the original
+//#define WYZ_SONG_BUFFER 			0x8DB0 	// CPC: biggest song unpacked (title, 579 bytes) ends at 0x9000
+
 #define BLACK_PEN		 			1		// For CPC, which pen is black?
 //#define AUTO_SPLIT 						// For CPC, but hud must be 32 raster on top and MODE 1
 //#define ALWAYS_SPLIT 						// Useful for DIRECT_TO_PLAY
@@ -53,6 +62,7 @@
 //#define DEACTIVATE_OBJECTS				// If defined, objects are not present.
 //#define ONLY_ONE_OBJECT					// If defined, only one object can be carried at a time.
 //#define OBJECT_COUNT				1		// Defines which FLAG will be used to store the object count.
+//#define DEACTIVATE_REFILLS				// If defined, no random refills.
 //#define DEACTIVATE_EVIL_TILE				// If defined, no killing tiles (behaviour 1) are detected.
 #define PLAYER_BOUNCES						// If defined, collisions make player bounce
 //#define PLAYER_FLICKERS 				 	// If defined, collisions make player flicker instead.
@@ -74,6 +84,9 @@
 //#define FANTY_A 					12		// Flying enemies acceleration.
 //#define FANTIES_LIFE_GAUGE		10		// Amount of shots needed to kill flying enemies.
 
+// This one is auto-activated with several combinations but you may activate it for yourself
+// if you need it...
+//#define ENEMIES_MAY_DIE
 // Make your own!
 // --------------
 //#define ENABLE_CUSTOM_ENEMS					// Create your custom enemies in `custom.h`
@@ -87,7 +100,7 @@
 											// If none are selected, FIRE is used.
 //#define NO_INDEXED_SCRIPTING 				// You aren't using * SCREEN * sections.
 //#define ENABLE_ENCODED_TEXT 				// Add support for TEXT BOX
-#define ENABLE_DIALOG						// Add support for DIALOG
+//#define ENABLE_DIALOG						// Add support for DIALOG
 
 // Top view:
 // ---------

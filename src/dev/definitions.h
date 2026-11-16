@@ -45,7 +45,9 @@
 
 #ifdef CPC
 	#define BASE_TILEMAP 		0x0100
-	#define WYZ_SONG_BUFFER 	0x8800
+	#ifndef WYZ_SONG_BUFFER
+		#define WYZ_SONG_BUFFER 	0x8800 	// Up to 0x9000: biggest song, unpacked
+	#endif
 	#define BASE_SUPERBUFF  	0x9000
 	#define BASE_ROOM_BUFFERS	0xC000 + 0x600
 	#define BASE_DIRTY_CELLS 	0xC800 + 0x600
