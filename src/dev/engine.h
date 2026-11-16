@@ -1018,8 +1018,11 @@ void move (void) {
 
 					ld  a, (_pad_this_frame)
 
-					#ifdef PLAYER_CAN_FIRE
+					#if defined PLAYER_CAN_FIRE
 						and sp_UP
+						jr  nz, m_jump_start_done
+					#elif defined PLAYER_JUMP_FIRE_ONLY
+						and sp_FIRE
 						jr  nz, m_jump_start_done
 					#else
 						and #(sp_UP | sp_FIRE)
@@ -1053,6 +1056,9 @@ void move (void) {
 					ld  a, (_pad0)
 					#ifdef PLAYER_CAN_FIRE
 						and sp_UP
+						jr  nz, m_jump_perform_not_pressing
+					#elif defined PLAYER_JUMP_FIRE_ONLY
+						and sp_FIRE
 						jr  nz, m_jump_perform_not_pressing
 					#else
 						and #(sp_UP | sp_FIRE)
