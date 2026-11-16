@@ -1,0 +1,17 @@
+Z80 Module Assembler 1.1.19 (03.11.2012), (c) InterLogic 1993-2009, Paulo Custodio 2011-2012     Mon Nov 16 11:21:11 2026
+Page 001                                                                                                   'zxloader.sym'
+
+
+
+
+Local Module Symbols:
+
+LOAD				= 00000050
+MAIN_SIZE			= 000078C2
+RAM1_SIZE			= 00001448
+RUN				= 0000004D
+
+
+Global Module Symbols:
+
+

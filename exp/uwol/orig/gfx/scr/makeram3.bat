@@ -1,0 +1,6 @@
+@echo off
+echo Building...
+copy /b 0-mojon.bin /b + 1-ubhres.bin /b + 2-credits.bin /b + 3-title.bin /b + 4-gover.bin /b + 5-finbad.bin /b + 6-fingoo.bin /b + 7-finend.bin /b ram3.bin /b
+echo Copying...
+copy ram3.bin ..\..\dev
+echo Fine.

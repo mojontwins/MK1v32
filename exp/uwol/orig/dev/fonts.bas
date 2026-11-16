@@ -1,0 +1,165 @@
+dim i as integer, j as integer, a as integer
+dim o as string
+
+for i = 0 to 17
+	o = ""
+	for j = 0 to 7
+		read a
+		o = o + str$ (a) + ","
+	next j
+	print o
+next i
+
+data &b00000000
+data &b00111110
+data &b01000011
+data &b10000001
+data &b10000001
+data &b10000010
+data &b01111100
+data &b00000000
+
+data &b00000000
+data &b00001100
+data &b00011100
+data &b00000100
+data &b00000100
+data &b00000100
+data &b00000100
+data &b00011111
+
+data &b00000000
+data &b00111100
+data &b01000110
+data &b00000011
+data &b00001110
+data &b00111100
+data &b01110000
+data &b01111110
+
+data &b11111110
+data &b10000110
+data &b00011100
+data &b01111110
+data &b00000011
+data &b00000111
+data &b01111100
+data &b01110000
+
+data &b00100010
+data &b00100010
+data &b00100010
+data &b00111110
+data &b00111110
+data &b00000010
+data &b00000010
+data &b00000010
+
+data &b01111110
+data &b01000000
+data &b11000000
+data &b11111110
+data &b01111111
+data &b00000010
+data &b00000110
+data &b00111000
+
+data &b00001110
+data &b00010010
+data &b00100000
+data &b01000000
+data &b11111110
+data &b11000011
+data &b01000011
+data &b00111110
+
+data &b00000000
+data &b00111111
+data &b01000001
+data &b00000001
+data &b00000010
+data &b00000100
+data &b00011000
+data &b01110000
+
+data &b00000000
+data &b00111111
+data &b11100011
+data &b01100110
+data &b00111111
+data &b01100001
+data &b11100011
+data &b01111110
+
+data &b00000000
+data &b11111110
+data &b11000011
+data &b01000011
+data &b00111111
+data &b00000010
+data &b01000100
+data &b00111000
+
+data &b00000000
+data &b00000000
+data &b10001000
+data &b01110000
+data &b00110000
+data &b00111000
+data &b01001100
+data &b01000000
+
+data &b00000000
+data &b01111110
+data &b00001000
+data &b00001000
+data &b00001000
+data &b00001000
+data &b00001000
+data &b00001000
+
+data &b00000000
+data &b00001000
+data &b00001000
+data &b00001000
+data &b00001000
+data &b00001000
+data &b00001000
+data &b00001000
+
+data &b00000000
+data &b00000010
+data &b00100010
+data &b01110111
+data &b01010111
+data &b01011101
+data &b11011001
+data &b10001000
+
+data &b00111110
+data &b01110000
+data &b01000000
+data &b01000110
+data &b01111000
+data &b01000000
+data &b01111110
+data &b01111000
+
+data &b00000000
+data &b00100000
+data &b00100000
+data &b00100000
+data &b00100000
+data &b00100000
+data &b00100000
+data &b01111110
+
+data &b00000000
+data &b01000001
+data &b01100010
+data &b00100010
+data &b00110110
+data &b00011100
+data &b00011100
+data &b00001000
+

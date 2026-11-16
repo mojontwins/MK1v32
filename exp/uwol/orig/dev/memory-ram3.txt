@@ -1,0 +1,9 @@
+QUE				DONDE		CUANTO
+0-mojon.bin		49152		223
+1-ubhres.bin	49375		1220
+2-credits.bin	50595		2137
+3-title.bin		52732		1606
+4-gover.bin		54338		173
+5-finbad.bin	54511		1247
+6-fingoo.bin	55758		1697
+7-finend.bin	57455		136

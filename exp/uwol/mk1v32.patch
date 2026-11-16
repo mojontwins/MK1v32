@@ -1,0 +1,977 @@
+diff -ruN a/src/dev/churromain.c b/src/dev/churromain.c
+--- a/src/dev/churromain.c	2026-11-15 17:14:11.721019580 +0100
++++ b/src/dev/churromain.c	2026-11-15 17:14:11.913271303 +0100
+@@ -53,4 +53,7 @@
+ #include "mainloop.h" 	// Main is here!
+ #ifndef CPC
+ 	#include "music.h"
++	#ifdef SFX_IDLE_PLAYER
++		#include "sfx_player.h" 	// Last: out of contended memory
++	#endif
+ #endif
+diff -ruN a/src/dev/config.h b/src/dev/config.h
+--- a/src/dev/config.h	2026-11-15 17:14:11.721406255 +0100
++++ b/src/dev/config.h	2026-11-15 17:14:18.619533736 +0100
+@@ -4,6 +4,9 @@
+ // config.h 
+ 
+ #define MIN_FAPS_PER_FRAME 			2		// 50 / N fps if possible
++//#define MODE_128K_DUAL 					// ZX: on a 128K, WYZ music & AY effects from RAM1 (see speccy.h, system/zxloader.asm)
++//#define SFX_IDLE_PLAYER 					// ZX: non blocking beeper effects in the idle frame time (sfx_player.h)
++//#define SFX_MIN_SLICE 			1500 	// ZX: with SFX_IDLE_PLAYER, minimum sound per frame (~21 T-states units)
+ #define BLACK_PEN		 			1		// For CPC, which pen is black?
+ //#define AUTO_SPLIT 						// For CPC, but hud must be 32 raster on top and MODE 1
+ //#define ALWAYS_SPLIT 						// Useful for DIRECT_TO_PLAY
+diff -ruN a/src/dev/cpc.h b/src/dev/cpc.h
+--- a/src/dev/cpc.h	2026-11-15 17:14:11.721505698 +0100
++++ b/src/dev/cpc.h	2026-11-15 17:14:18.601621397 +0100
+@@ -29,7 +29,9 @@
+ unsigned char wyz_beat_ct;
+ unsigned char wyz_signal;
+ 
+-#define WYZ_FX_CHANNEL 1
++#ifndef WYZ_FX_CHANNEL
++	#define WYZ_FX_CHANNEL 1
++#endif
+ #define AY_INIT()        wyz_init ()
+ #define AY_PLAY_SOUND(a) wyz_play_sound (a)
+ #define play_sfx(a)      wyz_play_sound (a)
+diff -ruN a/src/dev/definitions.h b/src/dev/definitions.h
+--- a/src/dev/definitions.h	2026-11-15 17:14:11.722284862 +0100
++++ b/src/dev/definitions.h	2026-11-15 17:14:11.913718045 +0100
+@@ -45,7 +45,9 @@
+ 
+ #ifdef CPC
+ 	#define BASE_TILEMAP 		0x0100
+-	#define WYZ_SONG_BUFFER 	0x8800
++	#ifndef WYZ_SONG_BUFFER
++		#define WYZ_SONG_BUFFER 	0x8800 	// Up to 0x9000: biggest song, unpacked
++	#endif
+ 	#define BASE_SUPERBUFF  	0x9000
+ 	#define BASE_ROOM_BUFFERS	0xC000 + 0x600
+ 	#define BASE_DIRTY_CELLS 	0xC800 + 0x600
+diff -ruN a/src/dev/mainloop.h b/src/dev/mainloop.h
+--- a/src/dev/mainloop.h	2026-11-15 17:14:11.791954049 +0100
++++ b/src/dev/mainloop.h	2026-11-15 17:14:18.598167507 +0100
+@@ -6,7 +6,42 @@
+ void main (void) {
+ 	#ifndef CPC
+ 		#asm 
+-			ld  sp, STACK_ADDR
++				ld  sp, STACK_ADDR
++
++			#ifdef MODE_128K_DUAL
++				// 128K? Paging the ROM changes what's at 0001.
++					xor a
++					ld  (_is128k), a
++					ld  (_ay_player_on), a
++
++					ld  bc, 0x7ffd
++					out (c), a
++					ld  a, (0x0001)
++					ld  h, a
++					ld  a, 0x10
++					out (c), a
++					ld  a, (0x0001)
++					cp  h
++					jr  z, ml_48k
++
++				// 128K: the stack goes under the program, as RAM1 is paged in
++				// at C000. The player was loaded there by the loader.
++					ld  sp, 24200
++					ld  a, 1
++					ld  (_is128k), a
++
++					di
++					ld  b, 1
++					call SetRAMBank
++					call RAM1_INIT
++					ld  b, 0
++					call SetRAMBank
++
++					ld  a, 1
++					ld  (_ay_player_on), a
++
++				.ml_48k
++			#endif
+ 		#endasm 
+ 	#endif
+ 
+@@ -207,7 +242,12 @@
+ 			#endif
+ 			
+ 			mueve_bicharracos ();
+-			move ();
++
++			#ifdef PLAYER_MOVE_OVERRIDE
++				if (player_move_override () == 0) move ();
++			#else
++				move ();
++			#endif
+ 				
+ 			#ifdef PLAYER_CAN_FIRE
+ 				mueve_bullets ();
+@@ -339,12 +379,17 @@
+ 
+ 			#else
+ 				#asm
+-					.ml_min_faps_loop
+-						ld  a, (_isrc)
+-						cp  MIN_FAPS_PER_FRAME
+-						jr  nc, ml_min_faps_loop_end
+-						halt
+-						jr  ml_min_faps_loop
++					#ifdef SFX_IDLE_PLAYER
++							// Sound effects in the idle time until the frame is over
++							call _sfx_idle_wait
++					#else
++						.ml_min_faps_loop
++							ld  a, (_isrc)
++							cp  MIN_FAPS_PER_FRAME
++							jr  nc, ml_min_faps_loop_end
++							halt
++							jr  ml_min_faps_loop
++					#endif
+ 
+ 					.ml_min_faps_loop_end
+ 						xor a
+diff -ruN a/src/dev/sfx_player.h b/src/dev/sfx_player.h
+--- a/src/dev/sfx_player.h	1970-01-01 01:00:00.000000000 +0100
++++ b/src/dev/sfx_player.h	2026-11-15 17:14:11.914020940 +0100
+@@ -0,0 +1,235 @@
++// MTE MK1 v3.2
++// Copyleft 2011, 2026 by The Mojon Twins
++
++// sfx_player.h - ZX 48K beeper sound effects played in the idle frame time
++//
++// Instead of `halt`ing until the frame is over, the main loop calls
++// sfx_idle_wait, which makes the current effect sound until the interrupt
++// that ends the frame comes. Nothing blocks the game.
++//
++// * sfx_tick runs in the ISR (50 Hz): it advances the effect (steps, slides).
++// * sfx_play (n) starts effect n if it is at least as important as the one
++//   playing. peta_el_beeper (n) calls it.
++// * SFX_MIN_SLICE (config.h): minimum sound per frame (~21 T-states units),
++//   used when the game leaves little idle time. 0 / undefined: idle time only.
++//
++// Effects come from sfx.h, generated by utils/sfxcnv from sfx/sfx.txt. Each is
++// a priority byte, then 4 byte steps (frames, period, slide, flags), then 0.
++// period: half wave = 21 * period + ~215 T-states; slide: added each frame.
++// flags: bit 0 noise, bit 1 rest. Bit 7 of sfx_flags means "playing".
++//
++// This file goes at the end of the program (churromain.c) so the loop that
++// times the sound is out of contended memory.
++
++unsigned char sfx_flags; 					// Bit 7: playing, bit 1: rest, bit 0: noise
++unsigned char sfx_frames;
++unsigned char sfx_period;
++signed char sfx_slide;
++unsigned char sfx_prio;
++unsigned char *sfx_ptr;
++unsigned char sfx_out;
++unsigned char sfx_lfsr = 1;
++
++void __FASTCALL__ sfx_play (unsigned char n) {
++	#asm
++			add hl, hl
++			ld  de, _sfx_table
++			add hl, de
++			ld  a, (hl)
++			inc hl
++			ld  h, (hl)
++			ld  l, a 						// HL -> effect
++
++			ld  a, (_sfx_flags)
++			or  a
++			jp  p, sfx_play_go 				// Nothing playing
++
++			ld  a, (_sfx_prio)
++			cp  (hl)
++			jr  z, sfx_play_go
++			ret nc 							// Something more important is playing
++
++		.sfx_play_go
++			ld  a, (hl)
++			ld  (_sfx_prio), a
++			inc hl
++			di
++			call sfx_load_step
++			ei
++	#endasm
++}
++
++void sfx_stop (void) {
++	#asm
++			xor a
++			ld  (_sfx_flags), a
++	#endasm
++}
++
++#asm
++	// ISR, 50 Hz. Advances the current effect.
++	.sfx_tick
++			ld  a, (_sfx_flags)
++			or  a
++			ret p
++
++			ld  hl, _sfx_frames
++			dec (hl)
++			jr  z, sfx_tick_next
++
++			ld  a, (_sfx_slide)
++			or  a
++			ret z
++
++			// period += slide, inside 1..245
++			ld  e, a
++			add a, a
++			sbc a, a
++			ld  d, a
++			ld  a, (_sfx_period)
++			ld  l, a
++			ld  h, 0
++			add hl, de
++			bit 7, h
++			jr  nz, sfx_tick_min
++			ld  a, h
++			or  a
++			jr  nz, sfx_tick_max
++			ld  a, l
++			cp  246
++			jr  nc, sfx_tick_max
++			or  a
++			jr  nz, sfx_tick_set
++
++		.sfx_tick_min
++			ld  a, 1
++			jr  sfx_tick_set
++
++		.sfx_tick_max
++			ld  a, 245
++
++		.sfx_tick_set
++			ld  (_sfx_period), a
++			ret
++
++		.sfx_tick_next
++			ld  hl, (_sfx_ptr)
++
++	// HL -> step: frames (0 = end), period, slide, flags
++	.sfx_load_step
++			ld  a, (hl)
++			or  a
++			jr  z, sfx_end
++			ld  (_sfx_frames), a
++			inc hl
++			ld  a, (hl)
++			ld  (_sfx_period), a
++			inc hl
++			ld  a, (hl)
++			ld  (_sfx_slide), a
++			inc hl
++			ld  a, (hl)
++			or  0x80
++			ld  (_sfx_flags), a
++			inc hl
++			ld  (_sfx_ptr), hl
++			ret
++
++		.sfx_end
++			xor a
++			ld  (_sfx_flags), a
++			ret
++
++	// Until the next interrupt (for full screen waits), idle time only.
++	._sfx_halt
++			ld  a, (_isrc)
++			inc a
++			ld  c, a
++			ld  de, 0
++			jr  sfx_iw_loop
++
++	// Main loop: until isrc >= MIN_FAPS_PER_FRAME
++	._sfx_idle_wait
++			ld  c, MIN_FAPS_PER_FRAME
++		#ifdef SFX_MIN_SLICE
++			ld  de, SFX_MIN_SLICE
++		#else
++			ld  de, 0
++		#endif
++
++		.sfx_iw_loop
++			ld  a, (_sfx_flags)
++			and 0x82
++			cp  0x80
++			jr  nz, sfx_iw_halt 			// Not playing, or a rest
++
++			ld  a, d
++			or  e
++			jr  nz, sfx_iw_play 			// Minimum slice not done yet
++
++			ld  a, (_isrc)
++			cp  c
++			ret nc
++
++		.sfx_iw_play
++			// Half a wave
++			ld  a, (_sfx_period)
++			ld  b, a
++
++		.sfx_iw_wait
++			nop
++			nop
++			djnz sfx_iw_wait
++
++			// Slice budget -= period + 10
++			add a, 10
++			ld  l, a
++			ld  h, 0
++			ex  de, hl
++			or  a
++			sbc hl, de
++			jr  nc, sfx_iw_budget
++			ld  hl, 0
++
++		.sfx_iw_budget
++			ex  de, hl
++
++			// Tone: toggle. Noise: toggle when the LFSR says so.
++			ld  a, (_sfx_flags)
++			rrca
++			jr  nc, sfx_iw_toggle
++
++			ld  a, (_sfx_lfsr)
++			srl a
++			jr  nc, sfx_iw_no_toggle
++			xor 0xb8
++			ld  (_sfx_lfsr), a
++
++		.sfx_iw_toggle
++			ld  a, (_sfx_out)
++			xor 16
++			ld  (_sfx_out), a
++			out (254), a
++			jr  sfx_iw_loop
++
++		.sfx_iw_no_toggle
++			ld  (_sfx_lfsr), a
++			jr  sfx_iw_loop
++
++		.sfx_iw_halt
++			ld  a, (_isrc)
++			cp  c
++			ret nc
++			halt
++			jr  sfx_iw_loop
++#endasm
++
++void sfx_play_wait (unsigned char n) {
++	// For jingles in full screens: play n and wait until it is over.
++	sfx_play (n);
++	while (sfx_flags & 0x80) {
++		#asm
++				call _sfx_halt
++		#endasm
++	}
++}
+diff -ruN a/src/dev/speccy.h b/src/dev/speccy.h
+--- a/src/dev/speccy.h	2026-11-15 17:14:11.793364315 +0100
++++ b/src/dev/speccy.h	2026-11-15 17:14:18.600020631 +0100
+@@ -134,10 +134,114 @@
+ 	defw 0	// 2 bytes libres
+ #endasm
+ 
++#ifdef SFX_IDLE_PLAYER
++	#include "sfx.h"
++#endif
++
++#ifdef MODE_128K_DUAL
++	// 128K: the WYZ player, songs & effects are in RAM1 (ogt/ram1/ram1.bin),
++	// loaded at C000 only on a 128K (system/zxloader.asm). Jump table:
++	#define RAM1_ISR 			0xC000 	// Every frame
++	#define RAM1_INIT 			0xC003
++	#define RAM1_PLAY 			0xC006 	// A = song
++	#define RAM1_FX 			0xC009 	// A = effect
++	#define RAM1_STOP 			0xC00C
++
++	// While RAM1 is paged in, C000-FFFF (the end of the program, the stack,
++	// splib2's IM2 table) is not there: interrupts are off, the stack is moved
++	// under the program (mainloop.h) and this code must stay below C000.
++
++	// ay_player_on: 23297 (above)
++	unsigned char is128k;
++
++	#asm
++		// B = RAM page at C000 (ROM 1)
++		.SetRAMBank
++				ld  a, 0x10
++				or  b
++				ld  bc, 0x7ffd
++				out (c), a
++				ret
++	#endasm
++
++	void __FASTCALL__ ay_play_music (unsigned char n) {
++		#asm
++				ld  a, (_is128k)
++				or  a
++				ret z
++
++				ld  e, l
++				di
++				ld  b, 1
++				call SetRAMBank
++				ld  a, e
++				push ix
++				push iy
++				call RAM1_PLAY
++				pop iy
++				pop ix
++				ld  b, 0
++				call SetRAMBank
++				ei
++		#endasm
++	}
++
++	void ay_stop_sound (void) {
++		#asm
++				ld  a, (_is128k)
++				or  a
++				ret z
++
++				di
++				ld  b, 1
++				call SetRAMBank
++				call RAM1_STOP
++				ld  b, 0
++				call SetRAMBank
++				ei
++		#endasm
++	}
++#endif
++
+ void ISR (void) {	
+ 	#asm
+ 			ld  hl, _isrc
+ 			inc (hl)
++
++		#ifdef MODE_128K_DUAL
++				ld  a, (_is128k)
++				or  a
++				jr  z, isr_48k
++
++				ld  a, (_ay_player_on)
++				or  a
++				ret z
++
++				push bc
++				push de
++				push ix
++				push iy
++				ld  b, 1
++				call SetRAMBank
++				call RAM1_ISR
++				ld  b, 0
++				call SetRAMBank
++				pop iy
++				pop ix
++				pop de
++				pop bc
++				ret
++
++			.isr_48k
++		#endif
++
++		#ifdef SFX_IDLE_PLAYER
++				push bc
++				push de
++				call sfx_tick
++				pop de
++				pop bc
++		#endif
+ 	#endasm
+ }
+ 
+@@ -762,7 +866,11 @@
+ void no_break (void) {
+ 	for (gpit = 0; gpit < 40; gpit ++) {
+ 		#asm 
+-			halt
++			#ifdef SFX_IDLE_PLAYER
++					call _sfx_halt
++			#else
++					halt
++			#endif
+ 		#endasm
+ 	}
+ }
+@@ -771,7 +879,11 @@
+ 	do {
+ 		pad_read ();
+ 		#asm
+-				halt
++			#ifdef SFX_IDLE_PLAYER
++					call _sfx_halt
++			#else
++					halt
++			#endif
+ 		#endasm
+ 		if (pad_this_frame != 0xff) break;
+ 	} while (-- espera);
+@@ -1317,6 +1429,7 @@
+ 	#endasm
+ }
+ 
++#ifndef SFX_IDLE_PLAYER
+ #asm
+ 	.playsfx
+ 		;di
+@@ -1574,6 +1687,7 @@
+ 		defw sound9
+ 		defw sound10
+ #endasm
++#endif
+ 
+ /*
+ 	TABLA DE SONIDOS
+@@ -1594,10 +1708,39 @@
+ */
+ 
+ void __FASTCALL__ peta_el_beeper (unsigned char n) {
+-	#asm
+-		ld a, l
+-		call playsfx
+-	#endasm
++	#ifdef MODE_128K_DUAL
++		// 128K: the AY effect with the same number (RAM1's table)
++		#asm
++				ld  a, (_is128k)
++				or  a
++				jr  z, peb_48k
++
++				ld  e, l
++				di
++				ld  b, 1
++				call SetRAMBank
++				ld  a, e
++				call RAM1_FX
++				ld  b, 0
++				call SetRAMBank
++				ei
++				ret
++
++			.peb_48k
++		#endasm
++	#endif
++
++	#ifdef SFX_IDLE_PLAYER
++		// Non blocking: sfx_player.h
++		#asm
++				jp  _sfx_play
++		#endasm
++	#else
++		#asm
++			ld a, l
++			call playsfx
++		#endasm
++	#endif
+ }
+ 
+ #ifdef DEBUG
+diff -ruN a/src/dev/system/loader128.bas b/src/dev/system/loader128.bas
+--- a/src/dev/system/loader128.bas	1970-01-01 01:00:00.000000000 +0100
++++ b/src/dev/system/loader128.bas	2026-11-15 17:14:18.604712049 +0100
+@@ -0,0 +1 @@
++10 BORDER VAL "0":PAPER VAL "0":INK VAL "0":CLS:CLEAR VAL "23999":LOAD ""CODE:RANDOMIZE USR VAL "24000"
+diff -ruN a/src/dev/system/zxloader.asm b/src/dev/system/zxloader.asm
+--- a/src/dev/system/zxloader.asm	1970-01-01 01:00:00.000000000 +0100
++++ b/src/dev/system/zxloader.asm	2026-11-15 17:14:18.604552237 +0100
+@@ -0,0 +1,62 @@
++; Uwol (ZX) - tape loader, at 24000 (BASIC: CLEAR 23999, LOAD ""CODE, USR 24000)
++;
++; Loads (headerless) the screen and the game at 24200. Then, if it's a 128K,
++; the music & effects (RAM1.bin, the WYZ player) into RAM1 at C000. On a 48K
++; the last block is not loaded. As MK1v4's loader_128 (ramiro4).
++; zxsizes.inc: MAIN_SIZE, RAM1_SIZE.
++
++	org 24000
++
++	INCLUDE "zxsizes.inc"
++
++	di
++	ld  sp, 23999
++
++	; Black attributes
++	ld  hl, $5800
++	ld  de, $5801
++	ld  bc, 767
++	ld  (hl), l
++	ldir
++
++	; Screen
++	ld  ix, $4000
++	ld  de, 6912
++	call load
++
++	; Game
++	ld  ix, 24200
++	ld  de, MAIN_SIZE
++	call load
++
++	; 128K? Paging the ROM changes what's at 0001.
++	ld  bc, $7ffd
++	xor a
++	out (c), a
++	ld  a, ($0001)
++	ld  h, a
++	ld  a, $10
++	out (c), a
++	ld  a, ($0001)
++	cp  h
++	jr  z, run
++
++	; RAM1 at C000 (ROM 1, RAM 1), then back to RAM 0
++	ld  a, $11
++	out (c), a
++	ld  ix, $c000
++	ld  de, RAM1_SIZE
++	call load
++	ld  a, $10
++	ld  bc, $7ffd
++	out (c), a
++
++.run
++	jp  24200
++
++.load
++	scf
++	ld  a, $ff
++	call $0556
++	di
++	ret
+diff -ruN a/src/utils/sfxcnv.bas b/src/utils/sfxcnv.bas
+--- a/src/utils/sfxcnv.bas	1970-01-01 01:00:00.000000000 +0100
++++ b/src/utils/sfxcnv.bas	2026-11-15 17:14:11.914592834 +0100
+@@ -0,0 +1,322 @@
++' sfxcnv v0.1 [MK1 v3.2]
++' Copyleft 2026 by The Mojon Twins
++'
++' Converts a text file of beeper sound effects to sfx.h for the ZX idle time
++' sound player (dev/sfx_player.h), and optionally writes a .wav per effect to
++' hear them, with the same timing as the player.
++'
++' The text file:
++'
++'   # comment
++'   sfx name [priority]          a new effect (SFX_NAME = its number, in order)
++'       tone  frames pitch [slide]
++'       noise frames pitch [slide]
++'       rest  frames
++'
++' frames: 50 Hz ticks. pitch: in Hz ("440") or as the player's period ("p40").
++' slide: added to the period each tick (+ = lower, - = higher).
++' The period goes from 1 (~7 KHz) to 245 (~330 Hz).
++'
++' Compile with fbc sfxcnv.bas cmdlineparser.bas
++
++#include "file.bi"
++#include "cmdlineparser.bi"
++
++Const CPU_CLOCK = 3500000
++Const T_INT = 69888 				' T-states between interrupts
++Const T_UNIT = 21 					' T-states per period unit
++Const T_TONE = 215 					' Rest of a tone half wave
++Const T_NOISE = 255 				' Rest of a noise half wave
++Const WAV_RATE = 44100
++
++Sub usage
++	Print "usage:"
++	Print
++	Print "$ sfxcnv in=sfx.txt out=sfx.h [wav=prefix] [idle=100] [slice=0] [faps=2]"
++	Print
++	Print "in      the effects, as text"
++	Print "out     the .h for the player"
++	Print "wav     write prefix + name + .wav for each effect"
++	Print "idle    % of each frame the game leaves idle (where the sound plays)"
++	Print "slice   the player's SFX_MIN_SLICE (minimum sound per frame)"
++	Print "faps    the game's MIN_FAPS_PER_FRAME"
++End Sub
++
++' Effects
++Const MAX_SFX = 64
++Const MAX_STEPS = 32
++Dim Shared As String sfxName (MAX_SFX - 1)
++Dim Shared As Integer sfxPrio (MAX_SFX - 1), sfxSteps (MAX_SFX - 1)
++Dim Shared As Integer stFrames (MAX_SFX - 1, MAX_STEPS - 1)
++Dim Shared As Integer stPeriod (MAX_SFX - 1, MAX_STEPS - 1)
++Dim Shared As Integer stSlide (MAX_SFX - 1, MAX_STEPS - 1)
++Dim Shared As Integer stFlags (MAX_SFX - 1, MAX_STEPS - 1)
++Dim Shared As Integer nSfx
++
++Function pitchToPeriod (s As String) As Integer
++	Dim As Integer p
++	If Lcase (Left (s, 1)) = "p" Then
++		p = Val (Mid (s, 2))
++	Else
++		p = Int (((CPU_CLOCK / (2 * Val (s))) - T_TONE) / T_UNIT + 0.5)
++	End If
++	If p < 1 Then p = 1
++	If p > 245 Then p = 245
++	Return p
++End Function
++
++' Splits a line into words
++Dim Shared As String words (15)
++Dim Shared As Integer nWords
++
++Sub splitWords (l As String)
++	Dim As Integer i
++	Dim As String c, w
++	nWords = 0: w = ""
++	For i = 1 To Len (l) + 1
++		c = Mid (l, i, 1)
++		If c = " " Or c = Chr (9) Or c = "" Then
++			If w <> "" And nWords < 16 Then words (nWords) = w: nWords = nWords + 1
++			w = ""
++		Else
++			w = w & c
++		End If
++	Next i
++End Sub
++
++Sub parseFile (fileName As String)
++	Dim As Integer f, cur, n, lineNo
++	Dim As String l
++	f = FreeFile
++	Open fileName For Input As #f
++	cur = -1
++	While Not Eof (f)
++		Line Input #f, l
++		lineNo = lineNo + 1
++		If Instr (l, "#") Then l = Left (l, Instr (l, "#") - 1)
++		splitWords l
++		If nWords = 0 Then Continue While
++		Select Case Lcase (words (0))
++			Case "sfx"
++				cur = nSfx: nSfx = nSfx + 1
++				sfxName (cur) = Ucase (words (1))
++				sfxPrio (cur) = 0
++				If nWords > 2 Then sfxPrio (cur) = Val (words (2))
++				sfxSteps (cur) = 0
++			Case "tone", "noise", "rest"
++				If cur < 0 Then Print "Line " & lineNo & ": step outside an effect": End 1
++				n = sfxSteps (cur): sfxSteps (cur) = n + 1
++				stFrames (cur, n) = Val (words (1))
++				If stFrames (cur, n) < 1 Then stFrames (cur, n) = 1
++				If stFrames (cur, n) > 255 Then stFrames (cur, n) = 255
++				stPeriod (cur, n) = 1: stSlide (cur, n) = 0: stFlags (cur, n) = 0
++				If Lcase (words (0)) = "rest" Then
++					stFlags (cur, n) = 2
++				Else
++					stPeriod (cur, n) = pitchToPeriod (words (2))
++					If nWords > 3 Then stSlide (cur, n) = Val (words (3))
++					If Lcase (words (0)) = "noise" Then stFlags (cur, n) = 1
++				End If
++			Case Else
++				Print "Line " & lineNo & ": what is " & words (0) & "?": End 1
++		End Select
++	Wend
++	Close #f
++End Sub
++
++Sub writeH (fileName As String, inName As String)
++	Dim As Integer f, i, j
++	f = FreeFile
++	Open fileName For Output As #f
++	Print #f, "// MTE MK1 v3.2"
++	Print #f, "// Generated by sfxcnv from " & inName & ". Don't edit."
++	Print #f, ""
++	For i = 0 To nSfx - 1
++		Print #f, "#define SFX_" & sfxName (i) & " " & i
++	Next i
++	Print #f, "#define SFX_COUNT " & nSfx
++	Print #f, ""
++	Print #f, "extern unsigned char sfx_table [];"
++	Print #f, ""
++	Print #f, "#asm"
++	Print #f, Chr (9) & "._sfx_table"
++	For i = 0 To nSfx - 1
++		Print #f, Chr (9) & Chr (9) & Chr (9) & "defw sfx_" & Lcase (sfxName (i))
++	Next i
++	For i = 0 To nSfx - 1
++		Print #f, Chr (9) & ".sfx_" & Lcase (sfxName (i))
++		Print #f, Chr (9) & Chr (9) & Chr (9) & "defb " & sfxPrio (i)
++		For j = 0 To sfxSteps (i) - 1
++			Print #f, Chr (9) & Chr (9) & Chr (9) & "defb " & stFrames (i, j) & ", " & stPeriod (i, j) & ", " & (stSlide (i, j) And 255) & ", " & stFlags (i, j)
++		Next j
++		Print #f, Chr (9) & Chr (9) & Chr (9) & "defb 0"
++	Next i
++	Print #f, "#endasm"
++	Close #f
++End Sub
++
++' ----------------------------------------------------------------------------
++' WAV preview: the same as the player. Each game frame is faps interrupts; the
++' game takes (100 - idle) % of it, then the sound plays until the frame ends
++' (at least `slice` units). The ISR advances the effect every T_INT T-states.
++' ----------------------------------------------------------------------------
++
++Dim Shared As Integer wavLevel (WAV_RATE * 10)
++Dim Shared As Integer wavLen
++
++Sub wavSpeaker (t0 As Double, t1 As Double, level As Integer)
++	' Speaker at level from t0 to t1 (T-states)
++	Dim As Integer s0, s1, s
++	s0 = Int (t0 * WAV_RATE / CPU_CLOCK)
++	s1 = Int (t1 * WAV_RATE / CPU_CLOCK)
++	If s1 > Ubound (wavLevel) Then s1 = Ubound (wavLevel)
++	For s = s0 To s1 - 1
++		wavLevel (s) = level
++	Next s
++	If s1 > wavLen Then wavLen = s1
++End Sub
++
++Sub writeWav (fileName As String, idle As Integer, slice As Integer, faps As Integer)
++	Dim As Integer f, i
++	Dim As uLong ul
++	Dim As uShort us
++	Dim As uByte b
++	f = FreeFile
++	Open fileName For Binary As #f
++	Put #f, , "RIFF"
++	ul = 36 + wavLen: Put #f, , ul
++	Put #f, , "WAVEfmt "
++	ul = 16: Put #f, , ul
++	us = 1: Put #f, , us 			' PCM
++	us = 1: Put #f, , us 			' mono
++	ul = WAV_RATE: Put #f, , ul
++	ul = WAV_RATE: Put #f, , ul
++	us = 1: Put #f, , us
++	us = 8: Put #f, , us
++	Put #f, , "data"
++	ul = wavLen: Put #f, , ul
++	For i = 0 To wavLen - 1
++		b = 128 + wavLevel (i) * 48
++		Put #f, , b
++	Next i
++	Close #f
++End Sub
++
++Sub preview (k As Integer, fileName As String, idle As Integer, slice As Integer, faps As Integer)
++	Dim As Double t, tInt, tFrame, tBusyEnd, tHalf
++	Dim As Integer playing, stp, frames, period, slide, flags, level, lfsr, budget, toggle, i
++	Dim As Integer endTicks
++
++	For i = 0 To Ubound (wavLevel): wavLevel (i) = 0: Next i
++	wavLen = 0
++
++	stp = 0: playing = -1: lfsr = 1: level = 0
++	frames = stFrames (k, 0): period = stPeriod (k, 0): slide = stSlide (k, 0): flags = stFlags (k, 0)
++	t = 0: tInt = T_INT
++	endTicks = 25 						' Some silence after the effect
++
++	Do
++		' A game frame: the game is busy first
++		tFrame = t + faps * T_INT
++		tBusyEnd = t + (faps * T_INT) * (100 - idle) / 100
++		budget = slice
++		wavSpeaker t, tBusyEnd, level
++		t = tBusyEnd
++
++		' Interrupts during the busy part
++		While tInt <= t
++			If playing Then
++				frames = frames - 1
++				If frames = 0 Then
++					stp = stp + 1
++					If stp >= sfxSteps (k) Then
++						playing = 0
++					Else
++						frames = stFrames (k, stp): period = stPeriod (k, stp)
++						slide = stSlide (k, stp): flags = stFlags (k, stp)
++					End If
++				Else
++					period = period + slide
++					If period < 1 Then period = 1
++					If period > 245 Then period = 245
++				End If
++			Else
++				endTicks = endTicks - 1
++			End If
++			tInt = tInt + T_INT
++		Wend
++
++		' Idle: sound until the frame is over (and the slice is done)
++		Do
++			If playing = 0 Or (flags And 2) Then
++				' halt: to the next interrupt
++				If t >= tFrame Then Exit Do
++				wavSpeaker t, tInt, level
++				t = tInt
++			Else
++				If budget <= 0 And t >= tFrame Then Exit Do
++				If flags And 1 Then tHalf = T_UNIT * period + T_NOISE Else tHalf = T_UNIT * period + T_TONE
++				wavSpeaker t, t + tHalf, level
++				t = t + tHalf
++				budget = budget - (period + 10)
++				toggle = -1
++				If flags And 1 Then
++					toggle = lfsr And 1
++					lfsr = lfsr Shr 1
++					If toggle Then lfsr = lfsr Xor &hB8
++				End If
++				If toggle Then level = 1 - level
++			End If
++
++			' Interrupts
++			While tInt <= t
++				If playing Then
++					frames = frames - 1
++					If frames = 0 Then
++						stp = stp + 1
++						If stp >= sfxSteps (k) Then
++							playing = 0
++						Else
++							frames = stFrames (k, stp): period = stPeriod (k, stp)
++							slide = stSlide (k, stp): flags = stFlags (k, stp)
++						End If
++					Else
++						period = period + slide
++						If period < 1 Then period = 1
++						If period > 245 Then period = 245
++					End If
++				Else
++					endTicks = endTicks - 1
++				End If
++				tInt = tInt + T_INT
++			Wend
++		Loop
++
++		If t > tFrame Then tFrame = t
++		t = tFrame
++	Loop Until endTicks <= 0 Or wavLen >= Ubound (wavLevel)
++
++	writeWav fileName, idle, slice, faps
++End Sub
++
++' ----------------------------------------------------------------------------
++
++Dim As String mandatory (1) = { "in", "out" }
++Dim As Integer i, idle, slice, faps
++
++sclpParseAttrs
++If Not sclpCheck (mandatory ()) Then usage: End 1
++
++parseFile sclpGetValue ("in")
++writeH sclpGetValue ("out"), sclpGetValue ("in")
++Print "sfxcnv: " & nSfx & " effects -> " & sclpGetValue ("out")
++
++If sclpGetValue ("wav") <> "" Then
++	idle = 100: If sclpGetValue ("idle") <> "" Then idle = Val (sclpGetValue ("idle"))
++	slice = 0: If sclpGetValue ("slice") <> "" Then slice = Val (sclpGetValue ("slice"))
++	faps = 2: If sclpGetValue ("faps") <> "" Then faps = Val (sclpGetValue ("faps"))
++	For i = 0 To nSfx - 1
++		preview i, sclpGetValue ("wav") & Lcase (sfxName (i)) & ".wav", idle, slice, faps
++	Next i
++	Print "sfxcnv: " & nSfx & " previews (" & idle & "% idle, slice " & slice & ")"
++End If

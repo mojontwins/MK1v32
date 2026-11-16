@@ -1,0 +1,2 @@
+	defc MAIN_SIZE = 31073
+	defc RAM1_SIZE = 5192
