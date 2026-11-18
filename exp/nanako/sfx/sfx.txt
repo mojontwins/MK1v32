@@ -1,0 +1,71 @@
+# Nanako in Classic Japanese Monster Castle - beeper sound effects for the idle
+# time player (dev/sfx_player.h). utils/sfxcnv makes dev/sfx.h from this file.
+#
+#   sfx name [priority]          SFX_NAME = its number, in order
+#       tone  frames pitch [slide]
+#       noise frames pitch [slide]
+#       rest  frames
+#
+# frames: 50 Hz ticks. pitch: Hz ("440") or period ("p40", 1-245).
+# slide: added to the period each tick (+ goes down, - goes up).
+# A higher priority effect can't be cut by a lower one.
+#
+# 0-5 are MK1's (peta_el_beeper 0-5 in the engine); 6-9 are Nanako's, in the
+# slots of MK1's shot, item, key and life (not used here): the CPC player has
+# 10 effects. The same numbers are the AY effects on the ZX 128K and the CPC
+# (tools/nanako_music.py): jump, take, drop and death are the original's.
+
+sfx enemy_destroyed 2
+	noise 3  p20
+	noise 4  p60  10
+
+sfx enemy_hit 2
+	noise 2  p30
+	tone  2  600
+
+sfx player_hit 5 			# MK1 plays 2 when the player is hit: Nanako's death
+	noise 4  p8
+	tone  20 1200 6
+	noise 6  p40  8
+
+sfx jump 1
+	tone  5  700  -8
+
+sfx player_hit_2 3
+	tone  6  900  15
+
+sfx game_over 5
+	tone  8  700
+	tone  8  600
+	tone  8  500
+	tone  20 400
+
+# Nanako
+
+sfx ending 5
+	tone  8  1000
+	tone  8  1200
+	tone  8  1500
+	tone  8  1200
+	tone  8  1500
+	tone  25 2000
+
+sfx take 3
+	tone  2  1600
+	tone  2  1200
+	tone  2  900
+	tone  4  1600 -6
+
+sfx drop 3
+	noise 2  p12
+	tone  3  500
+	tone  3  700
+	noise 3  p30  6
+
+sfx start 4
+	tone  4  1000
+	tone  4  1300
+	tone  4  1600
+	rest  2
+	tone  4  1300
+	tone  12 2000

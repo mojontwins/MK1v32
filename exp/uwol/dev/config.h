@@ -7,7 +7,8 @@
 #define MODE_128K_DUAL 						// ZX: on a 128K, WYZ music & AY effects from RAM1 (see speccy.h)
 #define SFX_IDLE_PLAYER 					// ZX: non blocking beeper effects in the idle frame time (sfx_player.h)
 #define SFX_MIN_SLICE 				1500 	// ZX: with SFX_IDLE_PLAYER, minimum sound per frame (~21 T-states units)
-#define BLACK_PEN		 			3		// For CPC, which pen is black? (Uwol: 1, 2 = room colours)
+#define BLACK_PEN		 			8		// For CPC, which pen is black? (Uwol: 1, 2 = room colours)
+#define CPC_CUSTOM_SPRITES_POST 			// CPC: call cpc_custom_sprites_post () after the sprites are drawn to the superbuffer
 #define WYZ_FX_CHANNEL 			0 		// CPC: effects over channel A (drums on B), as the original
 #define WYZ_SONG_BUFFER 			0x8DB0 	// CPC: biggest song unpacked (title, 579 bytes) ends at 0x9000
 //#define AUTO_SPLIT 						// For CPC, but hud must be 32 raster on top and MODE 1

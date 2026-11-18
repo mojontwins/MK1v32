@@ -103,12 +103,21 @@ struct sp_SS *sp_moviles [MAX_ENEMS];
 	struct sp_SS *sp_sword;
 #endif
 
-struct sp_Rect spritesClipValues = { VIEWPORT_Y, VIEWPORT_X, 20, 30 };
+// Sprites are clipped to the viewport, or to SPRITES_CLIP_* (characters,
+// _X2 / _Y2 not included) if defined in config.h.
+#ifndef SPRITES_CLIP_X1
+	#define SPRITES_CLIP_X1 	VIEWPORT_X
+	#define SPRITES_CLIP_X2 	(VIEWPORT_X + 30)
+	#define SPRITES_CLIP_Y1 	VIEWPORT_Y
+	#define SPRITES_CLIP_Y2 	(VIEWPORT_Y + 20)
+#endif
+
+struct sp_Rect spritesClipValues = { SPRITES_CLIP_Y1, SPRITES_CLIP_X1, SPRITES_CLIP_Y2 - SPRITES_CLIP_Y1, SPRITES_CLIP_X2 - SPRITES_CLIP_X1 };
 struct sp_Rect *spritesClip;
 
 #asm
 	.fsClipStruct defb 0, 24, 0, 32
-	.vpClipStruct defb VIEWPORT_Y, VIEWPORT_Y + 20, VIEWPORT_X, VIEWPORT_X + 30
+	.vpClipStruct defb SPRITES_CLIP_Y1, SPRITES_CLIP_Y2, SPRITES_CLIP_X1, SPRITES_CLIP_X2
 #endasm
 
 unsigned char isrc           @ 23296;
@@ -135,7 +144,7 @@ unsigned char ay_counter     @ 23298;
 #endasm
 
 #ifdef SFX_IDLE_PLAYER
-	#include "sfx.h"
+	#include "speccy/sfx.h"
 #endif
 
 #ifdef MODE_128K_DUAL

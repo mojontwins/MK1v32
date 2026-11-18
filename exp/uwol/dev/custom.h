@@ -10,6 +10,11 @@
 unsigned char rand (void);
 
 #define UWOL_FANTY_T 		6 		// Custom enemy type for the fanty
+#define UWOL_TOUCHED_H 		0xCE 	// CPC: high byte of tiles_tocados (system/tilemap_conf.asm)
+#define UWOL_SIDES_L_BYTE 	0 		// CPC: byte of a tiles_tocados row holding chars 0-7
+#define UWOL_SIDES_R_BYTE 	3 		// CPC: byte holding chars 24-31
+#define UWOL_SIDES_L_MASK 	0xF3 	// CPC: clears chars 2, 3 (VIEWPORT_X 2) in byte 0 of a row
+#define UWOL_SIDES_R_MASK 	0x0F 	// CPC: clears chars 28-31 in byte 3 of a row
 #define UWOL_COIN_TILE 		12 		// Coins are tiles 12-15 (one per background)
 #define UWOL_ARROW_L 		20
 #define UWOL_ARROW_R 		21
@@ -58,6 +63,7 @@ unsigned char uwol_bonus; 					// Extra lives given
 unsigned char uwol_good; 					// For game_ending ()
 unsigned char uwol_visited [UWOL_ROOMS];
 unsigned int uwol_fanty_idx = 0xffff; 				// malotes [] index of the fanty, 0xffff = none
+unsigned char uwol_fanty_slot = 0xff; 				// Its enemy slot, 0xff = none
 unsigned char uwol_fanty_t; 				// Its original type
 unsigned char uwol_num_buf [6];
 unsigned int uwol_max;
@@ -134,6 +140,104 @@ void uwol_die (void) {
 	}
 #endif
 
+#if defined CPC && defined CPC_CUSTOM_SPRITES_POST
+	void cpc_custom_sprites_post (void) {
+		// On ZX the black attributes of tiles 46 / 47 hide the sprites in the
+		// side columns (0, 13, 14). On CPC those columns are always black on
+		// screen, so their cells are simply not copied from the superbuffer:
+		// the touched-cell bits are cleared on the rows a sprite covers.
+		// Only Uwol and the fanty ever get there.
+		#asm
+				ld  ix, #(BASE_SPRITES + (SP_PLAYER * 16))
+				call uwol_sides
+
+				ld  a, (_uwol_fanty_slot)
+				cp  0xff
+				ret z
+				add SP_ENEMS_BASE
+				ld  l, a
+				ld  h, 0
+				add hl, hl
+				add hl, hl
+				add hl, hl
+				add hl, hl 						// x16
+				ld  de, BASE_SPRITES
+				add hl, de
+				push hl
+				pop ix
+
+			// Sprite coordinates count from the screen's top left in mode 0
+			// pixels and lines. tiles_tocados: 1 bit per character cell,
+			// 4 bytes per row, bit n of byte b is column 8 * b + n.
+
+			.uwol_sides
+				ld  a, (ix + 8) 				// X
+				ld  e, UWOL_SIDES_L_BYTE 		// Column 0 = chars 2, 3
+				ld  c, UWOL_SIDES_L_MASK
+				cp  VIEWPORT_X * 4 + 8
+				jr  c, uwol_sides_go
+
+				ld  e, UWOL_SIDES_R_BYTE 		// Columns 13-14 = chars 28-31
+				ld  c, UWOL_SIDES_R_MASK
+				cp  VIEWPORT_X * 4 + 97 		// Reaches column 13?
+				ret c
+
+			.uwol_sides_go
+				ld  a, (ix + 9) 				// Y
+				cp  VIEWPORT_Y * 8 + 160
+				ret nc
+				ld  b, a
+				srl a
+				srl a
+				srl a
+				ld  d, a 						// D = first char row
+
+				ld  a, b
+				add 15
+				srl a
+				srl a
+				srl a 							// A = last char row
+				cp  VIEWPORT_Y + 20
+				jr  c, uwol_sides_rows
+				ld  a, VIEWPORT_Y + 19 			// Not the HUD below
+
+			.uwol_sides_rows
+				sub d
+				inc a
+				ld  b, a 						// B = rows
+
+				ld  a, d
+				add a, a
+				add a, a
+				add e
+				ld  l, a
+				ld  h, UWOL_TOUCHED_H 			// HL -> tiles_tocados [4 * row + byte]
+
+			.uwol_sides_loop
+				ld  a, (hl)
+				and c
+				ld  (hl), a
+				ld  a, l
+				add 4
+				ld  l, a
+				djnz uwol_sides_loop
+		#endasm
+	}
+#endif
+
+void uwol_reset_baddies (void) {
+	// Back to how they start: active, at the start of their path, moving
+	// forwards (every enemy in the map starts at x1, y1 with mx, my >= 0).
+	for (gpit = 0; gpit < 3; gpit ++) {
+		enoffsmasi = enoffs + gpit;
+		malotes [enoffsmasi].t &= 127;
+		malotes [enoffsmasi].x = malotes [enoffsmasi].x1;
+		malotes [enoffsmasi].y = malotes [enoffsmasi].y1;
+		if (malotes [enoffsmasi].mx < 0) malotes [enoffsmasi].mx = -malotes [enoffsmasi].mx;
+		if (malotes [enoffsmasi].my < 0) malotes [enoffsmasi].my = -malotes [enoffsmasi].my;
+	}
+}
+
 #ifdef PLAYER_MOVE_OVERRIDE
 	unsigned char player_move_override (void) {
 		// Return 1 if call to `move` should be skipped.
@@ -146,16 +250,20 @@ void uwol_die (void) {
 		player.next_frame = sprite_cells [CELL_DEAD];
 
 		if (player.y > (160 << 6)) {
-			// Back to the room's start, blinking and dressed.
-			player.x = (PLAYER_INI_X << 4) << 6;
-			player.y = (PLAYER_INI_Y << 4) << 6;
-			player.vy = 0;
-			player.facing = SIDEVIEW_FACING_RIGHT;
-			player.estado = EST_PARP;
-			player.ct_estado = 32;
-			player.next_frame = sprite_cells [1];
-			uwol_nude = 0;
+			// As the original: the room starts over after the pyramid. Coins,
+			// enemies and time back, Uwol dressed at the start, no shirt.
+			// Visited rooms (second round) stay empty: no coins, no enemies.
+			player.y = 160 << 6;
 			player.life --;
+			if (player.life >= 0) {
+				hotspots [n_pant].tipo = 0;
+				uwol_fanty_restore ();
+				if (uwol_visited [n_pant] == 0) uwol_reset_baddies ();
+				#asm
+						call _show_pyramid
+				#endasm
+				on_pant = 0xff; 			// Enter the room again
+			}
 		}
 
 		gpx = player.x >> 6;
@@ -178,6 +286,7 @@ void uwol_fanty_create (void) {
 	}
 
 	uwol_fanty_idx = enoffs + gpit;
+	uwol_fanty_slot = gpit;
 	uwol_fanty_t = malotes [uwol_fanty_idx].t;
 	malotes [uwol_fanty_idx].t = UWOL_FANTY_T;
 	if (rdi) {
@@ -197,6 +306,7 @@ void uwol_fanty_restore (void) {
 	if (uwol_fanty_idx != 0xffff) {
 		malotes [uwol_fanty_idx].t = uwol_fanty_t;
 		uwol_fanty_idx = 0xffff;
+		uwol_fanty_slot = 0xff;
 	}
 }
 
@@ -403,36 +513,52 @@ void uwol_fanty_restore (void) {
 		// This room's background colour for the background, its shaded
 		// version and the coin of the current zone.
 		#ifdef CPC
-			// Pens 1 (paper) and 2 (ink)
+			// Pens 1 (PAPER) and 2 (INK) from the room's ZX attribute, through
+			// uwol_cpc_colours: index BRIGHT * 8 + ZX colour.
 			#asm
 					ld  a, (_uwol_attr)
+					and 0x40
 					rrca
 					rrca
 					rrca
-					call uwol_set_colours_hw
-					ld  bc, 0x7f01
-					out (c), c
-					out (c), a 						// Pen 1 = paper
+					ld  d, a 						// D = BRIGHT * 8
 
 					ld  a, (_uwol_attr)
-					call uwol_set_colours_hw
-					ld  bc, 0x7f02
-					out (c), c
-					out (c), a 						// Pen 2 = ink
-					ret
+					rrca
+					rrca
+					rrca
+					ld  e, 1
+					call uwol_set_pen 				// Pen 1 = PAPER
 
-				.uwol_set_colours_hw
-					// A & 7 = ZX colour -> A = CPC hardware colour | 0x40
+					ld  a, (_uwol_attr)
+					ld  e, 2 						// Pen 2 = INK
+
+				.uwol_set_pen
 					and 7
-					ld  e, a
-					ld  d, 0
-					ld  hl, uwol_set_colours_lut
-					add hl, de
+					or  d
+					ld  l, a
+					ld  h, 0
+					ld  bc, uwol_cpc_colours
+					add hl, bc
+					ld  b, 0x7f
+					out (c), e
 					ld  a, (hl)
+					out (c), a
 					ret
 
-				.uwol_set_colours_lut
-					defb 0x54, 0x44, 0x5C, 0x58, 0x56, 0x46, 0x5E, 0x40
+				// ZX colour -> CPC hardware colour (gate array value, 0x40 | hw).
+				// Closest colours in gfx/cpc/pal.png. Any CPC colour can be used:
+				//   0x54 black       0x44 navy        0x55 blue        0x5C dark red
+				//   0x58 purple      0x5D mauve       0x4C red         0x45 rose
+				//   0x4D magenta     0x56 green       0x46 teal        0x57 sky blue
+				//   0x5E olive       0x40 grey        0x5F pastel blue 0x4E orange
+				//   0x47 pink        0x4F pastel mag. 0x52 bri. green  0x42 sea green
+				//   0x53 bri. cyan   0x5A lime        0x59 pastel grn. 0x5B pastel cyan
+				//   0x4A yellow      0x43 pastel yel. 0x4B white
+				.uwol_cpc_colours
+					// black  blue   red    magen. green  cyan   yellow white
+					defb 0x54, 0x44, 0x5C, 0x58, 0x56, 0x46, 0x4A, 0x4B 	// BRIGHT 0
+					defb 0x54, 0x5D, 0x4C, 0x4D, 0x52, 0x5B, 0x43, 0x4B 	// BRIGHT 1
 			#endasm
 		#else
 			#asm
@@ -673,6 +799,19 @@ void uwol_fanty_restore (void) {
 				ld  a, (hl)
 				ld  (__n), a
 				call _draw_and_advance
+
+			// Corner (0, 0) does cast its shadow: (1, 1) is fully shaded.
+
+				ld  a, (_rdi)
+				dec a
+				jr  nz, cdsb_draw_next
+				ld  a, (_map_buff)
+				cp  46
+				jr  nz, cdsb_draw_next
+				ld  a, 8
+				ld  (_map_attr), a
+
+			.cdsb_draw_next
 				ld  a, (_rdi)
 				cp  150
 				jr  nz, cdsb_draw_loop
@@ -916,6 +1055,7 @@ void uwol_leave (unsigned char right) {
 		uwol_nude = 0;
 		uwol_exit = 0;
 		uwol_fanty_idx = 0xffff;
+		uwol_fanty_slot = 0xff;
 		uwol_time = uwol_coins << 1; 	// 0 in visited rooms: exits + fanty at once.
 
 		// Zone songs: MUSIC_ZONE1, then MUSIC_ZONE2-4 (3-5)

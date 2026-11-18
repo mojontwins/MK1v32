@@ -59,6 +59,11 @@ void title_screen (void) {
 	#endif
 
 	blackout ();
+	#ifdef CPC
+		#asm
+				call my_inks 					// Pens 1 & 2 back from the last room
+		#endasm
+	#endif
 	#asm
 			ld  hl, _s_title
 			call _unpack_screen
@@ -173,8 +178,9 @@ void show_pyramid (void) {
 
 	SCREEN_UPDATE;
 
+	// Until a control is pressed, like the original
 	no_break ();
-	espera_activa (150);
+	do espera_activa (250); while (pad_this_frame == 0xff);
 
 	uwol_marco ();
 }
@@ -201,6 +207,11 @@ void game_ending (void) {
 	#endif
 
 	blackout ();
+	#ifdef CPC
+		#asm
+				call my_inks 					// Pens 1 & 2 back from the last room
+		#endasm
+	#endif
 	#asm
 			ld  hl, _s_ending
 			call _unpack_screen

@@ -7,11 +7,11 @@
 		ld  b, 0x7f
 		ld  a, 0
 		out (c), a
-		ld  a, 0x4F	// 0b0100000 OR F (FFFF80FF)
+		ld  a, 0x58	// 0b0100000 OR 18 (FF800080)
 		out (c), a
 		ld  a, 1
 		out (c), a
-		ld  a, 0x44	// 0b0100000 OR 4 (FF000080)
+		ld  a, 0x46	// 0b0100000 OR 6 (FF008080)
 		out (c), a
 		ld  a, 2
 		out (c), a
@@ -19,55 +19,55 @@
 		out (c), a
 		ld  a, 3
 		out (c), a
-		ld  a, 0x54	// 0b0100000 OR 14 (FF000000)
+		ld  a, 0x56	// 0b0100000 OR 16 (FF008000)
 		out (c), a
 		ld  a, 4
 		out (c), a
-		ld  a, 0x55	// 0b0100000 OR 15 (FF0000FF)
+		ld  a, 0x52	// 0b0100000 OR 12 (FF00FF00)
 		out (c), a
 		ld  a, 5
 		out (c), a
-		ld  a, 0x4C	// 0b0100000 OR C (FFFF0000)
+		ld  a, 0x4E	// 0b0100000 OR E (FFFF8000)
 		out (c), a
 		ld  a, 6
 		out (c), a
-		ld  a, 0x4D	// 0b0100000 OR D (FFFF00FF)
+		ld  a, 0x4A	// 0b0100000 OR A (FFFFFF00)
 		out (c), a
 		ld  a, 7
 		out (c), a
-		ld  a, 0x52	// 0b0100000 OR 12 (FF00FF00)
+		ld  a, 0x4C	// 0b0100000 OR C (FFFF0000)
 		out (c), a
 		ld  a, 8
 		out (c), a
-		ld  a, 0x53	// 0b0100000 OR 13 (FF00FFFF)
+		ld  a, 0x54	// 0b0100000 OR 14 (FF000000)
 		out (c), a
 		ld  a, 9
 		out (c), a
-		ld  a, 0x4A	// 0b0100000 OR A (FFFFFF00)
+		ld  a, 0x5C	// 0b0100000 OR 1C (FF800000)
 		out (c), a
 		ld  a, 10
 		out (c), a
-		ld  a, 0x4B	// 0b0100000 OR B (FFFFFFFF)
+		ld  a, 0x4D	// 0b0100000 OR D (FFFF00FF)
 		out (c), a
 		ld  a, 11
 		out (c), a
-		ld  a, 0x5C	// 0b0100000 OR 1C (FF800000)
+		ld  a, 0x43	// 0b0100000 OR 3 (FFFFFF80)
 		out (c), a
 		ld  a, 12
 		out (c), a
-		ld  a, 0x5E	// 0b0100000 OR 1E (FF808000)
+		ld  a, 0x5B	// 0b0100000 OR 1B (FF80FFFF)
 		out (c), a
 		ld  a, 13
 		out (c), a
-		ld  a, 0x46	// 0b0100000 OR 6 (FF008080)
+		ld  a, 0x4B	// 0b0100000 OR B (FFFFFFFF)
 		out (c), a
 		ld  a, 14
 		out (c), a
-		ld  a, 0x40	// 0b0100000 OR 0 (FF808080)
+		ld  a, 0x57	// 0b0100000 OR 17 (FF0080FF)
 		out (c), a
 		ld  a, 15
 		out (c), a
-		ld  a, 0x56	// 0b0100000 OR 16 (FF008000)
+		ld  a, 0x44	// 0b0100000 OR 4 (FF000080)
 		out (c), a
 		ret
 #endasm

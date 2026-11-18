@@ -1,0 +1,2 @@
+	defc MAIN_SIZE = 14477
+	defc LOADER_SIZE = 246
