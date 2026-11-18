@@ -1493,6 +1493,10 @@ void saca_a_todo_el_mundo_de_aqui (void) {
 // SPR struct is 16 bytes wide. So iteration is simple
 // if you write your code by hand ... 
 
+#ifdef CPC_CUSTOM_SPRITES_POST
+	void cpc_custom_sprites_post (void); 	// In custom code, see config.h
+#endif
+
 void cpc_UpdateNow (unsigned char sprites) {
 	
 	if (sprites) {
@@ -1606,6 +1610,10 @@ void cpc_UpdateNow (unsigned char sprites) {
 
 			._cpc_screen_update_done
 		#endasm
+
+		#ifdef CPC_CUSTOM_SPRITES_POST
+			cpc_custom_sprites_post ();
+		#endif
 	}
 
 	#ifdef MIN_FAPS_PER_FRAME
