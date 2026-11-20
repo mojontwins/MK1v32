@@ -210,6 +210,7 @@ void game_ending (void) {
 	#ifdef CPC
 		#asm
 				call my_inks 					// Pens 1 & 2 back from the last room
+				call cpc_ResetTouchedTiles 		// Called mid-frame: drop the room's pending cells
 		#endasm
 	#endif
 	#asm

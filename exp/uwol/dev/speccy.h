@@ -103,12 +103,21 @@ struct sp_SS *sp_moviles [MAX_ENEMS];
 	struct sp_SS *sp_sword;
 #endif
 
-struct sp_Rect spritesClipValues = { VIEWPORT_Y, VIEWPORT_X, 20, 30 };
+// Sprites are clipped to the viewport, or to SPRITES_CLIP_* (characters,
+// _X2 / _Y2 not included) if defined in config.h.
+#ifndef SPRITES_CLIP_X1
+	#define SPRITES_CLIP_X1 	VIEWPORT_X
+	#define SPRITES_CLIP_X2 	(VIEWPORT_X + 30)
+	#define SPRITES_CLIP_Y1 	VIEWPORT_Y
+	#define SPRITES_CLIP_Y2 	(VIEWPORT_Y + 20)
+#endif
+
+struct sp_Rect spritesClipValues = { SPRITES_CLIP_Y1, SPRITES_CLIP_X1, SPRITES_CLIP_Y2 - SPRITES_CLIP_Y1, SPRITES_CLIP_X2 - SPRITES_CLIP_X1 };
 struct sp_Rect *spritesClip;
 
 #asm
 	.fsClipStruct defb 0, 24, 0, 32
-	.vpClipStruct defb VIEWPORT_Y, VIEWPORT_Y + 20, VIEWPORT_X, VIEWPORT_X + 30
+	.vpClipStruct defb SPRITES_CLIP_Y1, SPRITES_CLIP_Y2, SPRITES_CLIP_X1, SPRITES_CLIP_X2
 #endasm
 
 unsigned char isrc           @ 23296;
@@ -135,7 +144,7 @@ unsigned char ay_counter     @ 23298;
 #endasm
 
 #ifdef SFX_IDLE_PLAYER
-	#include "sfx.h"
+	#include "speccy/sfx.h"
 #endif
 
 #ifdef MODE_128K_DUAL
@@ -524,6 +533,16 @@ void draw_coloured_tile (unsigned char x, unsigned char y, unsigned char t) {
 				jr dct_sts_p_nonshaded
 
 			.dct_sts_p_do
+				// UWOL ONLY: column 0 below row 0 (invisible walls) casts no
+				// shadows over column 1
+				ld  b, a
+				ld  a, c
+				or  a
+				ld  a, b
+				jr  nz, dct_sts_p_uwol_ok
+				or  a
+				jr  nz, dct_sts_p_nonshaded
+			.dct_sts_p_uwol_ok
 				call _attr_2
 				ld  a, l
 				and 8 
@@ -1214,6 +1233,7 @@ void render_all_sprites (void) {
 			srl a
 			srl a
 			add VIEWPORT_Y
+			and 31 						// UWOL ONLY: gpy 240-255 -> rows 0-1, clipped
 			ld  h, a 
 
 			ld  a, (_rdx)
@@ -1430,263 +1450,263 @@ void __FASTCALL__ enems_en_an_calc (unsigned char n) {
 }
 
 #ifndef SFX_IDLE_PLAYER
-#asm
-	.playsfx
-		;di
-		ld l,a
-		ld h,0
-		add hl,hl
-		ld de,proclist
-		add hl,de
-		ld a,(hl)
-		inc hl
-		ld h,(hl)
-		ld l,a
-		ld de,0
-		jp (hl)
-	
-	.sound1	;enemy destroyed
-		ex de,hl
-		ld bc,500
-	.sound1l0
-		ld a,(hl)
-		and 16
-		out ($FE),a
-		ld e,a
-		inc a
-		sla a
-		sla a
-	.sound1l1
-		dec a
-		jr nz,sound1l1
-		out ($FE),a
-		ld a,e
-		inc a
-		add a,a
-		add a,a
-		add a,a
-	.sound1l2
-		dec a
-		jr nz,sound1l2
-		ld a,b
-		inc hl
-		dec bc
-		ld a,b
-		or c
-		jr nz,sound1l0
-		;ei
-		ret
-	
-	.sound2	;enemy hit
-		ex de,hl
-		ld bc,40*256+100
-	.sound2l0
-		ld a,(hl)
-		and 16
-		out ($FE),a
-		inc hl
-		ld a,c
-	.sound2l1
-		dec a
-		jr nz,sound2l1
-		out ($FE),a
-		ld a,c
-	.sound2l2
-		dec a
-		jr nz,sound2l2
-		djnz sound2l0
-		;ei
-		ret
-	
-	.sound3	;something
-		ex de,hl
-		ld b,100
-		ld de,$1020
-	.sound3l0
-		ld a,(hl)
-		and d
-		out ($FE),a
-		inc hl
-		ld a,e
-	.sound3l0a
-		dec a
-		jr nz,sound3l0a
-		djnz sound3l0
-		ld b,250
-	.sound3l1
-		ld a,(hl)
-		and d
-		out ($FE),a
-		inc hl
-		ld a,2
-	.sound3l2
-		dec a
-		jr nz,sound3l2
-		xor a
-		out ($FE),a
-		ld a,e
-	.sound3l3
-		dec a
-		jr nz,sound3l3
-		djnz sound3l1
-		;ei
-		ret
-	
-	.sound4	;jump
-		ld bc,20*256+250
-	.sound4l0
-		ld a,16
-		out ($FE),a
-		ld a,4
-	.sound4l1
-		dec a
-		jr nz,sound4l1
-		out ($FE),a
-		ld a,c
-	.sound4l2
-		dec a
-		jr nz,sound4l2
-		dec c
-		dec c
-		djnz sound4l0
-		;ei
-		ret
-	
-	.sound5	;player hit
-		ex de,hl
-		ld bc,100*256+16
-	.sound5l0
-		ld a,(hl)
-		and c
-		out ($FE),a
-		inc hl
-		ld a,110
-		sub b
-		ld e,a
-		and c
-		out ($FE),a
-	.sound5l1
-		dec e
-		jr nz,sound5l1
-		djnz sound5l0
-		;ei
-		ret
-	
-	.sound6	;enemy destroyed 2
-		ex de,hl
-		ld bc,20*256+16
-	.sound6l0
-		ld a,(hl)
-		inc hl
-		and c
-		out ($FE),a
-		xor a
-	.sound6l0a
-		dec a
-		jr nz,sound6l0a
-		djnz sound6l0
-	.sound6l1
-		ld a,(hl)
-		inc hl
-		and c
-		out ($FE),a
-	.sound6l2
-		dec a
-		jr nz,sound6l2
-		djnz sound6l1
-		;ei
-		ret
+	#asm
+		.playsfx
+			;di
+			ld l,a
+			ld h,0
+			add hl,hl
+			ld de,proclist
+			add hl,de
+			ld a,(hl)
+			inc hl
+			ld h,(hl)
+			ld l,a
+			ld de,0
+			jp (hl)
 		
-	.sound7	;shot
-		ex de,hl
-		ld bc,100*256
-	.sound7l0
-		ld a,(hl)
-		inc hl
-		or c
-		and 16
-		out ($FE),a
-		ld a,(hl)
-		srl a
-		srl a
-	.sound7l1
-		dec a
-		jr nz,sound7l1
-		ld a,c
-		add a,4
-		ld c,a
-		djnz sound7l0
-		;ei
-		ret
-	
-	.sound8	;take item
-		ld a,200
-		jr soundItem
-	.sound9
-		ld a,175
-		jr soundItem
-	.sound10
-		ld a,100
-	.soundItem
-		ld (frq),a
-		ld b,4
-		ld d,128
-	.sound8l2
-		push bc
-	;.frq=$+1
-	;	ld bc,2*256+200
-		defb #01	;ld bc
-	.frq
-		defb 200	;+200
-		defb 2	;2*256
-	.sound8l0
-		push bc
-		ld b,50
-	.sound8l1
-		xor 16
-		and 16
-		out ($FE),a
-		ld e,a
-		ld a,d
-	.sound8l2b
-		dec a
-		jr nz,sound8l2b
-		out ($FE),a
-		ld a,129
-		sub d
-	.sound8l3
-		dec a
-		jr nz,sound8l3
-		ld a,e
-		ld e,c
-	.sound8l4
-		dec e
-		jr nz,sound8l4
-		djnz sound8l1
-		pop bc
-		ld a,c
-		sub 16
-		ld c,a
-		djnz sound8l0
-		pop bc
-		srl d
-		srl d
-		djnz sound8l2
-		;ei
-		ret
-	
-	.proclist
-		defw sound1
-		defw sound2
-		defw sound3
-		defw sound4
-		defw sound5
-		defw sound6
-		defw sound7
-		defw sound8
-		defw sound9
-		defw sound10
-#endasm
+		.sound1	;enemy destroyed
+			ex de,hl
+			ld bc,500
+		.sound1l0
+			ld a,(hl)
+			and 16
+			out ($FE),a
+			ld e,a
+			inc a
+			sla a
+			sla a
+		.sound1l1
+			dec a
+			jr nz,sound1l1
+			out ($FE),a
+			ld a,e
+			inc a
+			add a,a
+			add a,a
+			add a,a
+		.sound1l2
+			dec a
+			jr nz,sound1l2
+			ld a,b
+			inc hl
+			dec bc
+			ld a,b
+			or c
+			jr nz,sound1l0
+			;ei
+			ret
+		
+		.sound2	;enemy hit
+			ex de,hl
+			ld bc,40*256+100
+		.sound2l0
+			ld a,(hl)
+			and 16
+			out ($FE),a
+			inc hl
+			ld a,c
+		.sound2l1
+			dec a
+			jr nz,sound2l1
+			out ($FE),a
+			ld a,c
+		.sound2l2
+			dec a
+			jr nz,sound2l2
+			djnz sound2l0
+			;ei
+			ret
+		
+		.sound3	;something
+			ex de,hl
+			ld b,100
+			ld de,$1020
+		.sound3l0
+			ld a,(hl)
+			and d
+			out ($FE),a
+			inc hl
+			ld a,e
+		.sound3l0a
+			dec a
+			jr nz,sound3l0a
+			djnz sound3l0
+			ld b,250
+		.sound3l1
+			ld a,(hl)
+			and d
+			out ($FE),a
+			inc hl
+			ld a,2
+		.sound3l2
+			dec a
+			jr nz,sound3l2
+			xor a
+			out ($FE),a
+			ld a,e
+		.sound3l3
+			dec a
+			jr nz,sound3l3
+			djnz sound3l1
+			;ei
+			ret
+		
+		.sound4	;jump
+			ld bc,20*256+250
+		.sound4l0
+			ld a,16
+			out ($FE),a
+			ld a,4
+		.sound4l1
+			dec a
+			jr nz,sound4l1
+			out ($FE),a
+			ld a,c
+		.sound4l2
+			dec a
+			jr nz,sound4l2
+			dec c
+			dec c
+			djnz sound4l0
+			;ei
+			ret
+		
+		.sound5	;player hit
+			ex de,hl
+			ld bc,100*256+16
+		.sound5l0
+			ld a,(hl)
+			and c
+			out ($FE),a
+			inc hl
+			ld a,110
+			sub b
+			ld e,a
+			and c
+			out ($FE),a
+		.sound5l1
+			dec e
+			jr nz,sound5l1
+			djnz sound5l0
+			;ei
+			ret
+		
+		.sound6	;enemy destroyed 2
+			ex de,hl
+			ld bc,20*256+16
+		.sound6l0
+			ld a,(hl)
+			inc hl
+			and c
+			out ($FE),a
+			xor a
+		.sound6l0a
+			dec a
+			jr nz,sound6l0a
+			djnz sound6l0
+		.sound6l1
+			ld a,(hl)
+			inc hl
+			and c
+			out ($FE),a
+		.sound6l2
+			dec a
+			jr nz,sound6l2
+			djnz sound6l1
+			;ei
+			ret
+			
+		.sound7	;shot
+			ex de,hl
+			ld bc,100*256
+		.sound7l0
+			ld a,(hl)
+			inc hl
+			or c
+			and 16
+			out ($FE),a
+			ld a,(hl)
+			srl a
+			srl a
+		.sound7l1
+			dec a
+			jr nz,sound7l1
+			ld a,c
+			add a,4
+			ld c,a
+			djnz sound7l0
+			;ei
+			ret
+		
+		.sound8	;take item
+			ld a,200
+			jr soundItem
+		.sound9
+			ld a,175
+			jr soundItem
+		.sound10
+			ld a,100
+		.soundItem
+			ld (frq),a
+			ld b,4
+			ld d,128
+		.sound8l2
+			push bc
+		;.frq=$+1
+		;	ld bc,2*256+200
+			defb #01	;ld bc
+		.frq
+			defb 200	;+200
+			defb 2	;2*256
+		.sound8l0
+			push bc
+			ld b,50
+		.sound8l1
+			xor 16
+			and 16
+			out ($FE),a
+			ld e,a
+			ld a,d
+		.sound8l2b
+			dec a
+			jr nz,sound8l2b
+			out ($FE),a
+			ld a,129
+			sub d
+		.sound8l3
+			dec a
+			jr nz,sound8l3
+			ld a,e
+			ld e,c
+		.sound8l4
+			dec e
+			jr nz,sound8l4
+			djnz sound8l1
+			pop bc
+			ld a,c
+			sub 16
+			ld c,a
+			djnz sound8l0
+			pop bc
+			srl d
+			srl d
+			djnz sound8l2
+			;ei
+			ret
+		
+		.proclist
+			defw sound1
+			defw sound2
+			defw sound3
+			defw sound4
+			defw sound5
+			defw sound6
+			defw sound7
+			defw sound8
+			defw sound9
+			defw sound10
+	#endasm
 #endif
 
 /*

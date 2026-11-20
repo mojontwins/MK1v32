@@ -11,7 +11,7 @@ if [%1]==[justcompile] goto :compile
 
 echo Converting resources
 ..\utils\ene2h.exe ..\enems\enems.ene enems.h 2bytes > nul
-..\utils\sfxcnv.exe in=..\sfx\sfx.txt out=sfx.h > nul
+..\utils\sfxcnv.exe in=..\sfx\sfx.txt out=speccy\sfx.h > nul
 ..\utils\ts2bin.exe ..\gfx\speccy\font.png ..\gfx\speccy\work.png tileset.bin 7 pureblack47 > nul
 ..\utils\sprcnv2.exe ..\gfx\speccy\sprites.png speccy\sprites.h 25 > nul
 for %%s in (title marco ending) do (

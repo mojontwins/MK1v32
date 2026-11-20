@@ -34,10 +34,19 @@ Produce `uwol_cpc.sna`, `uwol_cpc.cdt` (se carga con `RUN""`) y `uwol_cpc.dsk` (
 - **Golpes:** `PLAYER_BOUNCES` y `PLAYER_FLICKERS`.
 - **Game over.**
 
-**Motor:** hay dos cambios, y los dos están en `mk1v32.patch`:
+**Motor:** usa el de `src/dev`, con unos cambios propios de Uwol que no son para reutilizar (buscar `UWOL ONLY`):
 
-- la llamada a `player_move_override ()` en `mainloop.h` (el hook ya estaba declarado, pero no se llamaba);
-- el reproductor de efectos (ver "Sonido").
+- **Por encima del área de juego** (`engine.h`, `mainloop.h`): para que sea más fácil saltar a las plataformas de arriba, Uwol puede subir hasta 15 píxeles por encima de la fila de arriba, por un hueco del techo. `player.y` llega a -15 × 64 y `gpy` vale entonces 241-255. Con -15 sus pies siguen en la fila 0, así que las colisiones horizontales con el techo siguen funcionando: no puede salir del hueco ni andar por encima del techo. El resto sale solo de que `gpy` es de 8 bits: las colisiones de arriba miran la fila 15 (fuera del mapa). Además:
+  - al aterrizar con `gpy` en 240 (no debería pasar), `player.y` vale -16 × 64 y no +240 píxeles;
+  - ahí arriba no se cogen hotspots: `gpy` 241-255 coincidiría con la `y` de "no hay hotspot" (240), y la camiseta se cogía en cada frame.
+- **El sprite ahí arriba** se recorta al área de juego: en ZX, con `and 31` en la fila del sprite (`speccy.h`) y el recorte de siempre; en CPC ya pasa solo, porque la librería no marca las celdas de fuera. En CPC, el tiempo no se imprime mientras Uwol esté encima de sus cifras (si no, saldría su parte oculta), y se imprime al irse (`custom.h`).
+- **Sombras de la columna 1** (`speccy.h`, `cpc.h`): la columna 0 (paredes invisibles, sólidas) no echa sombra salvo en la fila 0, para que la esquina (0, 0) sombree entera la (1, 1). Así el tile 46 es sólido desde el principio (`comportamiento_tiles`).
+
+De lo añadido al motor para Uwol, usa:
+
+- la llamada a `player_move_override ()` en `mainloop.h`;
+- el reproductor de efectos (ver "Sonido");
+- en CPC, `CPC_CUSTOM_SPRITES_POST`: tras pintar los sprites, `cpc_custom_sprites_post ()` (en `custom.h`) quita las marcas de las celdas de las columnas laterales en las filas que ocupan Uwol y el fanty, así que esa parte no se copia a la pantalla y quedan tapados como en ZX.
 
 **Custom** (`custom.h`, `custom_flick.h`, `pantallas.h`):
 
@@ -64,7 +73,7 @@ Produce `uwol_cpc.sna`, `uwol_cpc.cdt` (se carga con `RUN""`) y `uwol_cpc.dsk` (
 
 ## Sonido (ZX)
 
-`SFX_IDLE_PLAYER` (en `config.h`) activa `dev/sfx_player.h`, que reproduce efectos de beeper sin bloquear el juego.
+`SFX_IDLE_PLAYER` (en `config.h`) activa `dev/speccy/sfx_player.h`, que reproduce efectos de beeper sin bloquear el juego.
 
 **Cómo funciona:**
 
@@ -84,7 +93,7 @@ Produce `uwol_cpc.sna`, `uwol_cpc.cdt` (se carga con `RUN""`) y `uwol_cpc.dsk` (
 **Los efectos:**
 
 - Están en `sfx/sfx.txt` (el formato se explica en el propio fichero).
-- `utils/sfxcnv` genera `dev/sfx.h`; `comp.sh` / `comp.bat` lo llaman.
+- `utils/sfxcnv` genera `dev/speccy/sfx.h`; `comp.sh` / `comp.bat` lo llaman.
 - Los 10 primeros son los de MK1 (`peta_el_beeper` 0-9 en el motor). Los demás son de Uwol: `SFX_COIN`, `SFX_SHIRT`, `SFX_DEATH`, `SFX_FANTY`, `SFX_EXITS`, `SFX_EXTRA_LIFE` y `SFX_ENDING`.
 
 **Para escucharlos:**
@@ -94,10 +103,7 @@ Produce `uwol_cpc.sna`, `uwol_cpc.cdt` (se carga con `RUN""`) y `uwol_cpc.dsk` (
 
 **CPC:** no usa este sistema; sigue con los efectos AY de WYZ. En `custom.h`, los `SFX_*` de Uwol se traducen a los efectos más parecidos.
 
-Los cambios al motor están en `mk1v32.patch`:
-
-- `speccy.h`, `mainloop.h`, `churromain.c`, `config.h`, `definitions.h` y `cpc.h`;
-- ficheros nuevos: `sfx_player.h`, `utils/sfxcnv.bas`, `system/zxloader.asm` y `system/loader128.bas`.
+Los cambios al motor ya están en `src/dev` del repo; los ficheros del motor de `dev/` son copia de los de allí.
 
 ## Música y efectos AY (CPC y ZX 128K)
 

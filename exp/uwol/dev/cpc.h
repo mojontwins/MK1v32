@@ -633,6 +633,18 @@ void _tile_address (void) {
 		// if (cx1 < 0 || cy1 < 0 || cx1 > 14 || cy1 > 9) return 0;
 		// return map_attr [cx1 + (cy1 << 4) - cy1];
 		#asm
+				// UWOL ONLY: column 0 below row 0 (invisible walls) casts no
+				// shadows over column 1
+				ld  a, (_cx1)
+				or  a
+				jr  nz, attr_mk2_uwol_ok
+				ld  a, (_cy1)
+				or  a
+				jr  z, attr_mk2_uwol_ok
+				ld  hl, 0
+				ret
+			.attr_mk2_uwol_ok
+
 				ld  a, (_cx1)
 				ld  c, a 
 				ld  a, (_cy1)
@@ -1150,6 +1162,9 @@ void draw_text (unsigned char x, unsigned char y, char *s) {
 			jr  z, print_str_inv 
 			
 			inc hl
+
+			cp  0x25 			; '%' = new line, as in ZX
+			jr  z, draw_text_nl
 			
 			sub 32
 			ld  (de), a
@@ -1162,6 +1177,18 @@ void draw_text (unsigned char x, unsigned char y, char *s) {
 			ld  (__n), a
 
 			jr  draw_text_loop
+
+		.draw_text_nl
+			push hl
+			call print_str_inv 	; Invalidate this line
+			pop hl
+
+			ld  a, (__t)
+			ld  (__x), a
+			ld  a, (__y)
+			inc a
+			ld  (__y), a
+			jr  draw_text_pre_loop
 
 		#if defined ACTIVATE_SCRIPTING && defined TEXT_X
 			.draw_line_of_text
@@ -1177,6 +1204,10 @@ void draw_text (unsigned char x, unsigned char y, char *s) {
 		.print_str_inv
 
 			; Invalidate cells based upon strlen.
+			ld  a, (__n)
+			or  a
+			ret z 				; Empty line (text ending in '%')
+
 			ld  a, (__y)
 			ld  b, a
 			ld  d, a

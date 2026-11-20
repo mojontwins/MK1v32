@@ -94,7 +94,22 @@ void draw_num (unsigned char x, unsigned char y, unsigned int n, unsigned char d
 		uwol_num_buf);
 }
 
+#ifdef CPC
+	unsigned char uwol_time_pending;
+	#define UWOL_OVER_TIME 	(gpy >= 240 && gpx > (17 - VIEWPORT_X) * 8 - 16 && gpx < (20 - VIEWPORT_X) * 8)
+#endif
+
 void uwol_hud_time (void) {
+	#ifdef CPC
+		// Uwol above the playfield and over the digits (chars 17-19): the
+		// hidden part of his sprite is in the superbuffer over those cells.
+		// Printed when he's gone (before_vsync).
+		if (UWOL_OVER_TIME) {
+			uwol_time_pending = 1;
+			return;
+		}
+		uwol_time_pending = 0;
+	#endif
 	draw_num (17, 1, uwol_time < 0 ? 0 : uwol_time, 3);
 }
 
@@ -202,7 +217,16 @@ void uwol_die (void) {
 				ld  a, VIEWPORT_Y + 19 			// Not the HUD below
 
 			.uwol_sides_rows
+				ld  b, a 						// Not the HUD above either
+				ld  a, d 						// (Uwol may be above the playfield)
+				cp  VIEWPORT_Y
+				jr  nc, uwol_sides_rows_top
+				ld  d, VIEWPORT_Y
+			.uwol_sides_rows_top
+				ld  a, b
 				sub d
+				ret c 							// All of it above
+
 				inc a
 				ld  b, a 						// B = rows
 
@@ -557,8 +581,8 @@ void uwol_fanty_restore (void) {
 				//   0x4A yellow      0x43 pastel yel. 0x4B white
 				.uwol_cpc_colours
 					// black  blue   red    magen. green  cyan   yellow white
-					defb 0x54, 0x44, 0x5C, 0x58, 0x56, 0x46, 0x4A, 0x4B 	// BRIGHT 0
-					defb 0x54, 0x5D, 0x4C, 0x4D, 0x52, 0x5B, 0x43, 0x4B 	// BRIGHT 1
+					defb 0x54, 0x44, 0x5C, 0x58, 0x56, 0x46, 0x5E, 0x40 	// BRIGHT 0
+					defb 0x54, 0x5D, 0x4C, 0x4D, 0x52, 0x57, 0x4E, 0x5F 	// BRIGHT 1
 			#endasm
 		#else
 			#asm
@@ -799,41 +823,12 @@ void uwol_fanty_restore (void) {
 				ld  a, (hl)
 				ld  (__n), a
 				call _draw_and_advance
-
-			// Corner (0, 0) does cast its shadow: (1, 1) is fully shaded.
-
-				ld  a, (_rdi)
-				dec a
-				jr  nz, cdsb_draw_next
-				ld  a, (_map_buff)
-				cp  46
-				jr  nz, cdsb_draw_next
-				ld  a, 8
-				ld  (_map_attr), a
-
-			.cdsb_draw_next
 				ld  a, (_rdi)
 				cp  150
 				jr  nz, cdsb_draw_loop
 
-			// Tile 46 is drawn as behaviour 0 so it doesn't cast shadows over
-			// the playfield; it is made an obstacle now.
-
-				ld  hl, _map_buff
-				ld  de, _map_attr
-				ld  b, 150
-
-			.cdsb_walls_loop
-				ld  a, (hl)
-				cp  46
-				jr  nz, cdsb_walls_next
-				ld  a, 8
-				ld  (de), a
-
-			.cdsb_walls_next
-				inc hl
-				inc de
-				djnz cdsb_walls_loop
+			// Tile 46 (sides) is solid. Only (0, 0) casts its shadow over
+			// column 1: see "UWOL ONLY" in the shadows code of cpc.h / speccy.h.
 
 			// Coins again, unshaded
 
@@ -1000,6 +995,7 @@ void uwol_leave (unsigned char right) {
 		// Not enough money! back to the top.
 		n_pant = 0;
 		uwol_level = 1;
+		on_pant = 0xff; 			// Redraw it even if n_pant didn't change
 	} else {
 		n_pant += uwol_level + right;
 		uwol_level ++;
@@ -1089,6 +1085,9 @@ void uwol_leave (unsigned char right) {
 			}
 			uwol_hud_time ();
 		}
+		#ifdef CPC
+			if (uwol_time_pending && !UWOL_OVER_TIME) uwol_hud_time ();
+		#endif
 
 		// Coins, then exits.
 		if (uwol_coins) {

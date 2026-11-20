@@ -6,7 +6,7 @@
 void main (void) {
 	#ifndef CPC
 		#asm 
-				ld  sp, STACK_ADDR
+			ld  sp, STACK_ADDR
 
 			#ifdef MODE_128K_DUAL
 				// 128K? Paging the ROM changes what's at 0001.
@@ -248,7 +248,7 @@ void main (void) {
 			#else
 				move ();
 			#endif
-				
+							
 			#ifdef PLAYER_CAN_FIRE
 				mueve_bullets ();
 			#endif
@@ -264,6 +264,12 @@ void main (void) {
 
 			//if (gpx >= hotspot_x - 15 && gpx <= hotspot_x + 15 && gpy >= hotspot_y - 15 && gpy <= hotspot_y + 15) 
 			#asm
+					// UWOL ONLY: no hotspots above the playfield (gpy 241-255
+					// would match the "no hotspot" y, 240)
+					ld  a, (_gpy)
+					cp  0xf0
+					jp  nc, _hotspots_else
+
 					// gpx >= hotspot_x - 15 -> gpx + 15 >= hotspot_x
 					ld  a, (_hotspot_x)
 					ld  c, a

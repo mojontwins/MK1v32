@@ -1018,8 +1018,11 @@ void move (void) {
 
 					ld  a, (_pad_this_frame)
 
-					#ifdef PLAYER_CAN_FIRE
+					#if defined PLAYER_CAN_FIRE
 						and sp_UP
+						jr  nz, m_jump_start_done
+					#elif defined PLAYER_JUMP_FIRE_ONLY
+						and sp_FIRE
 						jr  nz, m_jump_start_done
 					#else
 						and #(sp_UP | sp_FIRE)
@@ -1053,6 +1056,9 @@ void move (void) {
 					ld  a, (_pad0)
 					#ifdef PLAYER_CAN_FIRE
 						and sp_UP
+						jr  nz, m_jump_perform_not_pressing
+					#elif defined PLAYER_JUMP_FIRE_ONLY
+						and sp_FIRE
 						jr  nz, m_jump_perform_not_pressing
 					#else
 						and #(sp_UP | sp_FIRE)
@@ -1182,8 +1188,19 @@ void move (void) {
 			bit 7, h 			
 			jr  z, m_vert_thrust_notneg
 
-			// HL is negative, crop to 0:
-			ld  hl, 0
+			// UWOL ONLY: Uwol may go up to 15 px above the playfield (gpy
+			// 241-255 then), so his feet are always in row 0: he can jump
+			// through a gap in the ceiling but never stand on top of it.
+			// HL is negative, crop to -15 * 64:
+			ld  a, h
+			cp  0xfc
+			jr  c, m_vert_uwol_crop
+			jr  nz, m_vert_thurst_write
+			ld  a, l
+			cp  0x40
+			jr  nc, m_vert_thurst_write
+		.m_vert_uwol_crop
+			ld  hl, 0xfc40
 			jr  m_vert_thurst_write
 
 		.m_vert_thrust_notneg
@@ -1367,8 +1384,16 @@ void move (void) {
 
 			ld  a, (_gpy)
 			and 0xf0 
+
 			ld  (_gpy), a 
 			call Ashl16_HL
+
+			// UWOL ONLY: gpy 240 means y = -16 (shouldn't happen, see above)
+			cp  0xf0
+			jr  nz, m_vert_coll_down_uwol_done
+			ld  h, 0xfc
+		.m_vert_coll_down_uwol_done
+
 			ld  (_player + 2), HL 	// player.y
 
 			ld  a, WALL_DOWN

@@ -1,4 +1,4 @@
-Z80 Module Assembler V1.0.31 (13.6.2009), (c) InterLogic 1993-2009                               Tue Nov 17 17:14:52 2026
+Z80 Module Assembler V1.0.31 (13.6.2009), (c) InterLogic 1993-2009                               Thu Nov 19 22:54:04 2026
 Page 001                                                                                                       'ram1.sym'
 
 
@@ -63,7 +63,7 @@ NO_DEC_TEMPO			= 00000342
 NO_ENVOLVENTE			= 00000276
 NO_ENVOLVENTES_SONIDO		= 000000F1
 
-Z80 Module Assembler V1.0.31 (13.6.2009), (c) InterLogic 1993-2009                               Tue Nov 17 17:14:52 2026
+Z80 Module Assembler V1.0.31 (13.6.2009), (c) InterLogic 1993-2009                               Thu Nov 19 22:54:04 2026
 Page 002                                                                                                       'ram1.sym'
 
 
@@ -129,7 +129,7 @@ PUNTERO_P_DECP			= 000005C8
 PUNTERO_SONIDO			= 000005D7
 RAM1_FX				= 0000000F
 
-Z80 Module Assembler V1.0.31 (13.6.2009), (c) InterLogic 1993-2009                               Tue Nov 17 17:14:52 2026
+Z80 Module Assembler V1.0.31 (13.6.2009), (c) InterLogic 1993-2009                               Thu Nov 19 22:54:04 2026
 Page 003                                                                                                       'ram1.sym'
 
 

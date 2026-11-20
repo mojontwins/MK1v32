@@ -220,7 +220,7 @@
 unsigned char comportamiento_tiles [] = {
 	0, 0, 0, 0, 8, 8, 8, 8, 8, 8, 8, 8, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 		// 46 -> 8 after rendering (custom.h)
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0 		// 46: floors and ceilings on the sides
 };
 
 // On CPC, using MODE_1 and AUTO_SPLIT, add here your custom palete includes

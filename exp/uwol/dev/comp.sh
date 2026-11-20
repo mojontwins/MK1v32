@@ -18,7 +18,7 @@ cd "$(dirname "$0")"
 if [ "$1" != "justcompile" ]; then
 	echo "Converting resources"
 	$T/ene2h ../enems/enems.ene enems.h 2bytes > /dev/null
-	$T/sfxcnv in=../sfx/sfx.txt out=sfx.h > /dev/null
+	$T/sfxcnv in=../sfx/sfx.txt out=speccy/sfx.h > /dev/null
 	$T/ts2bin ../gfx/speccy/font.png ../gfx/speccy/work.png tileset.bin 7 pureblack47 > /dev/null
 	$T/sprcnv2 ../gfx/speccy/sprites.png speccy/sprites.h 25 > /dev/null
 	for s in title marco ending; do
